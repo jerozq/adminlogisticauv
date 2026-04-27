@@ -1,0 +1,89 @@
+.calendar-master-wrapper .fc {
+  --fc-border-color: rgba(255, 255, 255, 0.45);
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: rgba(255, 255, 255, 0.35);
+  --fc-today-bg-color: rgba(191, 219, 254, 0.22);
+  --fc-button-text-color: #334155;
+  --fc-button-bg-color: rgba(255, 255, 255, 0.75);
+  --fc-button-border-color: rgba(255, 255, 255, 0.7);
+  --fc-button-hover-bg-color: rgba(255, 255, 255, 0.95);
+  --fc-button-hover-border-color: rgba(255, 255, 255, 0.85);
+  --fc-button-active-bg-color: rgba(255, 255, 255, 0.95);
+  --fc-button-active-border-color: rgba(255, 255, 255, 0.95);
+  color: #334155;
+}
+
+.calendar-master-wrapper .fc .fc-toolbar-title {
+  font-family: var(--font-geist-sans), sans-serif;
+  color: #1e293b;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.calendar-master-wrapper .fc .fc-button {
+  border-radius: 9999px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 1px 1px rgba(15, 23, 42, 0.05);
+  font-family: var(--font-geist-sans), sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: none;
+}
+
+.calendar-master-wrapper .fc-theme-standard td,
+.calendar-master-wrapper .fc-theme-standard th {
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.calendar-master-wrapper .fc-col-header-cell-cushion,
+.calendar-master-wrapper .fc-daygrid-day-number,
+.calendar-master-wrapper .fc-timegrid-axis-cushion {
+  color: #475569;
+  font-family: var(--font-geist-sans), sans-serif;
+}
+
+.calendar-master-wrapper .fc-event {
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  padding: 2px 8px;
+  font-family: var(--font-geist-sans), sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.calendar-master-wrapper .fc-event .fc-event-main {
+  color: inherit;
+}
+
+.calendar-master-wrapper .master-event-preparado {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #2563eb;
+}
+
+.calendar-master-wrapper .master-event-ejecucion {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #d97706;
+}
+
+.calendar-master-wrapper .master-event-liquidado {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #059669;
+}
+
+.calendar-master-wrapper .master-event-aplazado {
+  background: #faf5ff;
+  border-color: #ddd6fe;
+  color: #7c3aed;
+}
+
+.calendar-master-wrapper .master-event-default {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #475569;
+}

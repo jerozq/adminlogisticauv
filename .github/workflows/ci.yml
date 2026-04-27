@@ -1,0 +1,91 @@
+# ============================================================
+# CI — Pruebas automáticas + gate de despliegue
+#
+# Se ejecuta en cada Push y cada Pull Request.
+# Si cualquier test falla:
+#   - El pipeline se cancela.
+#   - Se imprime un aviso claro en consola para Jero.
+#   - El paso de build (y cualquier despliegue posterior) no corre.
+# ============================================================
+
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+defaults:
+  run:
+    working-directory: logistica-app
+
+jobs:
+  test-and-build:
+    name: Tests y Build
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ────────────────────────────────────────────
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      # ── 2. Node.js ─────────────────────────────────────────────
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: logistica-app/package-lock.json
+
+      # ── 3. Instalar dependencias ───────────────────────────────
+      - name: Instalar dependencias
+        run: npm ci
+
+      # ── 4. Lint ────────────────────────────────────────────────
+      - name: Lint (ESLint)
+        run: npm run lint
+        continue-on-error: false
+
+      # ── 5. Pruebas (Vitest) ────────────────────────────────────
+      - name: Ejecutar pruebas
+        id: tests
+        run: npm test
+
+      # ── 6. Aviso para Jero si los tests fallan ─────────────────
+      - name: ❌ Tests fallaron — aviso para Jero
+        if: failure() && steps.tests.outcome == 'failure'
+        run: |
+          echo "══════════════════════════════════════════════════"
+          echo "  ⛔  JERO: Los tests fallaron en el pipeline CI  "
+          echo "══════════════════════════════════════════════════"
+          echo ""
+          echo "  Rama:     ${{ github.ref_name }}"
+          echo "  Commit:   ${{ github.sha }}"
+          echo "  Autor:    ${{ github.actor }}"
+          echo "  Evento:   ${{ github.event_name }}"
+          echo ""
+          echo "  ▶ Revisa el paso 'Ejecutar pruebas' arriba para"
+          echo "    ver qué test falló y el stack trace completo."
+          echo ""
+          echo "  🚫 El build y el despliegue fueron CANCELADOS."
+          echo "══════════════════════════════════════════════════"
+
+      # ── 7. Build de Next.js (solo si tests pasaron) ────────────
+      #    Este paso actúa como gate: si los tests fallan (paso 5),
+      #    GitHub Actions cancela el job y este paso nunca corre.
+      - name: Build de producción (Next.js)
+        run: npm run build
+        env:
+          # Variables de entorno requeridas por Next.js en build time.
+          # Agrega aquí las tuyas con ${{ secrets.NOMBRE_SECRET }}.
+          NEXT_TELEMETRY_DISABLED: "1"
+
+      # ── 8. Confirmación de éxito ───────────────────────────────
+      - name: ✅ Pipeline completado
+        run: |
+          echo "══════════════════════════════════════════════════"
+          echo "  ✅  Tests y build completados sin errores."
+          echo "  Rama:   ${{ github.ref_name }}"
+          echo "  Commit: ${{ github.sha }}"
+          echo "══════════════════════════════════════════════════"

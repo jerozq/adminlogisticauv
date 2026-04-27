@@ -1,0 +1,366 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* ============================================================
+   DESIGN TOKENS — Paleta sobria Slate/Zinc
+   Contraste garantizado: todos los textos sobre sus fondos
+   cumplen WCAG AA mínimo.
+   ============================================================ */
+:root {
+  /* — Base — */
+  --background: #f8f9fb;          /* zinc-50 ligeramente azulado */
+  --foreground: #18181b;          /* zinc-900 */
+
+  /* — Canales RGB raw (para rgba/rgb con alpha variable) — */
+  --background-raw: 248 249 251;
+  --white-raw:      255 255 255;
+
+  /* — Mesh gradient — visible para que el backdrop-blur tenga qué desenfocar — */
+  --grad-1: rgba(148, 163, 184, 0.32);   /* slate-400/32  – esquina sup-izq */
+  --grad-2: rgba(99,  102, 241, 0.12);   /* indigo-500/12 – esquina inf-der */
+  --grad-3: rgba(203, 213, 225, 0.38);   /* slate-300/38  – centro */
+  --grad-4: rgba(186, 230, 253, 0.14);   /* sky-200/14    – esquina inf-izq */
+
+  /* — Superficie (tarjetas, paneles) — */
+  --surface:        rgba(255, 255, 255, 0.80);
+  --surface-raised: rgba(255, 255, 255, 0.95);
+  --surface-border: rgba(24, 24, 27, 0.08);   /* zinc-900/8 */
+
+  /* — Cristal Liquid Glass — */
+  --card-bg:          rgb(var(--background-raw) / 0.45);
+  --card-border:      rgb(var(--white-raw) / 0.55);
+  --card-border-soft: rgb(var(--white-raw) / 0.20);
+  --card-shadow:      0 4px 30px rgba(0, 0, 0, 0.08), 0 1px 0 0 rgba(255,255,255,0.80) inset;
+  --card-shine:       0 1px 0 0 rgba(255,255,255,0.90) inset, 0 -1px 0 0 rgba(255,255,255,0.18) inset;
+
+  /* — Botón primario — */
+  --btn-primary-bg:    rgba(30, 41, 59, 0.90);   /* slate-800/90 */
+  --btn-primary-hover: #334155;                  /* slate-700 */
+  --btn-primary-bd:    #334155;
+  --btn-primary-fg:    #ffffff;
+
+  /* — Botón secundario — */
+  --btn-secondary-bg:    rgb(var(--white-raw) / 0.10);
+  --btn-secondary-hover: rgb(var(--white-raw) / 0.20);
+  --btn-secondary-bd:    rgb(var(--white-raw) / 0.12);
+
+  /* — Texto — */
+  --text-primary:   #18181b;   /* zinc-900 */
+  --text-secondary: #52525b;   /* zinc-600 */
+  --text-muted:     #a1a1aa;   /* zinc-400 */
+
+  /* — Interactivo — */
+  --accent:         #334155;   /* slate-700 — CTA principal */
+  --accent-hover:   #1e293b;   /* slate-800 */
+  --accent-fg:      #f8fafc;   /* texto sobre accent */
+
+  /* — Estado: Preparado (azul desaturado) — */
+  --state-prep-bg:  rgba(147, 197, 253, 0.10);  /* blue-300/10 */
+  --state-prep-fg:  #1e40af;                    /* blue-800 — alto contraste */
+  --state-prep-bd:  rgba(147, 197, 253, 0.22);  /* blue-300/22 */
+  --state-prep-dot: #93c5fd;                    /* blue-300 */
+
+  /* — Estado: En Ejecución (ámbar desaturado) — */
+  --state-run-bg:  rgba(252, 211, 77, 0.10);    /* amber-300/10 */
+  --state-run-fg:  #92400e;                     /* amber-900 — alto contraste */
+  --state-run-bd:  rgba(252, 211, 77, 0.22);    /* amber-300/22 */
+  --state-run-dot: #fcd34d;                     /* amber-300 */
+
+  /* — Estado: Liquidado (esmeralda desaturado) — */
+  --state-ok-bg:  rgba(134, 239, 172, 0.10);    /* green-300/10 */
+  --state-ok-fg:  #14532d;                      /* green-900 — alto contraste */
+  --state-ok-bd:  rgba(134, 239, 172, 0.22);    /* green-300/22 */
+  --state-ok-dot: #86efac;                      /* green-300 */
+
+  /* — Estado: Aplazado (slate neutro) — */
+  --state-hold-bg:  rgba(148, 163, 184, 0.10);  /* slate-400/10 */
+  --state-hold-fg:  #334155;                    /* slate-700 */
+  --state-hold-bd:  rgba(148, 163, 184, 0.22);  /* slate-400/22 */
+  --state-hold-dot: #94a3b8;                    /* slate-400 */
+
+  /* — Estado: Cancelado (rose muy apagado) — */
+  --state-cancel-bg:  rgba(253, 164, 175, 0.10); /* rose-300/10 */
+  --state-cancel-fg:  #9f1239;                   /* rose-900 — alto contraste */
+  --state-cancel-bd:  rgba(253, 164, 175, 0.22); /* rose-300/22 */
+  --state-cancel-dot: #fda4af;                   /* rose-300 */
+
+  /* — Glass — */
+  --glass-bg:     rgba(255, 255, 255, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.65);
+  --glass-shadow: 0 4px 24px 0 rgba(15, 23, 42, 0.06), 0 1px 0 0 rgba(255,255,255,0.90) inset;
+
+  /* — Input — */
+  --input-bg:       rgba(255, 255, 255, 0.10);
+  --input-border:   rgba(255, 255, 255, 0.30);
+  --input-ring:     #94a3b8;   /* slate-400 */
+
+  /* — Chart palette (desaturada, legible) — */
+  --chart-1: #475569;   /* slate-600 */
+  --chart-2: #1d4ed8;   /* blue-700 */
+  --chart-3: #047857;   /* emerald-700 */
+  --chart-4: #b45309;   /* amber-700 */
+  --chart-5: #be185d;   /* pink-700 */
+  --chart-6: #0e7490;   /* cyan-700 */
+}
+
+:root[data-theme='dark'] {
+  --background: #0d0f12;
+  --foreground: #e4e4e7;   /* zinc-200 */
+
+  --background-raw: 13 15 18;
+  --white-raw:      255 255 255;
+
+  --grad-1: rgba(51,  65,  85,  0.45);   /* slate-700/45 – más visible en oscuro */
+  --grad-2: rgba(49,  46,  129, 0.28);   /* indigo-900/28 */
+  --grad-3: rgba(15,  23,  42,  0.35);   /* slate-950/35 */
+  --grad-4: rgba(14,  116, 144, 0.12);   /* cyan-700/12  – toque frío */
+
+  --surface:        rgba(24, 24, 27, 0.80);
+  --surface-raised: rgba(39, 39, 42, 0.95);
+  --surface-border: rgba(255, 255, 255, 0.08);
+
+  /* — Cristal Liquid Glass oscuro — */
+  --card-bg:          rgb(var(--background-raw) / 0.55);
+  --card-border:      rgba(255, 255, 255, 0.12);
+  --card-border-soft: rgba(255, 255, 255, 0.06);
+  --card-shadow:      0 4px 30px rgba(0, 0, 0, 0.40), 0 1px 0 0 rgba(255,255,255,0.10) inset;
+  --card-shine:       0 1px 0 0 rgba(255,255,255,0.12) inset, 0 -1px 0 0 rgba(255,255,255,0.04) inset;
+
+  --btn-primary-bg:    rgba(148, 163, 184, 0.90);  /* slate-400/90 */
+  --btn-primary-hover: #cbd5e1;                    /* slate-300 */
+  --btn-primary-bd:    #94a3b8;
+  --btn-primary-fg:    #0f172a;
+
+  --btn-secondary-bg:    rgb(var(--white-raw) / 0.08);
+  --btn-secondary-hover: rgb(var(--white-raw) / 0.16);
+  --btn-secondary-bd:    rgb(var(--white-raw) / 0.10);
+
+  --input-bg:     rgba(255, 255, 255, 0.05);
+  --input-border: rgba(255, 255, 255, 0.12);
+  --input-ring:   #64748b;   /* slate-500 */
+
+  --text-primary:   #f4f4f5;   /* zinc-100 */
+  --text-secondary: #a1a1aa;   /* zinc-400 */
+  --text-muted:     #52525b;   /* zinc-600 */
+
+  --accent:       #94a3b8;     /* slate-400 */
+  --accent-hover: #cbd5e1;     /* slate-300 */
+  --accent-fg:    #0f172a;     /* slate-900 */
+
+  --state-prep-bg:  rgba(30, 64, 175, 0.18);
+  --state-prep-fg:  #93c5fd;   /* blue-300 */
+  --state-prep-bd:  rgba(147, 197, 253, 0.28);
+  --state-prep-dot: #3b82f6;
+
+  --state-run-bg:  rgba(146, 64, 14, 0.18);
+  --state-run-fg:  #fcd34d;    /* amber-300 */
+  --state-run-bd:  rgba(252, 211, 77, 0.28);
+  --state-run-dot: #f59e0b;
+
+  --state-ok-bg:  rgba(20, 83, 45, 0.18);
+  --state-ok-fg:  #86efac;     /* green-300 */
+  --state-ok-bd:  rgba(134, 239, 172, 0.28);
+  --state-ok-dot: #22c55e;
+
+  --state-hold-bg:  rgba(30, 41, 59, 0.45);
+  --state-hold-fg:  #94a3b8;   /* slate-400 */
+  --state-hold-bd:  rgba(148, 163, 184, 0.22);
+  --state-hold-dot: #64748b;
+
+  --state-cancel-bg:  rgba(159, 18, 57, 0.18);
+  --state-cancel-fg:  #fda4af;  /* rose-300 */
+  --state-cancel-bd:  rgba(253, 164, 175, 0.28);
+  --state-cancel-dot: #f43f5e;
+
+  --glass-bg:     rgba(13, 15, 20, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.09);
+  --glass-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.50), 0 1px 0 0 rgba(255,255,255,0.08) inset;
+
+  --chart-1: #94a3b8;
+  --chart-2: #60a5fa;
+  --chart-3: #34d399;
+  --chart-4: #fbbf24;
+  --chart-5: #f472b6;
+  --chart-6: #22d3ee;
+}
+
+body {
+  background-color: var(--background);
+  /* Mesh gradient — cuatro puntos de color para que el backdrop-blur
+     de las tarjetas tenga suficiente textura y el cristal se note     */
+  background-image:
+    radial-gradient(ellipse 80% 60% at 12% 12%, var(--grad-1) 0%, transparent 65%),
+    radial-gradient(ellipse 65% 50% at 88% 88%, var(--grad-2) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 70% at 50% 50%, var(--grad-3) 0%, transparent 75%),
+    radial-gradient(ellipse 50% 45% at 10% 85%, var(--grad-4) 0%, transparent 55%);
+  background-attachment: fixed;
+  color: var(--text-primary);
+  font-family: var(--font-geist-sans), sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ============================================================
+   Clases utilitarias reutilizables
+   ============================================================ */
+
+/* — Glass panel (nav, headers, wrappers de alto nivel) — */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+/* — Modal card — Liquid Glass más opaco para modales de edición — */
+.modal-card {
+  background: rgb(var(--background-raw) / 0.88);
+  backdrop-filter: blur(40px) saturate(220%);
+  -webkit-backdrop-filter: blur(40px) saturate(220%);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow), var(--card-shine);
+}
+
+/* — Tarjeta Liquid Glass — el núcleo del diseño Apple Glass — */
+.surface-card {
+  background: var(--card-bg);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow), var(--card-shine);
+}
+
+/* — Columna Kanban — Glass más sutil, sin shine agresivo — */
+.kanban-col {
+  background: rgb(var(--background-raw) / 0.28);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--card-border-soft);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+  border-radius: 1.25rem;
+  padding: 0.75rem;
+}
+
+/* — Pills de estado — traslúcidas con backdrop-blur (Apple style) — */
+.pill-prep,
+.pill-run,
+.pill-ok,
+.pill-hold,
+.pill-cancel {
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
+}
+.pill-prep   { background: var(--state-prep-bg);   color: var(--state-prep-fg);   border: 1px solid var(--state-prep-bd); }
+.pill-run    { background: var(--state-run-bg);    color: var(--state-run-fg);    border: 1px solid var(--state-run-bd);  }
+.pill-ok     { background: var(--state-ok-bg);     color: var(--state-ok-fg);     border: 1px solid var(--state-ok-bd);   }
+.pill-hold   { background: var(--state-hold-bg);   color: var(--state-hold-fg);   border: 1px solid var(--state-hold-bd); }
+.pill-cancel { background: var(--state-cancel-bg); color: var(--state-cancel-fg); border: 1px solid var(--state-cancel-bd);}
+
+/* — Input Liquid Glass — traslúcido, limpio, Apple style — */
+.glass-input {
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 0.5rem;
+  outline: none;
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  color: var(--text-primary);
+}
+.glass-input::placeholder { color: var(--text-muted); opacity: 1; }
+.glass-input:hover {
+  border-color: var(--input-ring);
+  background: var(--input-bg);
+}
+.glass-input:focus {
+  border-color: var(--input-ring);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--input-ring) 18%, transparent);
+  background: var(--input-bg);
+}
+/* select nativo hereda la transparencia */
+select.glass-input option {
+  background: var(--background);
+  color: var(--text-primary);
+}
+
+/* — Botón primario Liquid Glass — */
+.btn-primary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
+  border: 1px solid var(--btn-primary-bd);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: background 0.15s ease;
+}
+.btn-primary:hover { background: var(--btn-primary-hover); }
+
+/* — Botón secundario Liquid Glass — */
+.btn-secondary {
+  background: var(--btn-secondary-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--btn-secondary-bd);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: background 0.15s ease;
+}
+.btn-secondary:hover { background: var(--btn-secondary-hover); }
+
+/* ============================================================
+   Animaciones de entrada — FloatingNav panel y otros overlays
+   ============================================================ */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideInFromTop {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)   scale(1);    }
+}
+
+.animate-in          { animation-fill-mode: both; }
+.fade-in             { animation-name: fadeIn; }
+.slide-in-from-top-2 { animation-name: slideInFromTop; }
+.duration-150        { animation-duration: 150ms; }
+.duration-200        { animation-duration: 200ms; }
+
+/* ============================================================
+   Estilos de impresión — oculta todo excepto el preview
+   ============================================================ */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body > * {
+    visibility: hidden;
+  }
+
+  #cotizacion-doc-preview {
+    visibility: visible;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: auto;
+    margin: 0;
+    padding: 2cm;
+    background: #fff;
+    font-size: 12pt;
+  }
+
+  #cotizacion-doc-preview * {
+    visibility: visible;
+  }
+
+  @page {
+    size: A4;
+    margin: 1.5cm;
+  }
+}
