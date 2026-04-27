@@ -91,8 +91,17 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 }
 
 // ============ MATCHER ============
+// Allowlist explícita: el middleware solo se invoca en estas rutas.
+// La raíz '/' y '/login' quedan fuera intencionalmente → nunca causan MIDDLEWARE_INVOCATION_FAILED.
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|_next/data|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|css|js|json|woff|woff2|ttf|ico)$).*)',
+    '/dashboard/:path*',
+    '/admin/:path*',
+    '/profile/:path*',
+    '/account/:path*',
+    '/cotizaciones/:path*',
+    '/ejecucion/:path*',
+    '/reembolsos/:path*',
+    '/tarifario/:path*',
   ],
 }
