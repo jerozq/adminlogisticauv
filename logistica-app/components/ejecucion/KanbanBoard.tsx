@@ -90,16 +90,15 @@ export function KanbanBoard({ actividades }: { actividades: ActividadKanban[] })
 // ActivityCard
 // ============================================================
 function CountdownTimer({ startStr, endStr, isDone }: { startStr?: string | null, endStr?: string | null, isDone: boolean }) {
-  const [timeLeft, setTimeLeft] = useState<CalculoVencimiento | null>(null)
+  const [timeLeft, setTimeLeft] = useState<CalculoVencimiento | null>(() => {
+    if (!startStr) return null
+    return calcularTiempoRestante(startStr, Date.now(), isDone)
+  })
 
   useEffect(() => {
     if (!startStr) return
 
-    // Actualización inmediata para no esperar 1s el primer render real calculado
-    const initCalc = calcularTiempoRestante(startStr, Date.now(), isDone)
-    if (initCalc) setTimeLeft(initCalc)
-
-    if (isDone || !initCalc) return
+    if (isDone || !calcularTiempoRestante(startStr, Date.now(), isDone)) return
 
     const interval = setInterval(() => {
       const calc = calcularTiempoRestante(startStr, Date.now(), isDone)

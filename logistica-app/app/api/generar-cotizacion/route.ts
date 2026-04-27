@@ -3,6 +3,8 @@ import Docxtemplater from 'docxtemplater'
 import PizZip from 'pizzip'
 import path from 'path'
 import fs from 'fs'
+import os from 'os'
+import { execSync } from 'child_process'
 
 // ============================================================
 // Etiquetas del template Word → nombres snake_case uniformes
@@ -282,10 +284,6 @@ export async function POST(req: NextRequest) {
     let ext = 'docx'
 
     if (format === 'pdf') {
-      const fs = require('fs')
-      const os = require('os')
-      const path = require('path')
-      const { execSync } = require('child_process')
       
       const tmpDir = os.tmpdir()
       const tmpBase = `cotizacion-${requerimiento.numero_requerimiento ?? 'tmp'}-${Date.now()}`

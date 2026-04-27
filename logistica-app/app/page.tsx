@@ -15,7 +15,7 @@ import { LoginToastClient } from '@/components/LoginToastClient'
 import { getDashboardStats } from '@/actions/ejecucion'
 
 // ─── Utilidad para extraer el nombre del usuario ──────────────────────────────
-function getUserDisplayName(user: any): string {
+function getUserDisplayName(user: { user_metadata?: { display_name?: string }; email?: string } | null): string {
   if (!user) return 'Usuario'
   if (user.user_metadata?.display_name) {
     return user.user_metadata.display_name

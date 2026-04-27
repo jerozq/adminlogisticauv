@@ -62,6 +62,22 @@ interface Props {
 type SortKey = 'codigo_item' | 'descripcion' | 'categoria' | 'precio_venta'
 type SortDir = 'asc' | 'desc'
 
+function SortIcon({ col, sortKey }: { col: SortKey; sortKey: SortKey }) {
+  return (
+    <ArrowUpDown
+      className={`size-3 inline ml-1 transition-opacity ${sortKey === col ? 'opacity-100 text-blue-500' : 'opacity-30'}`}
+    />
+  )
+}
+
+function SortIcon({ col, sortKey }: { col: SortKey; sortKey: SortKey }) {
+  return (
+    <ArrowUpDown
+      className={`size-3 inline ml-1 transition-opacity ${sortKey === col ? 'opacity-100 text-blue-500' : 'opacity-30'}`}
+    />
+  )
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Sub-component: Historial Panel
 // ─────────────────────────────────────────────────────────────────────────────
@@ -448,12 +464,6 @@ export function TarifarioEditor({
     })
   }
 
-  const SortIcon = ({ col }: { col: SortKey }) => (
-    <ArrowUpDown
-      className={`size-3 inline ml-1 transition-opacity ${sortKey === col ? 'opacity-100 text-blue-500' : 'opacity-30'}`}
-    />
-  )
-
   // ── Pagination page numbers ──
   function getPageNumbers(current: number, total: number): (number | '...')[] {
     if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
@@ -544,17 +554,17 @@ export function TarifarioEditor({
         {/* Table header */}
         <div className="hidden sm:grid grid-cols-[100px_1fr_128px_96px_148px] gap-x-4 px-5 py-2 bg-black/5 dark:bg-white/5 border-b border-white/10 text-[11px] font-bold uppercase tracking-widest [color:var(--text-muted)]">
           <button onClick={() => handleSort('codigo_item')} className="text-left hover:[color:var(--text-primary)] transition-colors">
-            Código <SortIcon col="codigo_item" />
+            Código <SortIcon col="codigo_item" sortKey={sortKey} />
           </button>
           <button onClick={() => handleSort('descripcion')} className="text-left hover:[color:var(--text-primary)] transition-colors">
-            Descripción <SortIcon col="descripcion" />
+            Descripción <SortIcon col="descripcion" sortKey={sortKey} />
           </button>
           <button onClick={() => handleSort('categoria')} className="text-left hover:[color:var(--text-primary)] transition-colors">
-            Categoría <SortIcon col="categoria" />
+            Categoría <SortIcon col="categoria" sortKey={sortKey} />
           </button>
           <span className="text-left">Unidad</span>
           <button onClick={() => handleSort('precio_venta')} className="text-right hover:[color:var(--text-primary)] transition-colors">
-            Precio <SortIcon col="precio_venta" />
+            Precio <SortIcon col="precio_venta" sortKey={sortKey} />
           </button>
         </div>
 

@@ -24,6 +24,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     const stored = localStorage.getItem('theme') as Theme | null
     if (stored === 'dark' || stored === 'light') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setThemeState(stored)
       document.documentElement.setAttribute('data-theme', stored)
     }

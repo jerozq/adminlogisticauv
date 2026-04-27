@@ -34,7 +34,7 @@ export interface IActivityRepository {
   obtenerPorId(id: string): Promise<Actividad | null>
 
   /** Devuelve los datos crudos del requerimiento (para campos adicionales como cronograma_ia) */
-  obtenerRequerimientoRaw(id: string): Promise<Record<string, any> | null>
+  obtenerRequerimientoRaw(id: string): Promise<Record<string, unknown> | null>
 
   /**
    * Persiste el nuevo estado de la actividad y registra el motivo

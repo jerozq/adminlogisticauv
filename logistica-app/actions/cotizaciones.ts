@@ -4,9 +4,6 @@ import ExcelJS from 'exceljs'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { generateObject } from 'ai'
 import { z } from 'zod'
-import { getSupabase } from '@/lib/supabase'
-import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js'
-import { revalidatePath } from 'next/cache'
 import {
   CronogramaEntregaDraft,
   CotizacionItemDraft,
@@ -402,8 +399,6 @@ function parseFormatoMaterialApoyo(sheet: ExcelJS.Worksheet): {
       cantidad,
       precioUnitario: 0,
       esPassthrough: false,
-      excluirDeFinanzas: false,
-      ocultarEnCotizacion: false,
       fuente: 'excel',
       opcionesTarifario: [],
     })
@@ -648,8 +643,6 @@ REGLAS IMPORTANTES:
     cantidad: it.cantidad,
     precioUnitario: 0,
     esPassthrough: false,
-    excluirDeFinanzas: false,
-    ocultarEnCotizacion: false,
     fuente: 'excel' as const,
     opcionesTarifario: [],
   }))
@@ -897,8 +890,6 @@ function injectInhumacionItem(
     cantidad,
     precioUnitario: PRECIO_INHUMACION,
     esPassthrough: false,
-    excluirDeFinanzas: false,
-    ocultarEnCotizacion: false,
     fuente: 'manual' as const,
     opcionesTarifario: [],
   }
@@ -992,129 +983,6 @@ export async function parsearRequerimientoExcel(
 }
 
 // ============================================================
-// Generación de agenda operativa (llamado interno desde guardarCotizacion)
-// ============================================================
-
-/**
- * Genera hitos operativos usando Gemini con datos en memoria.
- * No carga desde DB — aprovecha los datos ya disponibles en la creación.
- * Retorna el número de hitos guardados (0 si falla, sin lanzar error).
- */
-async function generarHitosOperativosIA(
-  encabezado: RequerimientoEncabezado,
-  items: CotizacionItemDraft[],
-  requerimientoId: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  sb: SupabaseClient<any, any, any>
-): Promise<number> {
-  const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY
-  if (!apiKey) return 0
-
-  try {
-    const fechaInicio = sanitizeDate(encabezado.fechaInicio) ?? new Date().toISOString().split('T')[0]
-    const fechaFin = sanitizeDate(encabezado.fechaFin) ?? fechaInicio
-    const diasActividad = Math.max(
-      1,
-      Math.ceil(
-        (new Date(fechaFin).getTime() - new Date(fechaInicio).getTime()) / (1000 * 60 * 60 * 24)
-      ) + 1
-    )
-
-    const itemsText =
-      items.length > 0
-        ? items
-            .map(i => `- ${i.descripcion} (${i.cantidad} ${i.unidadMedida ?? 'und'}) [${i.categoria ?? 'General'}]`)
-            .join('\n')
-        : 'Sin ítems cotizados'
-
-    const EntregableSchemaLocal = z.object({
-      fecha: z
-        .string()
-        .regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha inválida (use YYYY-MM-DD)'),
-      hora: z
-        .string()
-        .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Hora inválida (use HH:MM 24h)'),
-      descripcion_item: z.string().min(3),
-      cantidad: z.number().int().positive(),
-    })
-    const CronogramaSchemaLocal = z.object({
-      entregables: z.array(EntregableSchemaLocal),
-    })
-
-    const google = createGoogleGenerativeAI({ apiKey })
-
-    const systemPrompt = `Eres un coordinador logístico experto de la UARIV (Unidad para las Víctimas de Colombia).
-Se te pasan los datos de una actividad logística y debes generar un cronograma operativo detallado.
-
-REGLAS:
-- Eres un analista logístico experto. Analiza las observaciones de este requerimiento y extrae un cronograma estricto. Si no hay hora específica, infiere una lógica (ej. almuerzos a las 12:00 PM).
-- Devuelve únicamente "entregables" con: fecha (YYYY-MM-DD), hora (HH:MM 24h), descripcion_item y cantidad.
-- Genera entregables realistas y accionables para el equipo de campo.
-- Si hay alimentación, programa horarios consistentes (ej. 10:00, 12:00, 15:00).
-- Ordena cronológicamente por fecha y hora.
-- Máximo ${diasActividad * 12} entregables en total.`
-
-    const userPrompt = `=== ACTIVIDAD ===
-Nombre: ${encabezado.nombreActividad}
-Municipio: ${encabezado.municipio ?? 'No especificado'}
-Fecha inicio: ${fechaInicio}
-Fecha fin: ${fechaFin}
-Hora inicio: ${encabezado.horaInicio ?? '08:00'}
-Hora fin: ${encabezado.horaFin ?? '17:00'}
-Días de actividad: ${diasActividad}
-Víctimas/beneficiarios: ${encabezado.numVictimas ?? 0}
-
-=== ÍTEMS COTIZADOS ===
-${itemsText}
-
-=== OBSERVACIONES ===
-${encabezado.objeto ?? 'Sin observaciones adicionales'}
-
-Genera el cronograma operativo completo.`
-
-    const { object } = await generateObject({
-      model: google('gemini-2.0-flash'),
-      schema: CronogramaSchemaLocal,
-      system: systemPrompt,
-      prompt: userPrompt,
-      temperature: 0.3,
-    })
-
-    const entregables = object.entregables
-
-    await sb
-      .from('actividades')
-      .update({ cronograma_ia: entregables })
-      .eq('id', requerimientoId)
-
-    await sb
-      .from('requerimientos')
-      .update({ cronograma_ia: entregables })
-      .eq('id', requerimientoId)
-
-    let guardados = 0
-    for (const entregable of entregables) {
-      const fechaHora = new Date(`${entregable.fecha}T${entregable.hora}:00`)
-      if (Number.isNaN(fechaHora.getTime())) continue
-
-      const { error } = await sb.from('bitacora_entregas').insert({
-        actividad_id: requerimientoId,
-        descripcion: `${entregable.descripcion_item} (x${entregable.cantidad})`,
-        fecha_hora_limite: fechaHora.toISOString(),
-        estado: 'pendiente',
-      })
-
-      if (!error) guardados++
-    }
-
-    return guardados
-  } catch (err) {
-    console.warn('[generarHitosOperativosIA]', err instanceof Error ? err.message : err)
-    return 0
-  }
-}
-
-// ============================================================
 // Server Action: guardar en Supabase
 // ============================================================
 
@@ -1177,10 +1045,7 @@ export async function guardarCotizacion(
         .from('requerimientos')
         .insert({
           numero_requerimiento: encabezado.numeroRequerimiento || null,
-          nombre_actividad: [
-            encabezado.numeroRequerimiento || null,
-            encabezado.municipio || null,
-          ].filter(Boolean).join(' — ') || encabezado.nombreActividad || 'Sin nombre',
+          nombre_actividad: encabezado.nombreActividad || 'Sin nombre',
           objeto: encabezado.objeto || null,
           direccion_territorial: encabezado.direccionTerritorial || null,
           municipio: encabezado.municipio || null,
@@ -1292,12 +1157,8 @@ export async function guardarCotizacion(
       return { ok: false, error: `Error al registrar historial: ${historialError.message}` }
     }
 
-    // 7. Generar agenda operativa en Ejecución usando IA (datos en memoria, sin llamada extra)
-    //    Si la IA falla (cuota agotada, etc.), cae al cronograma sugerido extraído del Excel.
-    const hitosGenerados = await generarHitosOperativosIA(encabezado, items, req.id, sb)
-
-    if (hitosGenerados === 0 && cronogramaSugerido.length > 0) {
-      // Fallback: sembrar el cronograma básico extraído por la IA del Excel
+    // 7. Sembrar cronograma sugerido en Ejecución (editable por el usuario)
+    if (cronogramaSugerido.length > 0) {
       const hitos = cronogramaSugerido
         .filter((h) => h.descripcion?.trim() && h.fechaHoraLimite)
         .map((h) => ({
@@ -1311,6 +1172,7 @@ export async function guardarCotizacion(
           sb.from('bitacora_entregas').insert(hitos)
         )
 
+        // Si la tabla aún no existe en el entorno, no bloquear el guardado de cotización
         if (cronogramaError) {
           const msg = cronogramaError.message?.toLowerCase() ?? ''
           const missingTable =
@@ -1320,10 +1182,10 @@ export async function guardarCotizacion(
             (cronogramaError as { code?: string }).code === 'PGRST200'
 
           if (!missingTable) {
-            console.warn('[guardarCotizacion] Error al guardar cronograma fallback:', cronogramaError.message)
-          } else {
-            console.warn('[guardarCotizacion] bitacora_entregas no disponible en este entorno')
+            return { ok: false, error: `Error al guardar cronograma sugerido: ${cronogramaError.message}` }
           }
+
+          console.warn('[guardarCotizacion] bitacora_entregas no disponible en este entorno')
         }
       }
     }
@@ -1333,327 +1195,4 @@ export async function guardarCotizacion(
     console.error('[guardarCotizacion]', err)
     return { ok: false, error: 'Error inesperado al guardar en la base de datos.' }
   }
-}
-
-// ============================================================
-// Server Actions de edición / carga (compatibilidad editor v2)
-// ============================================================
-
-export async function listarHistorialCotizaciones(requerimientoId: string): Promise<
-  Array<{
-    id: string
-    version: number
-    estado: string
-    created_at: string
-    total_general: number
-  }>
-> {
-  try {
-    const { createClient } = await import('@supabase/supabase-js')
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseKey =
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-
-    if (!supabaseUrl || !supabaseKey) return []
-
-    const sb = createClient(supabaseUrl, supabaseKey)
-    const { data } = await sb
-      .from('cotizaciones')
-      .select('id, version, estado, created_at, total_general')
-      .eq('requerimiento_id', requerimientoId)
-      .order('version', { ascending: false })
-
-    return (data ?? []).map((h) => ({
-      id: h.id,
-      version: h.version,
-      estado: h.estado,
-      created_at: h.created_at,
-      total_general: Number(h.total_general ?? 0),
-    }))
-  } catch (err) {
-    console.error('[listarHistorialCotizaciones]', err)
-    return []
-  }
-}
-
-export async function cargarCotizacion(
-  requerimientoId: string
-): Promise<
-  | {
-      ok: true
-      encabezado: RequerimientoEncabezado
-      items: CotizacionItemDraft[]
-      cotizacion: { id: string; version: number; estado: string }
-      requerimientoEstado: string
-    }
-  | { ok: false; error: string }
-> {
-  try {
-    const { createClient } = await import('@supabase/supabase-js')
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseKey =
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-
-    if (!supabaseUrl || !supabaseKey) {
-      return { ok: false, error: 'Configuración de Supabase incompleta.' }
-    }
-
-    const sb = createClient(supabaseUrl, supabaseKey)
-
-    const { data: req, error: reqError } = await sb
-      .from('requerimientos')
-      .select('*')
-      .eq('id', requerimientoId)
-      .single()
-
-    if (reqError || !req) {
-      return { ok: false, error: reqError?.message ?? 'Requerimiento no encontrado.' }
-    }
-
-    const { data: cot, error: cotError } = await sb
-      .from('cotizaciones')
-      .select('id, version, estado')
-      .eq('requerimiento_id', requerimientoId)
-      .order('version', { ascending: false })
-      .limit(1)
-      .single()
-
-    if (cotError || !cot) {
-      return { ok: false, error: cotError?.message ?? 'No hay cotización para este requerimiento.' }
-    }
-
-    const { data: itemsRows, error: itemsError } = await sb
-      .from('cotizacion_items')
-      .select('id, tarifario_id, codigo_item, descripcion, categoria, unidad_medida, cantidad, precio_unitario, es_passthrough, fuente')
-      .eq('cotizacion_id', cot.id)
-      .order('created_at', { ascending: true })
-
-    if (itemsError) {
-      return { ok: false, error: itemsError.message }
-    }
-
-    const encabezado: RequerimientoEncabezado = {
-      numeroRequerimiento: req.numero_requerimiento ?? '',
-      nombreActividad: req.nombre_actividad ?? '',
-      objeto: req.objeto ?? '',
-      direccionTerritorial: req.direccion_territorial ?? '',
-      municipio: req.municipio ?? '',
-      departamento: req.departamento ?? '',
-      lugarDetalle: req.lugar_detalle ?? '',
-      fechaSolicitud: req.fecha_solicitud ?? '',
-      fechaInicio: req.fecha_inicio ?? '',
-      horaInicio: req.hora_inicio ?? '',
-      fechaFin: req.fecha_fin ?? '',
-      horaFin: req.hora_fin ?? '',
-      responsableNombre: req.responsable_nombre ?? '',
-      responsableCedula: req.responsable_cedula ?? '',
-      responsableCelular: req.responsable_celular ?? '',
-      responsableCorreo: req.responsable_correo ?? '',
-      numVictimas: Number(req.num_victimas ?? 0),
-      montoReembolsoDeclarado: Number(req.monto_reembolso_declarado ?? 0),
-    }
-
-    const items: CotizacionItemDraft[] = (itemsRows ?? []).map((i) => ({
-      id: i.id,
-      tarifarioId: i.tarifario_id ?? null,
-      codigoItem: i.codigo_item ?? '',
-      descripcion: i.descripcion ?? '',
-      categoria: i.categoria ?? 'Logística',
-      unidadMedida: i.unidad_medida ?? 'unidad',
-      cantidad: Number(i.cantidad ?? 0),
-      precioUnitario: Number(i.precio_unitario ?? 0),
-      esPassthrough: Boolean(i.es_passthrough),
-      fuente:
-        i.fuente === 'tarifario' || i.fuente === 'excel'
-          ? i.fuente
-          : 'manual',
-      opcionesTarifario: [],
-      excluirDeFinanzas: false,
-      ocultarEnCotizacion: false,
-    }))
-
-    return {
-      ok: true,
-      encabezado,
-      items,
-      cotizacion: {
-        id: cot.id,
-        version: Number(cot.version ?? 1),
-        estado: cot.estado ?? 'borrador',
-      },
-      requerimientoEstado: req.estado ?? 'generado',
-    }
-  } catch (err) {
-    console.error('[cargarCotizacion]', err)
-    return { ok: false, error: 'Error inesperado al cargar la cotización.' }
-  }
-}
-
-export async function actualizarCotizacion(
-  requerimientoId: string,
-  _cotizacionId: string,
-  encabezado: RequerimientoEncabezado,
-  items: CotizacionItemDraft[]
-): Promise<{ ok: true; cotizacionId: string } | { ok: false; error: string }> {
-  try {
-    const { createClient } = await import('@supabase/supabase-js')
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseKey =
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-
-    if (!supabaseUrl || !supabaseKey) {
-      return { ok: false, error: 'Configuración de Supabase incompleta.' }
-    }
-
-    const sb = createClient(supabaseUrl, supabaseKey)
-
-    const { data: latest, error: latestError } = await sb
-      .from('cotizaciones')
-      .select('id, version')
-      .eq('requerimiento_id', requerimientoId)
-      .order('version', { ascending: false })
-      .limit(1)
-      .single()
-
-    if (latestError || !latest) {
-      return { ok: false, error: latestError?.message ?? 'No se encontró cotización base para versionar.' }
-    }
-
-    const newVersion = Number(latest.version ?? 1) + 1
-    const subtotalServicios = items
-      .filter((i) => !i.esPassthrough)
-      .reduce((sum, i) => sum + i.cantidad * i.precioUnitario, 0)
-
-    const totalReembolsos = 0
-    const totalGeneral = subtotalServicios + totalReembolsos
-
-    const { data: newCot, error: newCotError } = await sb
-      .from('cotizaciones')
-      .insert({
-        requerimiento_id: requerimientoId,
-        version: newVersion,
-        estado: 'borrador',
-        subtotal_servicios: subtotalServicios,
-        total_reembolsos: totalReembolsos,
-        total_general: totalGeneral,
-      })
-      .select('id')
-      .single()
-
-    if (newCotError || !newCot) {
-      return { ok: false, error: newCotError?.message ?? 'No fue posible crear la nueva versión.' }
-    }
-
-    if (items.length > 0) {
-      const itemRows = items.map((i) => ({
-        cotizacion_id: newCot.id,
-        tarifario_id: i.tarifarioId || null,
-        codigo_item: i.codigoItem || null,
-        descripcion: i.descripcion,
-        categoria: i.categoria || null,
-        unidad_medida: i.unidadMedida || null,
-        cantidad: i.cantidad,
-        precio_unitario: i.precioUnitario,
-        es_passthrough: i.esPassthrough,
-        fuente: i.fuente,
-      }))
-
-      const { error: itemsError } = await sb.from('cotizacion_items').insert(itemRows)
-      if (itemsError) {
-        return { ok: false, error: itemsError.message }
-      }
-    }
-
-    const { error: reqUpdateError } = await sb
-      .from('requerimientos')
-      .update({
-        numero_requerimiento: encabezado.numeroRequerimiento || null,
-        nombre_actividad: [
-          encabezado.numeroRequerimiento || null,
-          encabezado.municipio || null,
-        ].filter(Boolean).join(' — ') || encabezado.nombreActividad || 'Sin nombre',
-        objeto: encabezado.objeto || null,
-        direccion_territorial: encabezado.direccionTerritorial || null,
-        municipio: encabezado.municipio || null,
-        departamento: encabezado.departamento || null,
-        lugar_detalle: encabezado.lugarDetalle || null,
-        fecha_solicitud: sanitizeDate(encabezado.fechaSolicitud),
-        fecha_inicio: sanitizeDate(encabezado.fechaInicio),
-        fecha_fin: sanitizeDate(encabezado.fechaFin),
-        hora_inicio: encabezado.horaInicio || null,
-        hora_fin: encabezado.horaFin || null,
-        responsable_nombre: encabezado.responsableNombre || null,
-        responsable_cedula: encabezado.responsableCedula || null,
-        responsable_celular: encabezado.responsableCelular || null,
-        responsable_correo: encabezado.responsableCorreo || null,
-        num_victimas: encabezado.numVictimas || 0,
-        monto_reembolso_declarado: encabezado.montoReembolsoDeclarado || null,
-      })
-      .eq('id', requerimientoId)
-
-    if (reqUpdateError) {
-      return { ok: false, error: reqUpdateError.message }
-    }
-
-    await sb.from('cotizacion_historial').insert({
-      cotizacion_id: newCot.id,
-      tipo_cambio: 'version_creada',
-      descripcion: `Cotización v${newVersion} creada desde editor`,
-      datos_nuevos: { items: items.length },
-    })
-
-    revalidatePath(`/cotizaciones/${requerimientoId}/editar`)
-    revalidatePath(`/cotizaciones/${requerimientoId}`)
-
-    return { ok: true, cotizacionId: newCot.id }
-  } catch (err) {
-    console.error('[actualizarCotizacion]', err)
-    return { ok: false, error: 'Error inesperado al actualizar la cotización.' }
-  }
-}
-
-// ============================================================
-// LISTADO: requerimientos con su última cotización
-// (para app/cotizaciones/page.tsx — Server Component)
-// ============================================================
-
-export interface RequerimientoConCotizacion {
-  id: string
-  numero: string
-  nombre: string
-  municipio: string
-  departamento: string
-  estadoReq: string
-  version: number
-  estadoCot: string
-  total: number
-}
-
-export async function listarRequerimientosConCotizaciones(): Promise<RequerimientoConCotizacion[]> {
-  const sb = getSupabase()
-  const { data, error } = await sb
-    .from('requerimientos')
-    .select('id, numero_requerimiento, municipio, departamento, estado, nombre_actividad, fecha_inicio, cotizaciones(version, estado, total_general)')
-    .order('created_at', { ascending: false })
-
-  if (error || !data) return []
-
-  return data.map((req: any) => {
-    const cots = Array.isArray(req.cotizaciones) ? req.cotizaciones : []
-    const latest = cots.sort((a: any, b: any) => b.version - a.version)[0] ?? null
-    return {
-      id: req.id,
-      numero: req.numero_requerimiento || 'S/N',
-      nombre: req.nombre_actividad || 'Sin nombre',
-      municipio: req.municipio || 'N/A',
-      departamento: req.departamento || 'N/A',
-      estadoReq: req.estado || 'generado',
-      version: latest?.version ?? 0,
-      estadoCot: latest?.estado ?? 'borrador',
-      total: latest?.total_general ?? 0,
-    }
-  })
 }

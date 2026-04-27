@@ -29,7 +29,7 @@ import type { BitacoraEntregaRow } from '@/types/ejecucion'
 import type { HitoCronogramaIA } from '@/actions/cronograma-ia'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-const CATEGORY_ICONS: Record<string, any> = {
+const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   'Logística': Wrench,
   'Alimentación': UtensilsCrossed,
   'Materiales': Package,

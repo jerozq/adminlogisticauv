@@ -147,7 +147,7 @@ export class SupabaseActivityRepository implements IActivityRepository {
   // obtenerRequerimientoRaw — para datos no mapeados en la entidad
   // ──────────────────────────────────────────────────────────────
 
-  async obtenerRequerimientoRaw(id: string): Promise<Record<string, any> | null> {
+  async obtenerRequerimientoRaw(id: string): Promise<Record<string, unknown> | null> {
     const { data, error } = await this.sb
       .from('requerimientos')
       .select('*')
@@ -226,7 +226,7 @@ export class SupabaseActivityRepository implements IActivityRepository {
     // Tabla puede no existir en entornos locales sin migración aplicada
     if (error || !data) return []
 
-    return data.map((row: any) => ({
+    return data.map((row: Record<string, unknown>) => ({
       nombreBeneficiario:  row.nombre_beneficiario,
       documentoIdentidad:  row.documento_identidad ?? '',
       municipioOrigen:     row.municipio_origen ?? '',

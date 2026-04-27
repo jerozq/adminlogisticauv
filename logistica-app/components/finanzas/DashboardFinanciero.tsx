@@ -138,23 +138,27 @@ function DonutChart({ distribucion }: { distribucion: DatosFinanciero['distribuc
 
   const R = 70, r = 44, cx = 90, cy = 90
 
-  let startAngle = -Math.PI / 2
-  const segments = distribucion.map((d, i) => {
-    const value = Math.max(0, d.totalRecibe)
-    const angle = total > 0 ? (value / total) * 2 * Math.PI : 0
-    const endAngle = startAngle + angle
-    const largeArc = angle > Math.PI ? 1 : 0
-    const seg = {
-      x1: Math.cos(startAngle), y1: Math.sin(startAngle),
-      x2: Math.cos(endAngle),   y2: Math.sin(endAngle),
-      largeArc, color: PIE_COLORS[i % PIE_COLORS.length],
-      label: d.nombreSocio, pct: total > 0 ? Math.round((value / total) * 100) : 0,
-    }
-    startAngle = endAngle
-    return seg
-  })
+  type Segment = { x1: number; y1: number; x2: number; y2: number; largeArc: number; color: string; label: string; pct: number }
+  const { segments } = distribucion.reduce<{ angle: number; segments: Segment[] }>(
+    ({ angle: startAngle, segments: acc }, d, i) => {
+      const value = Math.max(0, d.totalRecibe)
+      const angle = total > 0 ? (value / total) * 2 * Math.PI : 0
+      const endAngle = startAngle + angle
+      const largeArc = angle > Math.PI ? 1 : 0
+      return {
+        angle: endAngle,
+        segments: [...acc, {
+          x1: Math.cos(startAngle), y1: Math.sin(startAngle),
+          x2: Math.cos(endAngle),   y2: Math.sin(endAngle),
+          largeArc, color: PIE_COLORS[i % PIE_COLORS.length],
+          label: d.nombreSocio, pct: total > 0 ? Math.round((value / total) * 100) : 0,
+        }],
+      }
+    },
+    { angle: -Math.PI / 2, segments: [] }
+  )
 
-  function arcPath(seg: typeof segments[0]) {
+  function arcPath(seg: Segment) {
     if (seg.largeArc === 0 && Math.abs(seg.x1 - seg.x2) < 0.001 && Math.abs(seg.y1 - seg.y2) < 0.001) {
       // Full circle
       return [

@@ -73,9 +73,9 @@ export async function POST(request: NextRequest) {
         })
         span.setStatus({ code: 1 }) // OK
         return result
-      } catch (err: any) {
-        span.recordException(err)
-        span.setStatus({ code: 2, message: err.message }) // ERROR
+      } catch (err: unknown) {
+        span.recordException(err instanceof Error ? err : new Error(String(err)))
+        span.setStatus({ code: 2, message: err instanceof Error ? err.message : String(err) }) // ERROR
         throw err
       } finally {
         span.end()

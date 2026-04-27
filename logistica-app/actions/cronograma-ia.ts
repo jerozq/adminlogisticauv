@@ -249,7 +249,8 @@ Genera el cronograma operativo completo.`
     }
 
     revalidatePath(`/ejecucion/${actividadId}`)
-    // @ts-ignore`n    revalidateTag(`act:${actividadId}`)
+    // @ts-expect-error -- revalidateTag not yet in Next.js types
+    revalidateTag(`act:${actividadId}`)
 
     return { ok: true, entregables, hitosGuardados, fromCache: false }
   } catch (err) {
@@ -276,7 +277,8 @@ export async function actualizarCronogramaIA(
     await guardarCronogramaIAEnCache(sb, actividadId, entregables)
     revalidatePath(`/ejecucion/${actividadId}`)
     revalidatePath('/ejecucion')
-    // @ts-ignore`n    revalidateTag(`act:${actividadId}`)
+    // @ts-expect-error -- revalidateTag not yet in Next.js types
+    revalidateTag(`act:${actividadId}`)
     return { ok: true }
   } catch (err) {
     console.error('[actualizarCronogramaIA]', err)

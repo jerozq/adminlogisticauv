@@ -84,7 +84,10 @@ export function FloatingNav() {
   }, [open])
 
   // Cierra al cambiar de ruta
-  useEffect(() => { setOpen(false) }, [pathname])
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setOpen(false)
+  }, [pathname])
 
   return (
     <div

@@ -9,7 +9,7 @@ import {
   CheckCircle2,
   Info,
 } from 'lucide-react'
-import { buscarSugerenciasTarifario } from '@/actions/tarifario'
+import { getSupabase } from '@/lib/supabase'
 import type {
   CotizacionItemDraft,
   TarifarioSugerencia,
@@ -177,7 +177,7 @@ function ItemRow({
         <div className="border-t border-orange-200 px-3 py-3">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-orange-800">
             ¿A qué ítem del tarifario corresponde{' '}
-            <span className="italic font-normal normal-case">"{item.descripcion}"</span>?
+            <span className="italic font-normal normal-case">&quot;{item.descripcion}&quot;</span>?
           </p>
           <div className="flex flex-col gap-1.5">
             {item.opcionesTarifario.map(opt => (
@@ -288,14 +288,19 @@ export function CotizacionPreview({
   // Buscar en tarifario cuando cambia la query
   useEffect(() => {
     if (searchQuery.length < 3) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSearchResults([])
       return
     }
     startTransition(async () => {
-      const resultados = await buscarSugerenciasTarifario(searchQuery)
+      const { data } = await getSupabase()
+        .from('tarifario_2026')
+        .select('id, codigo_item, descripcion, precio_venta, unidad_medida, categoria')
+        .ilike('descripcion', `%${searchQuery}%`)
+        .limit(8)
 
       setSearchResults(
-        resultados.map(r => ({
+        (data ?? []).map(r => ({
           id: r.id,
           codigoItem: r.codigo_item,
           descripcion: r.descripcion,
@@ -318,8 +323,6 @@ export function CotizacionPreview({
       cantidad: 1,
       precioUnitario: sug.precioVenta,
       esPassthrough: false,
-      excluirDeFinanzas: false,
-      ocultarEnCotizacion: false,
       fuente: 'tarifario',
       opcionesTarifario: [],
     }
@@ -339,8 +342,6 @@ export function CotizacionPreview({
       cantidad: 1,
       precioUnitario: 0,
       esPassthrough: false,
-      excluirDeFinanzas: false,
-      ocultarEnCotizacion: false,
       fuente: 'manual',
       opcionesTarifario: [],
     }

@@ -23,12 +23,12 @@ export function AssistantAI({ contextData }: Props) {
   const { messages, sendMessage, status, setMessages } = useChat({
     id: 'logistica-assistant',
     transport: {
-      toModelMessages: (msgs: any[]) =>
-        msgs.map((m: any) => ({
+      toModelMessages: (msgs: { role: string; parts?: { type: string; text?: string }[] }[]) =>
+        msgs.map((m: { role: string; parts?: { type: string; text?: string }[] }) => ({
           role: m.role,
           content: getMessageText(m.parts ?? []),
         })),
-    } as any,
+    } as Parameters<typeof useChat>[0]['transport'],
   })
 
   const isLoading = status === 'streaming' || status === 'submitted'
@@ -47,11 +47,11 @@ export function AssistantAI({ contextData }: Props) {
     sendMessage({
       role: 'user',
       parts: [{ type: 'text' as const, text: input }],
-    } as any, {
+    } as Parameters<typeof sendMessage>[0], {
       body: {
         data: { context: contextData || 'Eres un asistente de Logística UV.' },
       },
-    } as any)
+    } as Parameters<typeof sendMessage>[1])
     setInput('')
   }
 

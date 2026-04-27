@@ -37,10 +37,10 @@ export async function listarEvidenciasGlobales(): Promise<EvidenciaGlobal[]> {
     return []
   }
 
-  return (data || []).map((row: any) => ({
+  return (data || []).map((row: Record<string, unknown>) => ({
     id: row.id,
     actividad_id: row.actividad_id,
-    nombre_actividad: row.requerimientos?.nombre_actividad || 'Actividad Desconocida',
+    nombre_actividad: (row.requerimientos as { nombre_actividad?: string } | null)?.nombre_actividad || 'Actividad Desconocida',
     descripcion: row.descripcion,
     monto: row.monto,
     pagador: row.pagador,

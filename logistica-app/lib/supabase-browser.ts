@@ -45,8 +45,8 @@ export async function uploadEvidencia(
       span.end()
       
       return publicUrl
-    } catch (err: any) {
-      span.recordException(err)
+    } catch (err: unknown) {
+      span.recordException(err instanceof Error ? err : new Error(String(err)))
       span.end()
       throw err
     }

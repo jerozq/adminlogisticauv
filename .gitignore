@@ -1,0 +1,29 @@
+# ── Entorno y secretos ──────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Archivos temporales y copias de seguridad ────────────────────
+*.bak
+*.tmp
+*.orig
+~$*
+
+# ── Python ───────────────────────────────────────────────────────
+*.py
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# ── Node (raíz) ──────────────────────────────────────────────────
+node_modules/
+
+# ── Documentos temporales de Office ──────────────────────────────
+~$*.docx
+~$*.xlsx
+
+# ── Sistema operativo ────────────────────────────────────────────
+.DS_Store
+Thumbs.db

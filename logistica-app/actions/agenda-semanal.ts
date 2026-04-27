@@ -65,7 +65,7 @@ export async function agregarItemCronograma(
       }
     }
 
-    let cronograma: HitoCronogramaIA[] = Array.isArray(req.cronograma_ia)
+    const cronograma: HitoCronogramaIA[] = Array.isArray(req.cronograma_ia)
       ? req.cronograma_ia
       : []
 
@@ -371,7 +371,7 @@ export async function subirEvidenciaEntregable(
 
 export async function obtenerCronogramaIA(
   actividadId: string
-): Promise<{ ok: boolean; cronograma?: any; error?: string }> {
+): Promise<{ ok: boolean; cronograma?: HitoCronogramaIA[]; error?: string }> {
   try {
     const sb = getSupabase()
 

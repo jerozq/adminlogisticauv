@@ -4,8 +4,8 @@ import { useState } from 'react'
 import { FileDown, Loader2, AlertCircle } from 'lucide-react'
 
 interface DownloadPdfButtonProps {
-  costo: any
-  actividad: any
+  costo: Record<string, unknown> & { id: string; monto: number; pagador: string; cotizacion_items?: { descripcion?: string } | null; descripcion?: string }
+  actividad: Record<string, unknown> & { id: string; fecha_inicio?: string | null }
   pagadorName: string
 }
 
@@ -59,9 +59,9 @@ export function DownloadPdfButton({ costo, actividad, pagadorName }: DownloadPdf
       a.click()
       URL.revokeObjectURL(url)
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err)
-      setError(err.message || 'Error desconocido')
+      setError(err instanceof Error ? err.message : 'Error desconocido')
     } finally {
       setIsPending(false)
     }

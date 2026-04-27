@@ -52,10 +52,10 @@ function StepIndicator({ current }: { current: WizardStep }) {
                 className={[
                   'flex size-9 items-center justify-center rounded-full text-sm font-bold transition-colors',
                   done
-                    ? '[background:var(--state-ok-dot)] text-white'
+                    ? 'bg-emerald-500 text-white'
                     : active
-                    ? '[background:var(--accent)] [color:var(--accent-fg)] shadow-sm'
-                    : '[background:var(--surface)] [color:var(--text-muted)]',
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
+                    : 'bg-zinc-100 text-zinc-400',
                 ].join(' ')}
               >
                 {done ? <CheckCircle2 className="size-4" /> : step.icon}
@@ -63,7 +63,7 @@ function StepIndicator({ current }: { current: WizardStep }) {
               <span
                 className={[
                   'hidden sm:block text-xs font-medium',
-                  active ? '[color:var(--state-prep-fg)]' : done ? '[color:var(--state-ok-fg)]' : '[color:var(--text-muted)]',
+                  active ? 'text-blue-700' : done ? 'text-emerald-600' : 'text-zinc-400',
                 ].join(' ')}
               >
                 {step.label}
@@ -73,7 +73,7 @@ function StepIndicator({ current }: { current: WizardStep }) {
               <div
                 className={[
                   'mx-1 h-0.5 w-8 sm:w-12 rounded transition-colors',
-                  done ? '[background:var(--state-ok-dot)]' : '[background:var(--surface-border)]',
+                  done ? 'bg-emerald-400' : 'bg-zinc-200',
                 ].join(' ')}
               />
             )}
@@ -141,14 +141,14 @@ export default function NuevaCotizacionPage() {
   }
 
   return (
-    <div className="min-h-screen [background:var(--background)]">
+    <div className="min-h-screen bg-zinc-50">
       {/* Header */}
-      <header className="sticky top-0 z-10 glass-panel border-x-0 border-t-0 border-b">
+      <header className="sticky top-0 z-10 border-b border-zinc-200 bg-white/80 backdrop-blur-sm">
         <div className="mx-auto flex max-w-2xl flex-col gap-3 px-4 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-base font-bold [color:var(--text-primary)]">Nueva cotización</h1>
+            <h1 className="text-base font-bold text-zinc-900">Nueva cotización</h1>
             {fileName && (
-              <span className="max-w-[160px] truncate rounded-full [background:var(--surface)] px-3 py-1 text-xs [color:var(--text-muted)]">
+              <span className="max-w-[160px] truncate rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-500">
                 {fileName}
               </span>
             )}
@@ -163,8 +163,8 @@ export default function NuevaCotizacionPage() {
         {step === 1 && (
           <section className="flex flex-col gap-4">
             <div>
-              <h2 className="text-lg font-bold [color:var(--text-primary)]">Carga el requerimiento</h2>
-              <p className="mt-1 text-sm [color:var(--text-muted)]">
+              <h2 className="text-lg font-bold text-zinc-800">Carga el requerimiento</h2>
+              <p className="mt-1 text-sm text-zinc-500">
                 Excel de la Unidad para las Víctimas (formato UARIV).
                 El sistema extrae automáticamente encabezado e ítems, incluyendo servicios de inhumación.
               </p>
@@ -177,8 +177,8 @@ export default function NuevaCotizacionPage() {
         {step === 2 && encabezado && (
           <section className="flex flex-col gap-6">
             <div>
-              <h2 className="text-lg font-bold [color:var(--text-primary)]">Verifica el encabezado</h2>
-              <p className="mt-1 text-sm [color:var(--text-muted)]">
+              <h2 className="text-lg font-bold text-zinc-800">Verifica el encabezado</h2>
+              <p className="mt-1 text-sm text-zinc-500">
                 Corrige los datos extraídos del Excel si es necesario.
               </p>
             </div>
@@ -194,16 +194,16 @@ export default function NuevaCotizacionPage() {
           <section className="flex flex-col gap-6">
             {/* Error de guardado arriba para que siempre sea visible */}
             {saveError && (
-              <div className="flex items-start gap-3 rounded-xl pill-cancel px-4 py-3 text-sm">
+              <div className="flex items-start gap-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200">
                 <span className="mt-0.5 text-lg leading-none">⚠️</span>
                 <span>{saveError}</span>
               </div>
             )}
             <div>
-              <h2 className="text-lg font-bold [color:var(--text-primary)]">Edita la cotización</h2>
-              <p className="mt-1 text-sm [color:var(--text-muted)]">
+              <h2 className="text-lg font-bold text-zinc-800">Edita la cotización</h2>
+              <p className="mt-1 text-sm text-zinc-500">
                 Ajusta cantidades, precios y añade o elimina ítems.
-                Los <span className="font-semibold [color:var(--state-run-fg)]">ítems passthrough</span> son costos
+                Los <span className="font-semibold text-amber-600">ítems passthrough</span> son costos
                 de terceros sin margen de utilidad.
               </p>
             </div>
@@ -218,12 +218,12 @@ export default function NuevaCotizacionPage() {
         {/* ─── Paso 4: Confirmación ─── */}
         {step === 4 && savedIds && (
           <section className="flex flex-col items-center gap-6 py-8 text-center">
-            <div className="flex size-20 items-center justify-center rounded-full [background:var(--state-ok-bg)]">
-              <CheckCircle2 className="size-10 [color:var(--state-ok-fg)]" />
+            <div className="flex size-20 items-center justify-center rounded-full bg-emerald-100">
+              <CheckCircle2 className="size-10 text-emerald-500" />
             </div>
             <div>
-              <h2 className="text-xl font-bold [color:var(--text-primary)]">¡Cotización guardada!</h2>
-              <p className="mt-2 text-sm [color:var(--text-muted)]">
+              <h2 className="text-xl font-bold text-zinc-900">¡Cotización guardada!</h2>
+              <p className="mt-2 text-sm text-zinc-500">
                 Se creó el requerimiento y la cotización versión 1 en Supabase.
               </p>
             </div>
@@ -252,7 +252,7 @@ export default function NuevaCotizacionPage() {
               {savedIds && (
                 <a
                   href={`/cotizaciones/${savedIds.requerimientoId}/exportar`}
-                  className="btn-primary flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-colors"
+                  className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
                 >
                   <FileText className="size-4" />
                   Previsualizar y Exportar Word
@@ -262,7 +262,7 @@ export default function NuevaCotizacionPage() {
                 href={`https://supabase.com/dashboard/project/vqodvkqvutkgvaqdcwtq/editor`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-secondary flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-colors"
+                className="flex items-center justify-center gap-2 rounded-xl bg-zinc-800 px-5 py-3 text-sm font-semibold text-white hover:bg-zinc-700 transition-colors"
               >
                 <ExternalLink className="size-4" />
                 Ver en Supabase
@@ -276,7 +276,7 @@ export default function NuevaCotizacionPage() {
                   setFileName('')
                   setSavedIds(null)
                 }}
-                className="btn-primary flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-colors"
+                className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
               >
                 <FileUp className="size-4" />
                 Nueva cotización
@@ -290,13 +290,13 @@ export default function NuevaCotizacionPage() {
 
       {/* Footer de navegación fijo */}
       {step !== 1 && step !== 4 && (
-        <div className="fixed bottom-0 left-0 right-0 glass-panel border-x-0 border-b-0">
+        <div className="fixed bottom-0 left-0 right-0 border-t border-zinc-200 bg-white/90 backdrop-blur-sm">
           <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 py-3">
             <button
               onClick={() => setStep((step - 1) as WizardStep)}
               disabled={saving}
-              className="btn-secondary flex items-center gap-1.5 rounded-xl px-4 py-2.5
-                         text-sm font-medium disabled:opacity-50 transition-colors"
+              className="flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-4 py-2.5
+                         text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 transition-colors"
             >
               <ChevronLeft className="size-4" />
               Atrás
@@ -306,8 +306,8 @@ export default function NuevaCotizacionPage() {
               <button
                 onClick={() => setStep((step + 1) as WizardStep)}
                 disabled={!encabezado}
-                className="btn-primary flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold
-                           disabled:opacity-50 transition-colors"
+                className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold
+                           text-white shadow-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
               >
                 Siguiente
                 <ChevronRight className="size-4" />
@@ -316,8 +316,8 @@ export default function NuevaCotizacionPage() {
               <button
                 onClick={handleGuardar}
                 disabled={saving}
-                className="btn-primary flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold
-                           disabled:opacity-50 transition-colors"
+                className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold
+                           text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50 transition-colors"
               >
                 {saving ? (
                   <>

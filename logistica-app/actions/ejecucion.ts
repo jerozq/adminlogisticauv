@@ -143,8 +143,8 @@ export async function listarActividadesCalendarioMaestro(): Promise<ActividadCal
     const rawCronograma = actividad.cronograma_ia
     const cronograma = Array.isArray(rawCronograma)
       ? rawCronograma
-      : (rawCronograma as any)?.data && Array.isArray((rawCronograma as any).data)
-      ? (rawCronograma as any).data
+      : (rawCronograma as { data?: unknown })?.data && Array.isArray((rawCronograma as { data?: unknown }).data)
+      ? (rawCronograma as { data: unknown[] }).data
       : []
 
     const cronogramaItems: CronogramaCalendarioItem[] = (cronograma as HitoCronogramaIA[]).map((item) => {
@@ -205,7 +205,8 @@ export async function crearEntrega(
   })
 
   revalidatePath('/ejecucion')
-  // @ts-ignore`n  revalidateTag(`entregas:${actividadId}`)
+  // @ts-expect-error -- revalidateTag not yet in Next.js types
+  revalidateTag(`entregas:${actividadId}`)
   return {
     id: entrega.id,
     actividad_id: entrega.actividadId,
@@ -226,7 +227,7 @@ export async function marcarEntregaLista(
   const repo = getActivityRepository()
   await repo.actualizarEstadoEntrega(entregaId, 'listo', evidenciaUrl ?? undefined)
   revalidatePath('/ejecucion')
-  // @ts-ignore
+  // @ts-expect-error -- revalidateTag not yet in Next.js types
   if (actividadId) revalidateTag(`entregas:${actividadId}`)
 }
 
@@ -237,7 +238,7 @@ export async function marcarEntregaPendiente(
   const repo = getActivityRepository()
   await repo.actualizarEstadoEntrega(entregaId, 'pendiente')
   revalidatePath('/ejecucion')
-  // @ts-ignore
+  // @ts-expect-error -- revalidateTag not yet in Next.js types
   if (actividadId) revalidateTag(`entregas:${actividadId}`)
 }
 
@@ -275,7 +276,7 @@ export async function agregarCosto(
     itemId: form.item_id,
     descripcion: form.descripcion,
     monto: form.monto,
-    pagador: form.pagador as any,
+    pagador: form.pagador as 'jero' | 'socio' | 'caja_proyecto' | 'anticipo_uv',
     soporteUrl: form.soporte_url,
     modoRegistro: form.modo_registro ?? 'por_item',
     cantidad: form.cantidad ?? 1,
@@ -285,7 +286,7 @@ export async function agregarCosto(
 
   revalidatePath('/ejecucion')
   revalidatePath(`/ejecucion/${actividadId}`)
-  // @ts-ignore
+  // @ts-expect-error -- revalidateTag not yet in Next.js types
   revalidateTag(`costos:${actividadId}`)
   return {
     id: costo.id,
@@ -319,7 +320,7 @@ export async function agregarCostoBatch(
     results.push(row)
   }
   revalidatePath(`/ejecucion/${actividadId}`)
-  // @ts-ignore
+  // @ts-expect-error -- revalidateTag not yet in Next.js types
   revalidateTag(`costos:${actividadId}`)
   return results
 }
@@ -330,7 +331,7 @@ export async function eliminarCosto(costoId: string, actividadId?: string): Prom
   revalidatePath('/ejecucion')
   if (actividadId) {
     revalidatePath(`/ejecucion/${actividadId}`)
-    // @ts-ignore
+    // @ts-expect-error -- revalidateTag not yet in Next.js types
     revalidateTag(`costos:${actividadId}`)
   }
 }
@@ -421,7 +422,7 @@ export async function cambiarEstadoActividad(
   
   revalidatePath('/ejecucion')
   revalidatePath(`/ejecucion/${actividadId}`)
-  // @ts-ignore
+  // @ts-expect-error -- revalidateTag not yet in Next.js types
   revalidateTag(`act:${actividadId}`)
 }
 
@@ -449,7 +450,8 @@ export async function guardarParticipacionesActividad(
   const uc = makeRedefinirParticipacion()
   await uc.execute({ actividadId, participaciones, userId: 'anonymous' })
   revalidatePath(`/ejecucion/${actividadId}`)
-  // @ts-ignore`n  revalidateTag(`participaciones:${actividadId}`)
+  // @ts-expect-error -- revalidateTag not yet in Next.js types
+  revalidateTag(`participaciones:${actividadId}`)
 }
 
 export async function actualizarAporteSocio(
@@ -460,7 +462,7 @@ export async function actualizarAporteSocio(
   const repo = getActivityRepository()
   await repo.actualizarAporteSocio(actividadId, socioId, nuevoMonto)
   revalidatePath(`/ejecucion/${actividadId}`)
-  // @ts-ignore
+  // @ts-expect-error -- revalidateTag not yet in Next.js types
   revalidateTag(`participaciones:${actividadId}`)
 }
 

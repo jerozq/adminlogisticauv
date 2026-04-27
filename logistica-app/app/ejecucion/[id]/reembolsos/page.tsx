@@ -6,11 +6,12 @@ import { ArrowLeft, Printer, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import type { EjecucionCostoConItem } from '@/types/ejecucion'
+import type { ActividadBasica } from '@/actions/ejecucion'
 import { DownloadPdfButton } from '@/components/reembolsos/DownloadPdfButton'
 
 export default function ReembolsosPrintPage() {
   const { id } = useParams() as { id: string }
-  const [actividad, setActividad] = useState<any>(null)
+  const [actividad, setActividad] = useState<ActividadBasica | null>(null)
   const [costos, setCostos] = useState<EjecucionCostoConItem[]>([])
   const [loading, setLoading] = useState(true)
 
