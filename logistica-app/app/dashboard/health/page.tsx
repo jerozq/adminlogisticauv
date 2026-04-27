@@ -12,6 +12,8 @@ import type { HealthReport, ServiceStatus } from '@/app/api/health/route'
 
 import { getHealthCheckAdapter } from '@/src/infrastructure/adapters/HealthCheckAdapter'
 
+export const dynamic = 'force-dynamic'
+
 async function fetchHealth(): Promise<HealthReport> {
   const adapter = getHealthCheckAdapter()
   return adapter.fetchHealth()
