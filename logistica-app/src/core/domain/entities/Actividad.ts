@@ -265,7 +265,7 @@ export class Actividad {
         )
       }
 
-      if (tieneItemsInhumacion) {
+      if (tieneItemsInhumacion && ben.valorOtros > 0) {
         result.push(
           new Reembolso({
             id:            `${this.id}-INHUMACION-${ben.documentoIdentidad}`,
