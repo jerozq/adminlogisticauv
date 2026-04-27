@@ -227,11 +227,13 @@ export function CotizacionExportEditor({ datos }: Props) {
         <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
           Actividad
         </p>
-        <p className="font-bold text-zinc-900 text-base">{requerimiento.nombre_actividad}</p>
+        <p className="font-bold text-zinc-900 text-base">
+          {[
+            requerimiento.numero_requerimiento ?? null,
+            requerimiento.municipio ?? null,
+          ].filter(Boolean).join(' — ') || 'Sin identificador'}
+        </p>
         <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm text-zinc-500">
-          {requerimiento.numero_requerimiento && (
-            <span>Req. {requerimiento.numero_requerimiento}</span>
-          )}
           {requerimiento.municipio && (
             <span>
               {requerimiento.municipio}

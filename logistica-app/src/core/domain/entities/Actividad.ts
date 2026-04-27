@@ -242,7 +242,12 @@ export class Actividad {
 
     const result: Reembolso[] = []
 
-    for (const ben of this.reembolsosRequerimiento) {
+    // Filtramos beneficiarios sin nombre para evitar errores en la entidad Reembolso
+    const beneficiarios = this.reembolsosRequerimiento.filter(
+      (b) => b.nombreBeneficiario.trim().length > 0
+    )
+
+    for (const ben of beneficiarios) {
       if (ben.valorTransporte > 0) {
         result.push(
           new Reembolso({

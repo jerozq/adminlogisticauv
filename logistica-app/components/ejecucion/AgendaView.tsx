@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useEffect, useMemo } from 'react'
+import { useState, useTransition, useEffect, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Sparkles,
@@ -173,6 +173,24 @@ export function AgendaView({
   const [toast, setToast] = useState<{ type: 'success' | 'error' | 'quota'; message: string } | null>(null)
   const [modal, setModal] = useState<{ open: boolean; hito: HitoCronogramaIA | null; index: number }>({ open: false, hito: null, index: -1 })
 
+  // Carga automática desde Supabase si no hay datos del servidor
+  const autoLoadedRef = useRef(false)
+  useEffect(() => {
+    if (!autoLoadedRef.current && hitos.length === 0) {
+      autoLoadedRef.current = true
+      // forzar=false: lee de caché en DB sin llamar a la IA si ya existe
+      startGenerate(async () => {
+        const res = await generarCronogramaIA(actividadId, false)
+        if (res.ok && res.entregables.length > 0) {
+          setHitos(res.entregables)
+          setHitosBackup(res.entregables)
+          if (!res.fromCache) router.refresh()
+        }
+      })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // Agrupación por día
   const grouped = useMemo(() => {
     const days = new Map<string, HitoCronogramaIA[]>()
@@ -342,8 +360,8 @@ export function AgendaView({
                         </div>
                       </div>
 
-                      {/* Controles CRUD (hover) */}
-                      <div className="flex gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                      {/* Controles CRUD */}
+                      <div className="flex gap-1 shrink-0">
                         <button 
                           onClick={() => setModal({ open: true, hito: item, index: globalIdx })}
                           className="p-2 rounded-lg hover:bg-white/10 [color:var(--text-muted)] hover:[color:var(--text-primary)] transition-colors"

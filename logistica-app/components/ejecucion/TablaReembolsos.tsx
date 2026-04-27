@@ -562,6 +562,283 @@ function Toast({ message, type }: { message: string; type: 'success' | 'error' }
 }
 
 // ---------------------------------------------------------------
+// Recibo de Satisfacción — tipos, modal y tarjeta
+// ---------------------------------------------------------------
+
+interface ReciboSatisfaccion {
+  responsableUV:              string       // Quien emite (coordinador UV)
+  cargoUV:                    string       // Su cargo
+  representanteBeneficiarios: string       // Quien recibe (comunidad)
+  documentoRepresentante:     string       // CC del representante
+  servicioPrestado:           string       // Descripción del servicio
+  lugar:                      string       // Ciudad/municipio de firma
+  fecha:                      string       // YYYY-MM-DD
+  observaciones:              string | null
+}
+
+interface ModalReciboProps {
+  initial: ReciboSatisfaccion | null
+  onSave: (data: ReciboSatisfaccion) => void
+  onCancel: () => void
+}
+
+function ModalReciboSatisfaccion({ initial, onSave, onCancel }: ModalReciboProps) {
+  const [form, setForm] = useState<ReciboSatisfaccion>(
+    initial ?? {
+      responsableUV:              '',
+      cargoUV:                    'Coordinador/a Logístico',
+      representanteBeneficiarios: '',
+      documentoRepresentante:     '',
+      servicioPrestado:           '',
+      lugar:                      '',
+      fecha:                      new Date().toISOString().split('T')[0],
+      observaciones:              null,
+    }
+  )
+  const [error, setError] = useState<string | null>(null)
+
+  function set<K extends keyof ReciboSatisfaccion>(key: K, value: ReciboSatisfaccion[K]) {
+    setForm((prev) => ({ ...prev, [key]: value }))
+  }
+
+  function handleSave() {
+    if (!form.responsableUV.trim()) { setError('El responsable UV es obligatorio.'); return }
+    if (!form.representanteBeneficiarios.trim()) { setError('El representante de beneficiarios es obligatorio.'); return }
+    if (!form.servicioPrestado.trim()) { setError('La descripción del servicio es obligatoria.'); return }
+    if (!form.lugar.trim()) { setError('El lugar de firma es obligatorio.'); return }
+    setError(null)
+    onSave({ ...form, observaciones: form.observaciones?.trim() || null })
+  }
+
+  const isEdit = initial !== null
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onCancel() }}
+    >
+      <div className="modal-card rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b [border-color:var(--surface-border)]">
+          <div className="flex items-center gap-2">
+            <ClipboardCheck strokeWidth={1.5} className="size-4 text-emerald-500" />
+            <h2 className="font-semibold [color:var(--text-primary)] text-sm">
+              {isEdit ? 'Editar Recibo a Satisfacción' : 'Nuevo Recibo a Satisfacción'}
+            </h2>
+          </div>
+          <button
+            onClick={onCancel}
+            className="[color:var(--text-muted)] hover:[color:var(--text-primary)] transition-colors"
+            aria-label="Cerrar"
+          >
+            <X strokeWidth={1.5} className="size-4" />
+          </button>
+        </div>
+
+        {/* Form */}
+        <div className="px-5 py-4 space-y-3 max-h-[70vh] overflow-y-auto">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-white/30 pt-1">
+            Emisor (UV)
+          </p>
+          <Field label="Nombre del responsable UV">
+            <input
+              type="text"
+              value={form.responsableUV}
+              onChange={(e) => set('responsableUV', e.target.value)}
+              placeholder="Ej. Jeronimo Zapata"
+              className={INPUT_CLS}
+              autoFocus
+            />
+          </Field>
+          <Field label="Cargo">
+            <input
+              type="text"
+              value={form.cargoUV}
+              onChange={(e) => set('cargoUV', e.target.value)}
+              className={INPUT_CLS}
+            />
+          </Field>
+
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-white/30 pt-2">
+            Receptor (Beneficiarios)
+          </p>
+          <Field label="Nombre del representante">
+            <input
+              type="text"
+              value={form.representanteBeneficiarios}
+              onChange={(e) => set('representanteBeneficiarios', e.target.value)}
+              placeholder="Ej. María García"
+              className={INPUT_CLS}
+            />
+          </Field>
+          <Field label="Documento CC">
+            <input
+              type="text"
+              value={form.documentoRepresentante}
+              onChange={(e) => set('documentoRepresentante', e.target.value)}
+              placeholder="1234567890"
+              className={INPUT_CLS}
+            />
+          </Field>
+
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-white/30 pt-2">
+            Servicio
+          </p>
+          <Field label="Descripción del servicio prestado">
+            <textarea
+              value={form.servicioPrestado}
+              onChange={(e) => set('servicioPrestado', e.target.value)}
+              placeholder="Ej. Jornada de atención logística para 25 beneficiarios en el municipio…"
+              rows={3}
+              className={`${INPUT_CLS} resize-none`}
+            />
+          </Field>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Lugar de firma">
+              <input
+                type="text"
+                value={form.lugar}
+                onChange={(e) => set('lugar', e.target.value)}
+                placeholder="Ej. Cali"
+                className={INPUT_CLS}
+              />
+            </Field>
+            <Field label="Fecha">
+              <input
+                type="date"
+                value={form.fecha}
+                onChange={(e) => set('fecha', e.target.value)}
+                className={INPUT_CLS}
+              />
+            </Field>
+          </div>
+
+          <Field label="Observaciones (opcional)">
+            <textarea
+              value={form.observaciones ?? ''}
+              onChange={(e) => set('observaciones', e.target.value || null)}
+              placeholder="Cualquier nota adicional…"
+              rows={2}
+              className={`${INPUT_CLS} resize-none`}
+            />
+          </Field>
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div className="mx-5 mb-3 flex items-start gap-2 [color:var(--state-cancel-fg)] text-xs">
+            <AlertCircle strokeWidth={1.5} className="size-3.5 shrink-0 mt-0.5" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="px-5 py-4 border-t [border-color:var(--surface-border)] flex justify-end gap-2">
+          <button
+            onClick={onCancel}
+            className="btn-secondary px-3 py-1.5 text-sm rounded-lg transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSave}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg btn-primary transition-colors"
+          >
+            <Check strokeWidth={1.5} className="size-3.5" />
+            {isEdit ? 'Guardar cambios' : 'Crear Recibo'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ReciboCard({
+  recibo,
+  onEdit,
+  onDelete,
+}: {
+  recibo: ReciboSatisfaccion
+  onEdit: () => void
+  onDelete: () => void
+}) {
+  return (
+    <div className="mt-8 bg-emerald-500/5 hover:bg-emerald-500/10 border border-emerald-500/20 shadow-lg rounded-xl backdrop-blur-xl transition-all duration-200 p-5 space-y-4">
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-2">
+          <div className="p-2 rounded-xl bg-emerald-500/15 border border-emerald-500/25">
+            <ClipboardCheck strokeWidth={1.5} className="size-4 text-emerald-400" />
+          </div>
+          <div>
+            <p className="text-sm font-bold text-emerald-300">Recibo a Satisfacción</p>
+            <p className="text-[10px] text-emerald-400/60 mt-0.5 font-medium">
+              {fmtFecha(recibo.fecha)} · {recibo.lugar}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onEdit}
+            className="p-1 rounded-md text-white/50 hover:text-white hover:bg-white/10 transition-all"
+            title="Editar recibo"
+          >
+            <Edit2 strokeWidth={1.5} className="size-4" />
+          </button>
+          <button
+            onClick={onDelete}
+            className="p-1 rounded-md text-white/50 hover:text-red-400 hover:bg-red-500/10 transition-all"
+            title="Eliminar recibo"
+          >
+            <Trash2 strokeWidth={1.5} className="size-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Parties */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-white/30 mb-1">Emisor (UV)</p>
+          <p className="text-sm font-semibold text-white/90 leading-snug">{recibo.responsableUV}</p>
+          <p className="text-xs text-white/40 mt-0.5">{recibo.cargoUV}</p>
+        </div>
+        <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-white/30 mb-1">Receptor</p>
+          <p className="text-sm font-semibold text-white/90 leading-snug">{recibo.representanteBeneficiarios}</p>
+          {recibo.documentoRepresentante && (
+            <p className="text-xs text-white/40 mt-0.5 font-mono">CC {recibo.documentoRepresentante}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Service */}
+      <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-white/30 mb-1">Servicio Prestado</p>
+        <p className="text-xs text-white/70 leading-relaxed">{recibo.servicioPrestado}</p>
+      </div>
+
+      {recibo.observaciones && (
+        <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-white/30 mb-1">Observaciones</p>
+          <p className="text-xs text-white/60 leading-relaxed">{recibo.observaciones}</p>
+        </div>
+      )}
+
+      {/* Export — connected to PDF when API route is available */}
+      <button
+        disabled
+        className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-300/50 font-medium cursor-not-allowed transition-all"
+        title="Exportar PDF disponible próximamente"
+      >
+        <FileDown strokeWidth={1.5} className="size-3.5" />
+        Exportar Recibo PDF
+      </button>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------
 // Tarjeta individual de formato
 // ---------------------------------------------------------------
 
@@ -673,6 +950,11 @@ export function TablaReembolsos({ actividadId, initialReembolsos }: Props) {
   const [toastMsg, setToastMsg] = useState('')
   const [toastType, setToastType] = useState<'success' | 'error'>('success')
 
+  // ── Recibo a Satisfacción ──────────────────────────────────────
+  const [recibo, setRecibo] = useState<ReciboSatisfaccion | null>(null)
+  const [showReciboModal, setShowReciboModal] = useState(false)
+  const [isEditingRecibo, setIsEditingRecibo] = useState(false)
+
   const transporte = reembolsos.filter((r) => r.tipo === 'TRANSPORTE')
   const inhumacion = reembolsos.filter((r) => r.tipo === 'INHUMACION')
   const isEmpty = reembolsos.length === 0
@@ -746,6 +1028,19 @@ export function TablaReembolsos({ actividadId, initialReembolsos }: Props) {
     setToastMsg(msg)
     setToastType(type)
     setTimeout(() => setToastMsg(''), 4000)
+  }
+
+  // ── Recibo de Satisfacción handlers ─────────────────────────
+  function handleReciboGuardado(data: ReciboSatisfaccion) {
+    setRecibo(data)
+    setShowReciboModal(false)
+    setIsEditingRecibo(false)
+    showToast('Recibo a Satisfacción guardado correctamente.', 'success')
+  }
+
+  function handleReciboEliminado() {
+    setRecibo(null)
+    showToast('Recibo eliminado.', 'success')
   }
 
   // ── Render ───────────────────────────────────────────────────
@@ -841,27 +1136,34 @@ export function TablaReembolsos({ actividadId, initialReembolsos }: Props) {
         </div>
       )}
 
-      {/* ── Recibo a Satisfacción (glass card) ── */}
-      <div className="mt-8 bg-white/5 hover:bg-white/10 border border-white/10 shadow-lg rounded-xl backdrop-blur-xl transition-all duration-200 p-5 flex items-center gap-5">
-        <div className="shrink-0 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-          <ClipboardCheck strokeWidth={1.5} className="size-5 text-emerald-400" />
+      {/* ── Recibo a Satisfacción ── */}
+      {recibo ? (
+        <ReciboCard
+          recibo={recibo}
+          onEdit={() => { setIsEditingRecibo(true); setShowReciboModal(true) }}
+          onDelete={handleReciboEliminado}
+        />
+      ) : (
+        <div className="mt-8 bg-white/5 hover:bg-white/10 border border-white/10 shadow-lg rounded-xl backdrop-blur-xl transition-all duration-200 p-5 flex items-center gap-5">
+          <div className="shrink-0 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+            <ClipboardCheck strokeWidth={1.5} className="size-5 text-emerald-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-white/90">Recibo a Satisfacción</p>
+            <p className="text-xs text-white/40 mt-0.5 leading-relaxed">
+              Acredita la prestación satisfactoria del servicio logístico por parte de la UV.
+              Se emite y firma al cierre formal de la actividad.
+            </p>
+          </div>
+          <button
+            onClick={() => { setIsEditingRecibo(false); setShowReciboModal(true) }}
+            className="shrink-0 flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/25 text-emerald-300 whitespace-nowrap transition-all"
+          >
+            <Plus strokeWidth={1.5} className="size-3.5" />
+            Crear Recibo
+          </button>
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-white/90">Recibo a Satisfacción</p>
-          <p className="text-xs text-white/40 mt-0.5 leading-relaxed">
-            Acredita la prestación satisfactoria del servicio logístico por parte de la UV.
-            Se emite y firma al cierre formal de la actividad.
-          </p>
-        </div>
-        <button
-          disabled
-          className="shrink-0 flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-lg bg-white/5 border border-white/10 text-white/40 cursor-not-allowed whitespace-nowrap"
-          title="Disponible próximamente"
-        >
-          <FileDown strokeWidth={1.5} className="size-3.5" />
-          Exportar Recibo
-        </button>
-      </div>
+      )}
 
       {/* ── Modal de creación ── */}
       {showCrear && (
@@ -878,6 +1180,15 @@ export function TablaReembolsos({ actividadId, initialReembolsos }: Props) {
           reembolso={editing}
           onSave={handleSaved}
           onCancel={() => setEditing(null)}
+        />
+      )}
+
+      {/* ── Modal Recibo a Satisfacción ── */}
+      {showReciboModal && (
+        <ModalReciboSatisfaccion
+          initial={isEditingRecibo ? recibo : null}
+          onSave={handleReciboGuardado}
+          onCancel={() => { setShowReciboModal(false); setIsEditingRecibo(false) }}
         />
       )}
 

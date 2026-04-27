@@ -153,7 +153,6 @@ export default async function ActividadDetailPage({
     <div className="min-h-screen [background:var(--background)]">
       <PageHeader
         title={tituloActividad}
-        subtitle={actividad.nombre_actividad}
         backHref="/ejecucion"
         breadcrumbs={[
           { label: 'Inicio',     href: '/' },

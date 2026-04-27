@@ -226,16 +226,19 @@ export class SupabaseActivityRepository implements IActivityRepository {
     // Tabla puede no existir en entornos locales sin migración aplicada
     if (error || !data) return []
 
-    return data.map((row: Record<string, unknown>) => ({
-      nombreBeneficiario:  row.nombre_beneficiario,
-      documentoIdentidad:  row.documento_identidad ?? '',
-      municipioOrigen:     row.municipio_origen ?? '',
-      municipioDestino:    row.municipio_destino ?? '',
-      valorTransporte:     Number(row.valor_transporte ?? 0),
-      valorAlojamiento:    Number(row.valor_alojamiento ?? 0),
-      valorAlimentacion:   Number(row.valor_alimentacion ?? 0),
-      valorOtros:          Number(row.valor_otros ?? 0),
-    }))
+    return data
+      .map((row: Record<string, unknown>) => ({
+        nombreBeneficiario: (row.nombre_beneficiario as string | null)?.trim() ?? '',
+        documentoIdentidad: (row.documento_identidad as string | null)?.trim() ?? '',
+        municipioOrigen:    (row.municipio_origen as string | null)?.trim() ?? '',
+        municipioDestino:   (row.municipio_destino as string | null)?.trim() ?? '',
+        valorTransporte:    Number(row.valor_transporte ?? 0),
+        valorAlojamiento:   Number(row.valor_alojamiento ?? 0),
+        valorAlimentacion:  Number(row.valor_alimentacion ?? 0),
+        valorOtros:         Number(row.valor_otros ?? 0),
+      }))
+      // Filtramos filas sin nombre — no tienen sentido como reembolso
+      .filter((b) => b.nombreBeneficiario.length > 0)
   }
 
   private async _fetchItems(cotizacionId: string, actividadId: string) {

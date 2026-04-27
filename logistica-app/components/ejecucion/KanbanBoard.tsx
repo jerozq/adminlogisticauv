@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { CheckCircle2, Clock, TrendingUp, Pencil } from 'lucide-react'
+import { Clock, TrendingUp, Pencil } from 'lucide-react'
 import { calcularTiempoRestante, type CalculoVencimiento } from '@/src/core/domain/calculators/vencimientos'
 import type { ActividadKanban } from '@/types/ejecucion'
 import { CambiarEstadoButton } from './CambiarEstadoButton'
@@ -125,11 +125,6 @@ function CountdownTimer({ startStr, endStr, isDone }: { startStr?: string | null
 }
 
 function ActivityCard({ actividad }: { actividad: ActividadKanban }) {
-  const progress =
-    actividad.total_entregas > 0
-      ? Math.round((actividad.entregas_listas / actividad.total_entregas) * 100)
-      : null
-
   const fmt = (n: number) =>
     new Intl.NumberFormat('es-CO', {
       style: 'currency',
@@ -237,28 +232,6 @@ function ActivityCard({ actividad }: { actividad: ActividadKanban }) {
             </span>
           )}
         </div>
-
-        {/* Progress bar */}
-        {actividad.total_entregas > 0 && (
-          <div className="mb-3">
-            <div className="flex justify-between text-xs text-slate-500 mb-1 font-[family-name:var(--font-geist-sans)]">
-              <span className="flex items-center gap-1">
-                <CheckCircle2 strokeWidth={1.5} className="size-3" />
-                Entregas
-              </span>
-              <span>{actividad.entregas_listas}/{actividad.total_entregas}</span>
-            </div>
-            <div className="h-1.5 [background:var(--surface-border)] rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all"
-                style={{
-                  width: `${progress ?? 0}%`,
-                  background: progress === 100 ? 'var(--state-ok-dot)' : 'var(--state-prep-dot)',
-                }}
-              />
-            </div>
-          </div>
-        )}
 
         {/* Ingreso cotizado */}
         {actividad.ingreso_cotizado !== null && (
