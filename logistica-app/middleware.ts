@@ -2,10 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-// ============ CONFIGURACION ============
 const isDev = process.env.NODE_ENV === 'development'
-const PUBLIC_PATHS = ['/', '/login', '/register', '/about', '/contact']
-const PROTECTED_PREFIXES = ['/dashboard', '/admin', '/profile', '/account']
 
 function log(message: string, data?: unknown): void {
   if (isDev) {
@@ -13,25 +10,11 @@ function log(message: string, data?: unknown): void {
   }
 }
 
-// ============ MIDDLEWARE PRINCIPAL ============
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl
-
-  log('Request:', pathname)
+  log('Protegiendo ruta:', pathname)
 
   try {
-    // 1. Rutas publicas — early return sin tocar Supabase
-    if (PUBLIC_PATHS.includes(pathname)) {
-      return NextResponse.next()
-    }
-
-    // 2. Solo verificar auth en rutas protegidas
-    const isProtected = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix))
-    if (!isProtected) {
-      return NextResponse.next()
-    }
-
-    // 3. Validar variables de entorno
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
@@ -40,7 +23,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       return NextResponse.redirect(new URL('/login', request.url))
     }
 
-    // 4. Cliente Supabase por-request con API getAll/setAll (requerida en @supabase/ssr ^0.5+)
+    // Cliente por-request con API getAll/setAll (requerida en @supabase/ssr ^0.5+)
     let response = NextResponse.next({ request })
 
     const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -58,34 +41,24 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       },
     })
 
-    // 5. getUser() verifica el JWT contra Supabase (mas seguro que getSession())
+    // getUser() verifica el JWT contra Supabase (más seguro que getSession)
     const {
       data: { user },
       error,
     } = await supabase.auth.getUser()
 
-    if (error) {
-      log('Error de autenticacion:', error.message)
-      const loginUrl = new URL('/login', request.url)
-      loginUrl.searchParams.set('redirectTo', pathname)
-      loginUrl.searchParams.set('reason', 'auth_error')
-      return NextResponse.redirect(loginUrl)
-    }
-
-    if (!user) {
-      log('Sin sesion activa, redirigiendo')
+    if (error || !user) {
+      log('Sin sesion válida, redirigiendo a login')
       const loginUrl = new URL('/login', request.url)
       loginUrl.searchParams.set('redirectTo', pathname)
       return NextResponse.redirect(loginUrl)
     }
 
-    log('Usuario autenticado, acceso permitido')
+    log('Usuario autenticado:', user.email)
     return response
   } catch (err) {
-    // Captura de ultimo recurso — NUNCA propagar excepcion en Edge
-    const message = err instanceof Error ? err.message : 'Unknown error'
-    log('ERROR FATAL:', message)
-
+    // Captura de último recurso — NUNCA propagar excepción en Edge
+    log('ERROR FATAL:', err instanceof Error ? err.message : 'Unknown error')
     return NextResponse.redirect(new URL('/login?reason=system_error', request.url))
   }
 }
