@@ -12,6 +12,25 @@ import type { HitoCronogramaIA } from '@/actions/cronograma-ia'
 import { unstable_cache } from 'next/cache'
 
 // ============================================================
+// Type for raw requerimiento DB row
+// ============================================================
+interface RequerimientoRaw {
+  id: string
+  nombre_actividad: string
+  numero_requerimiento: string | null
+  municipio: string | null
+  departamento: string | null
+  estado: string
+  fecha_inicio: string | null
+  fecha_fin: string | null
+  hora_inicio: string | null
+  hora_fin: string | null
+  responsable_nombre: string | null
+  num_victimas: number
+  cronograma_ia: unknown
+}
+
+// ============================================================
 // Estado badge helpers
 // ============================================================
 
@@ -80,7 +99,7 @@ export default async function ActividadDetailPage({
     })),
   ])
 
-  const actividad = rawResult
+  const actividad = rawResult as RequerimientoRaw | null
   if (!actividad) notFound()
 
   const ingresoTotal = entityResult?.ingresoTotal ?? 0

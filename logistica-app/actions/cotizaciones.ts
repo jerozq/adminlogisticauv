@@ -7,6 +7,7 @@ import { z } from 'zod'
 import {
   CronogramaEntregaDraft,
   CotizacionItemDraft,
+  FuenteItem,
   ParsedRequerimiento,
   ReembolsoDetalleDraft,
   RequerimientoEncabezado,
@@ -399,6 +400,8 @@ function parseFormatoMaterialApoyo(sheet: ExcelJS.Worksheet): {
       cantidad,
       precioUnitario: 0,
       esPassthrough: false,
+      excluirDeFinanzas: false,
+      ocultarEnCotizacion: false,
       fuente: 'excel',
       opcionesTarifario: [],
     })
@@ -643,6 +646,8 @@ REGLAS IMPORTANTES:
     cantidad: it.cantidad,
     precioUnitario: 0,
     esPassthrough: false,
+    excluirDeFinanzas: false,
+    ocultarEnCotizacion: false,
     fuente: 'excel' as const,
     opcionesTarifario: [],
   }))
@@ -890,6 +895,8 @@ function injectInhumacionItem(
     cantidad,
     precioUnitario: PRECIO_INHUMACION,
     esPassthrough: false,
+    excluirDeFinanzas: false,
+    ocultarEnCotizacion: false,
     fuente: 'manual' as const,
     opcionesTarifario: [],
   }
@@ -1194,5 +1201,328 @@ export async function guardarCotizacion(
   } catch (err) {
     console.error('[guardarCotizacion]', err)
     return { ok: false, error: 'Error inesperado al guardar en la base de datos.' }
+  }
+}
+
+// ============================================================
+// Supabase helper (server-side, lazy)
+// ============================================================
+
+async function getSupabaseServer() {
+  const { createClient } = await import('@supabase/supabase-js')
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
+
+// ============================================================
+// listarRequerimientosConCotizaciones
+// ============================================================
+
+export async function listarRequerimientosConCotizaciones(): Promise<{
+  id: string
+  numero: string
+  nombre: string
+  municipio: string
+  departamento: string
+  estadoReq: string
+  version: number
+  estadoCot: string
+  total: number
+}[]> {
+  try {
+    const sb = await getSupabaseServer()
+
+    const { data, error } = await sb
+      .from('requerimientos')
+      .select(`
+        id,
+        numero_requerimiento,
+        nombre_actividad,
+        municipio,
+        departamento,
+        estado,
+        cotizaciones (
+          id,
+          version,
+          estado,
+          total_general
+        )
+      `)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('[listarRequerimientosConCotizaciones]', error)
+      return []
+    }
+
+    return (data ?? []).map((req: Record<string, unknown>) => {
+      const cots = (req.cotizaciones as Record<string, unknown>[] | null) ?? []
+      const latestCot = cots.length > 0
+        ? cots.reduce((prev, cur) => (Number(cur.version) > Number(prev.version) ? cur : prev))
+        : null
+
+      return {
+        id: req.id as string,
+        numero: (req.numero_requerimiento as string) || '—',
+        nombre: (req.nombre_actividad as string) || 'Sin nombre',
+        municipio: (req.municipio as string) || '—',
+        departamento: (req.departamento as string) || '—',
+        estadoReq: (req.estado as string) || '—',
+        version: latestCot ? Number(latestCot.version) : 0,
+        estadoCot: latestCot ? (latestCot.estado as string) : '—',
+        total: latestCot ? Number(latestCot.total_general) : 0,
+      }
+    })
+  } catch (err) {
+    console.error('[listarRequerimientosConCotizaciones]', err)
+    return []
+  }
+}
+
+// ============================================================
+// cargarCotizacion
+// ============================================================
+
+export async function cargarCotizacion(requerimientoId: string): Promise<
+  | {
+      ok: true
+      encabezado: RequerimientoEncabezado
+      items: CotizacionItemDraft[]
+      cotizacion: { id: string; version: number; estado: string }
+      requerimientoEstado: string
+    }
+  | { ok: false }
+> {
+  try {
+    const sb = await getSupabaseServer()
+
+    const { data: req, error: reqError } = await sb
+      .from('requerimientos')
+      .select('*')
+      .eq('id', requerimientoId)
+      .single()
+
+    if (reqError || !req) return { ok: false }
+
+    const { data: cots, error: cotError } = await sb
+      .from('cotizaciones')
+      .select('id, version, estado, subtotal_servicios, total_reembolsos, total_general')
+      .eq('requerimiento_id', requerimientoId)
+      .order('version', { ascending: false })
+      .limit(1)
+
+    if (cotError || !cots || cots.length === 0) return { ok: false }
+
+    const cot = cots[0]
+
+    const { data: itemRows, error: itemsError } = await sb
+      .from('cotizacion_items')
+      .select('*')
+      .eq('cotizacion_id', cot.id)
+
+    if (itemsError) return { ok: false }
+
+    const encabezado: RequerimientoEncabezado = {
+      numeroRequerimiento: (req.numero_requerimiento as string) ?? '',
+      nombreActividad:     (req.nombre_actividad as string) ?? '',
+      objeto:              (req.objeto as string) ?? '',
+      direccionTerritorial:(req.direccion_territorial as string) ?? '',
+      municipio:           (req.municipio as string) ?? '',
+      departamento:        (req.departamento as string) ?? '',
+      lugarDetalle:        (req.lugar_detalle as string) ?? '',
+      fechaSolicitud:      (req.fecha_solicitud as string) ?? '',
+      fechaInicio:         (req.fecha_inicio as string) ?? '',
+      fechaFin:            (req.fecha_fin as string) ?? '',
+      horaInicio:          (req.hora_inicio as string) ?? '',
+      horaFin:             (req.hora_fin as string) ?? '',
+      responsableNombre:   (req.responsable_nombre as string) ?? '',
+      responsableCedula:   (req.responsable_cedula as string) ?? '',
+      responsableCelular:  (req.responsable_celular as string) ?? '',
+      responsableCorreo:   (req.responsable_correo as string) ?? '',
+      numVictimas:         Number(req.num_victimas ?? 0),
+      montoReembolsoDeclarado: Number(req.monto_reembolso_declarado ?? 0),
+    }
+
+    const items: CotizacionItemDraft[] = (itemRows ?? []).map((row: Record<string, unknown>) => ({
+      id:                  (row.id as string),
+      tarifarioId:         (row.tarifario_id as string | null) ?? null,
+      codigoItem:          (row.codigo_item as string) ?? '',
+      descripcion:         (row.descripcion as string) ?? '',
+      categoria:           (row.categoria as string) ?? '',
+      unidadMedida:        (row.unidad_medida as string) ?? 'und',
+      cantidad:            Number(row.cantidad ?? 1),
+      precioUnitario:      Number(row.precio_unitario ?? 0),
+      esPassthrough:       Boolean(row.es_passthrough),
+      excluirDeFinanzas:   false,
+      ocultarEnCotizacion: false,
+      fuente:              (row.fuente as FuenteItem) ?? 'manual',
+      opcionesTarifario:   [],
+    }))
+
+    return {
+      ok: true,
+      encabezado,
+      items,
+      cotizacion: {
+        id:      cot.id as string,
+        version: Number(cot.version),
+        estado:  (cot.estado as string) ?? 'borrador',
+      },
+      requerimientoEstado: (req.estado as string) ?? 'generado',
+    }
+  } catch (err) {
+    console.error('[cargarCotizacion]', err)
+    return { ok: false }
+  }
+}
+
+// ============================================================
+// listarHistorialCotizaciones
+// ============================================================
+
+export async function listarHistorialCotizaciones(requerimientoId: string): Promise<{
+  id: string
+  version: number
+  estado: string
+  total_general: number
+  created_at: string
+}[]> {
+  try {
+    const sb = await getSupabaseServer()
+
+    const { data, error } = await sb
+      .from('cotizaciones')
+      .select('id, version, estado, total_general, created_at')
+      .eq('requerimiento_id', requerimientoId)
+      .order('version', { ascending: false })
+
+    if (error) {
+      console.error('[listarHistorialCotizaciones]', error)
+      return []
+    }
+
+    return (data ?? []).map((row: Record<string, unknown>) => ({
+      id:            row.id as string,
+      version:       Number(row.version),
+      estado:        (row.estado as string) ?? 'borrador',
+      total_general: Number(row.total_general ?? 0),
+      created_at:    (row.created_at as string) ?? new Date().toISOString(),
+    }))
+  } catch (err) {
+    console.error('[listarHistorialCotizaciones]', err)
+    return []
+  }
+}
+
+// ============================================================
+// actualizarCotizacion
+// ============================================================
+
+export async function actualizarCotizacion(
+  requerimientoId: string,
+  _cotizacionId: string,
+  encabezado: RequerimientoEncabezado,
+  items: CotizacionItemDraft[]
+): Promise<{ ok: true; cotizacionId: string } | { ok: false; error: string }> {
+  try {
+    const sb = await getSupabaseServer()
+
+    // 1. Update requerimiento encabezado
+    const { error: reqError } = await sb
+      .from('requerimientos')
+      .update({
+        numero_requerimiento: encabezado.numeroRequerimiento || null,
+        nombre_actividad:     encabezado.nombreActividad || 'Sin nombre',
+        objeto:               encabezado.objeto || null,
+        direccion_territorial:encabezado.direccionTerritorial || null,
+        municipio:            encabezado.municipio || null,
+        departamento:         encabezado.departamento || null,
+        lugar_detalle:        encabezado.lugarDetalle || null,
+        fecha_solicitud:      sanitizeDate(encabezado.fechaSolicitud),
+        fecha_inicio:         sanitizeDate(encabezado.fechaInicio),
+        fecha_fin:            sanitizeDate(encabezado.fechaFin),
+        hora_inicio:          encabezado.horaInicio || null,
+        hora_fin:             encabezado.horaFin || null,
+        responsable_nombre:   encabezado.responsableNombre || null,
+        responsable_cedula:   encabezado.responsableCedula || null,
+        responsable_celular:  encabezado.responsableCelular || null,
+        responsable_correo:   encabezado.responsableCorreo || null,
+        num_victimas:         encabezado.numVictimas || 0,
+        monto_reembolso_declarado: encabezado.montoReembolsoDeclarado || null,
+      })
+      .eq('id', requerimientoId)
+
+    if (reqError) {
+      return { ok: false, error: `Error al actualizar requerimiento: ${reqError.message}` }
+    }
+
+    // 2. Get current max version to determine next version number
+    const { data: maxVersionData } = await sb
+      .from('cotizaciones')
+      .select('version')
+      .eq('requerimiento_id', requerimientoId)
+      .order('version', { ascending: false })
+      .limit(1)
+
+    const nextVersion = ((maxVersionData?.[0]?.version as number) ?? 0) + 1
+
+    // 3. Calculate totals
+    const subtotalServicios = items
+      .filter(i => !i.esPassthrough)
+      .reduce((sum, i) => sum + i.cantidad * i.precioUnitario, 0)
+
+    // 4. Insert new cotización version
+    const { data: newCot, error: cotError } = await sb
+      .from('cotizaciones')
+      .insert({
+        requerimiento_id:    requerimientoId,
+        version:             nextVersion,
+        estado:              'borrador',
+        subtotal_servicios:  subtotalServicios,
+        total_reembolsos:    0,
+        total_general:       subtotalServicios,
+      })
+      .select('id')
+      .single()
+
+    if (cotError || !newCot) {
+      return { ok: false, error: `Error al crear nueva versión: ${cotError?.message}` }
+    }
+
+    // 5. Insert items
+    if (items.length > 0) {
+      const itemRows = items.map(i => ({
+        cotizacion_id: newCot.id,
+        tarifario_id:  i.tarifarioId || null,
+        codigo_item:   i.codigoItem || null,
+        descripcion:   i.descripcion,
+        categoria:     i.categoria || null,
+        unidad_medida: i.unidadMedida || null,
+        cantidad:      i.cantidad,
+        precio_unitario: i.precioUnitario,
+        es_passthrough: i.esPassthrough,
+        fuente:        i.fuente,
+      }))
+
+      const { error: itemsError } = await sb.from('cotizacion_items').insert(itemRows)
+      if (itemsError) {
+        return { ok: false, error: `Error al guardar ítems: ${itemsError.message}` }
+      }
+    }
+
+    // 6. Register in historial
+    await sb.from('cotizacion_historial').insert({
+      cotizacion_id: newCot.id,
+      tipo_cambio:   'version_creada',
+      descripcion:   `Cotización v${nextVersion} guardada desde el editor`,
+      datos_nuevos:  { items: items.length },
+    })
+
+    return { ok: true, cotizacionId: newCot.id as string }
+  } catch (err) {
+    console.error('[actualizarCotizacion]', err)
+    return { ok: false, error: 'Error inesperado al actualizar la cotización.' }
   }
 }

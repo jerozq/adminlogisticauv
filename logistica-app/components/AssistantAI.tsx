@@ -20,7 +20,7 @@ export function AssistantAI({ contextData }: Props) {
   const [isOpen, setIsOpen] = useState(false)
   const [input, setInput] = useState('')
 
-  const { messages, sendMessage, status, setMessages } = useChat({
+  const { messages, sendMessage, status, setMessages } = useChat(({
     id: 'logistica-assistant',
     transport: {
       toModelMessages: (msgs: { role: string; parts?: { type: string; text?: string }[] }[]) =>
@@ -28,8 +28,8 @@ export function AssistantAI({ contextData }: Props) {
           role: m.role,
           content: getMessageText(m.parts ?? []),
         })),
-    } as Parameters<typeof useChat>[0]['transport'],
-  })
+    },
+  }) as unknown as Parameters<typeof useChat>[0])
 
   const isLoading = status === 'streaming' || status === 'submitted'
 

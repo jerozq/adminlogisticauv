@@ -38,13 +38,13 @@ export async function listarEvidenciasGlobales(): Promise<EvidenciaGlobal[]> {
   }
 
   return (data || []).map((row: Record<string, unknown>) => ({
-    id: row.id,
-    actividad_id: row.actividad_id,
+    id:               row.id as string,
+    actividad_id:     row.actividad_id as string,
     nombre_actividad: (row.requerimientos as { nombre_actividad?: string } | null)?.nombre_actividad || 'Actividad Desconocida',
-    descripcion: row.descripcion,
-    monto: row.monto,
-    pagador: row.pagador,
-    soporte_url: row.soporte_url,
-    created_at: row.created_at,
+    descripcion:      row.descripcion as string,
+    monto:            row.monto as number,
+    pagador:          row.pagador as string,
+    soporte_url:      row.soporte_url as string,
+    created_at:       row.created_at as string,
   }))
 }

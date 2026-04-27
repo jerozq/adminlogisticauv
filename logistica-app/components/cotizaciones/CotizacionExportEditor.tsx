@@ -90,7 +90,7 @@ export function CotizacionExportEditor({ datos }: Props) {
   const [showPreview, setShowPreview] = useState(false)
 
   // Totales reactivos
-  const totals = calcularTotales(items, reembolsos)
+  const totals = calcularTotales(items)
 
   // ---- Edición de ítems ----
   const updateItem = useCallback(

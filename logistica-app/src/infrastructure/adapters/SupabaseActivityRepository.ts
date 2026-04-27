@@ -226,7 +226,7 @@ export class SupabaseActivityRepository implements IActivityRepository {
     // Tabla puede no existir en entornos locales sin migración aplicada
     if (error || !data) return []
 
-    return data
+    return (data as unknown as Record<string, unknown>[])
       .map((row: Record<string, unknown>) => ({
         nombreBeneficiario: (row.nombre_beneficiario as string | null)?.trim() ?? '',
         documentoIdentidad: (row.documento_identidad as string | null)?.trim() ?? '',

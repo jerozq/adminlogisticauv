@@ -323,6 +323,8 @@ export function CotizacionPreview({
       cantidad: 1,
       precioUnitario: sug.precioVenta,
       esPassthrough: false,
+      excluirDeFinanzas: false,
+      ocultarEnCotizacion: false,
       fuente: 'tarifario',
       opcionesTarifario: [],
     }
@@ -342,6 +344,8 @@ export function CotizacionPreview({
       cantidad: 1,
       precioUnitario: 0,
       esPassthrough: false,
+      excluirDeFinanzas: false,
+      ocultarEnCotizacion: false,
       fuente: 'manual',
       opcionesTarifario: [],
     }

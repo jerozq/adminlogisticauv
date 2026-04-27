@@ -70,14 +70,6 @@ function SortIcon({ col, sortKey }: { col: SortKey; sortKey: SortKey }) {
   )
 }
 
-function SortIcon({ col, sortKey }: { col: SortKey; sortKey: SortKey }) {
-  return (
-    <ArrowUpDown
-      className={`size-3 inline ml-1 transition-opacity ${sortKey === col ? 'opacity-100 text-blue-500' : 'opacity-30'}`}
-    />
-  )
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Sub-component: Historial Panel
 // ─────────────────────────────────────────────────────────────────────────────
