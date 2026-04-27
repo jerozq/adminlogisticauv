@@ -5,8 +5,6 @@ import path from 'path'
 import fs from 'fs'
 
 export const runtime = 'nodejs'
-import os from 'os'
-import { execSync } from 'child_process'
 
 // ============================================================
 // Etiquetas del template Word → nombres snake_case uniformes
@@ -178,7 +176,7 @@ export async function POST(req: NextRequest) {
 
   const { requerimiento, items, totals, cotizacion_fecha, nombreArchivo } = body
 
-  const templatePath = path.join(process.cwd(), '..', 'PLANTILLA COTIZACION.docx')
+  const templatePath = path.join(process.cwd(), 'templates', 'PLANTILLA COTIZACION.docx')
 
   if (!fs.existsSync(templatePath)) {
     return NextResponse.json(
@@ -278,47 +276,9 @@ export async function POST(req: NextRequest) {
       compression: 'DEFLATE',
     })
 
-    const body = await req.clone().json().catch(() => ({}))
-    const format = body.format || 'docx'
-    
-    let finalBuf = buf
-    let contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    let ext = 'docx'
-
-    if (format === 'pdf') {
-      
-      const tmpDir = os.tmpdir()
-      const tmpBase = `cotizacion-${requerimiento.numero_requerimiento ?? 'tmp'}-${Date.now()}`
-      const tmpDocx = path.join(tmpDir, `${tmpBase}.docx`)
-      
-      fs.writeFileSync(tmpDocx, buf)
-      
-      try {
-        const paths = [
-          process.env.LIBREOFFICE_PATH,
-          'C:\\Program Files\\LibreOffice\\program\\soffice.exe',
-          'soffice',
-        ].filter(Boolean) as string[]
-        
-        let libreOffice = 'soffice'
-        for (const p of paths) {
-          try {
-            execSync(`"${p}" --version`, { stdio: 'ignore' })
-            libreOffice = p
-            break
-          } catch {}
-        }
-        
-        execSync(`"${libreOffice}" --headless --convert-to pdf "${tmpDocx}" --outdir "${tmpDir}"`, { timeout: 30000 })
-        const tmpPdf = path.join(tmpDir, `${tmpBase}.pdf`)
-        finalBuf = fs.readFileSync(tmpPdf)
-        contentType = 'application/pdf'
-        ext = 'pdf'
-        fs.unlinkSync(tmpPdf)
-      } finally {
-        try { fs.unlinkSync(tmpDocx) } catch {}
-      }
-    }
+    const finalBuf = buf
+    const contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    const ext = 'docx'
 
     const filename = encodeURIComponent(
       nombreArchivo ?? `Cotizacion_${requerimiento.numero_requerimiento ?? 'nueva'}.${ext}`
