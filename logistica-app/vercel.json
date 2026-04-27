@@ -1,11 +1,4 @@
 {
-  "functions": {
-    "middleware": {
-      "maxDuration": 5,
-      "memory": 1024,
-      "runtime": "edge"
-    }
-  },
   "headers": [
     {
       "source": "/(.*)",
