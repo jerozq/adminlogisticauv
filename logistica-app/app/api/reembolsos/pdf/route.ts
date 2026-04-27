@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Reembolso } from '@/src/core/domain/entities/Reembolso'
 import { getPdfGenerator, getActivityRepository } from '@/src/infrastructure/container'
+
+export const runtime = 'nodejs'
 import type { ReembolsoProps } from '@/src/core/domain/entities/Reembolso'
 import { trace } from '@opentelemetry/api'
 

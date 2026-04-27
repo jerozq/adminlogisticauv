@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { makeGetFinancialSummaryWithAudit } from '@/src/infrastructure/container'
+
+export const runtime = 'nodejs'
 import { getFinancialExporter } from '@/src/infrastructure/adapters/FinancialExportAdapter'
 import type { DatosExportacionFinanciero } from '@/src/core/domain/ports/IFinancialExporter'
 import type { GetFinancialSummaryFilters } from '@/src/core/application/use-cases/GetFinancialSummary'

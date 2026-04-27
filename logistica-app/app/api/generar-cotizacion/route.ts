@@ -3,6 +3,8 @@ import Docxtemplater from 'docxtemplater'
 import PizZip from 'pizzip'
 import path from 'path'
 import fs from 'fs'
+
+export const runtime = 'nodejs'
 import os from 'os'
 import { execSync } from 'child_process'
 

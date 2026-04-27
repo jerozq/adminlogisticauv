@@ -66,7 +66,6 @@ function resolveTemplatePath(): string {
     envPath ? path.resolve(process.cwd(), envPath) : null,
     path.resolve(process.cwd(), TEMPLATE_FILENAME),
     path.resolve(process.cwd(), '..', TEMPLATE_FILENAME),
-    path.resolve(__dirname, '..', '..', '..', '..', TEMPLATE_FILENAME),
   ].filter((p): p is string => Boolean(p))
 
   for (const candidate of candidates) {
