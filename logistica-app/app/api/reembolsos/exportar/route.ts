@@ -9,12 +9,25 @@ import { trace } from '@opentelemetry/api'
 const tracer = trace.getTracer('reembolso-exportar')
 
 // ============================================================
-// POST /api/reembolsos/pdf  (mantenido por compatibilidad)
+// POST /api/reembolsos/exportar
 //
-// Alias de /api/reembolsos/exportar. Genera el documento XLSX
-// de un reembolso individual usando la plantilla Excel oficial.
-// Preferir el endpoint /api/reembolsos/exportar para nuevas
-// integraciones.
+// Genera el documento XLSX de un reembolso individual llenando
+// la plantilla Excel oficial con ExcelJS y lo retorna
+// directamente sin necesidad de LibreOffice ni procesos externos.
+//
+// Body JSON esperado:
+// {
+//   reembolsoProps: ReembolsoProps,   // datos del reembolso
+//   actividadId:   string,            // para cargar contexto
+//   expedidoPor?:  string             // nombre del firmante
+// }
+//
+// Respuesta:
+//   200 application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+//       — binario del XLSX listo para descarga
+//   400 — body inválido
+//   404 — actividad no encontrada
+//   500 — error de generación
 // ============================================================
 
 export async function POST(request: NextRequest) {
@@ -49,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generar documento con traza de OTEL
-    const pdf = await tracer.startActiveSpan('generate_documento', async (span) => {
+    const documento = await tracer.startActiveSpan('generate_documento', async (span) => {
       try {
         const result = await getPdfGenerator().generateReembolsoPdf({
           reembolso,
@@ -73,17 +86,17 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    return new NextResponse(pdf.buffer, {
+    return new NextResponse(documento.buffer, {
       status: 200,
       headers: {
-        'Content-Type':        pdf.mimeType,
-        'Content-Disposition': `attachment; filename="${pdf.nombreArchivo}"`,
+        'Content-Type':        documento.mimeType,
+        'Content-Disposition': `attachment; filename="${documento.nombreArchivo}"`,
         'Cache-Control':       'no-store',
       },
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Error desconocido'
-    console.error('[/api/reembolsos/pdf]', message)
+    console.error('[/api/reembolsos/exportar]', message)
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

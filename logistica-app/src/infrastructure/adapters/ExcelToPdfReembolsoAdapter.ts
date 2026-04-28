@@ -1,7 +1,5 @@
 import fs from 'fs'
-import os from 'os'
 import path from 'path'
-import { execSync } from 'child_process'
 import ExcelJS from 'exceljs'
 import type {
   IPdfGenerator,
@@ -14,16 +12,14 @@ import { getLogger } from '@/src/infrastructure/observability/logger'
 // ExcelToPdfReembolsoAdapter
 //
 // Implementa IPdfGenerator usando ExcelJS para rellenar la
-// plantilla XLSX oficial de la UV y LibreOffice headless para
-// convertirla a PDF.
+// plantilla XLSX oficial de la UV y devolverla directamente
+// como buffer sin necesitar ningún proceso externo.
 //
-// Estrategia de conversión:
+// Estrategia de generación:
 //   1. Cargar plantilla desde disco con ExcelJS (sin mutarla).
 //   2. Escribir los datos del reembolso en las celdas exactas
 //      del formato oficial.
-//   3. Guardar el XLSX relleno en un archivo temporal.
-//   4. Invocar LibreOffice headless para convertirlo a PDF.
-//   5. Leer el PDF resultante, limpiar temporales y retornar.
+//   3. Serializar el workbook a buffer XLSX y retornarlo.
 //
 // Celdas mapeadas — comunes (TRANSPORTE e INHUMACIÓN):
 //   B11  Dirección Territorial
@@ -79,65 +75,9 @@ function resolveTemplatePath(): string {
 }
 
 // ---------------------------------------------------------------
-// Búsqueda de LibreOffice en el sistema
+// El adaptador genera directamente el buffer XLSX con ExcelJS.
+// No se requiere LibreOffice ni ningún proceso externo.
 // ---------------------------------------------------------------
-
-/**
- * Candidatos de LibreOffice por plataforma.
- * Se prueban en orden; el primero que responda sin error se usa.
- */
-const LIBREOFFICE_CANDIDATES: string[] = [
-  // Variables de entorno explícitas para contenedores / CI
-  ...(process.env.LIBREOFFICE_PATH ? [process.env.LIBREOFFICE_PATH] : []),
-  // Linux / macOS (en PATH)
-  'libreoffice',
-  'soffice',
-  '/usr/bin/libreoffice',
-  '/usr/bin/soffice',
-  '/usr/local/bin/libreoffice',
-  // macOS (instalación estándar)
-  '/Applications/LibreOffice.app/Contents/MacOS/soffice',
-  // Windows (instalaciones por defecto)
-  'C:\\Program Files\\LibreOffice\\program\\soffice.exe',
-  'C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe',
-]
-
-let _libreOfficePath: string | null = null
-
-function findLibreOffice(): string {
-  if (_libreOfficePath) return _libreOfficePath
-
-  const envPath = process.env.LIBREOFFICE_PATH?.trim()
-  if (envPath) {
-    try {
-      execSync(`"${envPath}" --version`, { stdio: 'pipe', timeout: 5_000 })
-      _libreOfficePath = envPath
-      return envPath
-    } catch {
-      log.warn(
-        { libreOfficePath: envPath },
-        'LIBREOFFICE_PATH inválida; se intentará autodetección de LibreOffice'
-      )
-    }
-  }
-
-  const autoCandidates = LIBREOFFICE_CANDIDATES.filter((c) => c !== envPath)
-  for (const candidate of autoCandidates) {
-    try {
-      execSync(`"${candidate}" --version`, { stdio: 'pipe', timeout: 5_000 })
-      _libreOfficePath = candidate
-      return candidate
-    } catch {
-      // No disponible en esta ruta, probar siguiente
-    }
-  }
-
-  throw new Error(
-    'LibreOffice no está instalado o no se encontró en el PATH. ' +
-    'Instálalo desde https://www.libreoffice.org/ o define la variable ' +
-    'de entorno LIBREOFFICE_PATH con la ruta al ejecutable soffice.exe.'
-  )
-}
 
 // ---------------------------------------------------------------
 // Utilidades de fecha
@@ -152,13 +92,6 @@ function formatDate(isoDate: string): string {
   const [year, month, day] = isoDate.split('-')
   if (!year || !month || !day) return isoDate
   return `${day.padStart(2, '0')}/${month.padStart(2, '0')}/${year}`
-}
-
-function toArrayBuffer(buf: Buffer): ArrayBuffer {
-  return buf.buffer.slice(
-    buf.byteOffset,
-    buf.byteOffset + buf.byteLength,
-  ) as ArrayBuffer
 }
 
 // ---------------------------------------------------------------
@@ -209,64 +142,32 @@ export class ExcelToPdfReembolsoAdapter implements IPdfGenerator {
     ws.getCell('D56').value = reembolso.valor
     ws.getCell('D58').value = reembolso.valorEnLetras()
 
-    // ── Paso 4: Serializar XLSX relleno a archivo temporal ───────
-    const tmpDir  = os.tmpdir()
-    const tmpBase = `reembolso-${reembolso.tipo}-${reembolso.documento}-${Date.now()}`
-    const tmpXlsx = path.join(tmpDir, `${tmpBase}.xlsx`)
-
-    await workbook.xlsx.writeFile(tmpXlsx)
-
+    // ── Paso 4: Serializar XLSX directamente a buffer ────────────
     const nombreArchivo =
-      `REEMBOLSO-${reembolso.tipo}-${reembolso.documento}.pdf`
+      `REEMBOLSO-${reembolso.tipo}-${reembolso.documento}.xlsx`
 
-    try {
-      // ── Paso 5: Convertir a PDF con LibreOffice ───────────────
-      const libreOffice = findLibreOffice()
+    const xlsxBuffer = await workbook.xlsx.writeBuffer()
 
-      execSync(
-        `"${libreOffice}" --headless --convert-to pdf "${tmpXlsx}" --outdir "${tmpDir}"`,
-        { timeout: 30_000, stdio: 'pipe' }
-      )
+    log.info(
+      {
+        actividadId:   actividad.id,
+        requerimiento: actividad.numeroRequerimiento,
+        reembolsoId:   reembolso.id,
+        tipo:          reembolso.tipo,
+        beneficiario:  reembolso.personaNombre,
+        documento:     reembolso.documento,
+        monto:         reembolso.valor,
+        valorEnLetras: reembolso.valorEnLetras(),
+        rutaOrigen:    reembolso.rutaOrigen,
+        rutaDestino:   reembolso.rutaDestino,
+      },
+      'Documento XLSX de reembolso generado exitosamente'
+    )
 
-      const tmpPdf = path.join(tmpDir, `${tmpBase}.pdf`)
-
-      if (!fs.existsSync(tmpPdf)) {
-        throw new Error(
-          'LibreOffice no generó el archivo PDF esperado. ' +
-          `Ruta buscada: ${tmpPdf}`
-        )
-      }
-
-      const pdfNodeBuffer = fs.readFileSync(tmpPdf)
-      const pdfArrayBuffer = toArrayBuffer(pdfNodeBuffer)
-
-      // ── Paso 6: Log de éxito con Pino ────────────────────────
-      log.info(
-        {
-          actividadId:   actividad.id,
-          requerimiento: actividad.numeroRequerimiento,
-          reembolsoId:   reembolso.id,
-          tipo:          reembolso.tipo,
-          beneficiario:  reembolso.personaNombre,
-          documento:     reembolso.documento,
-          monto:         reembolso.valor,
-          valorEnLetras: reembolso.valorEnLetras(),
-          rutaOrigen:    reembolso.rutaOrigen,
-          rutaDestino:   reembolso.rutaDestino,
-        },
-        'PDF de reembolso generado exitosamente'
-      )
-
-      return {
-        buffer:        pdfArrayBuffer,
-        nombreArchivo,
-        mimeType:      'application/pdf',
-      }
-    } finally {
-      // Limpiar archivos temporales siempre, incluso si hay error
-      for (const tmpFile of [tmpXlsx, path.join(tmpDir, `${tmpBase}.pdf`)]) {
-        try { fs.unlinkSync(tmpFile) } catch { /* ignorar si no existe */ }
-      }
+    return {
+      buffer:        xlsxBuffer as ArrayBuffer,
+      nombreArchivo,
+      mimeType:      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     }
   }
 }

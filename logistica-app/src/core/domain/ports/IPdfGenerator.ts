@@ -40,14 +40,14 @@ export interface DatosReembolsoPdf {
   expedidoPor: string
 }
 
-/** Resultado binario de la generación del PDF. */
+/** Resultado binario de la generación del documento. */
 export interface PdfGenerado {
-  /** Contenido binario del archivo PDF. */
+  /** Contenido binario del archivo. */
   buffer: ArrayBuffer
-  /** Nombre sugerido para la descarga, ej. "REEMBOLSO-TRANSPORTE-1234567.pdf". */
+  /** Nombre sugerido para la descarga, ej. "REEMBOLSO-TRANSPORTE-1234567.xlsx". */
   nombreArchivo: string
   /** Tipo MIME del documento generado. */
-  mimeType: 'application/pdf'
+  mimeType: string
 }
 
 export interface IPdfGenerator {

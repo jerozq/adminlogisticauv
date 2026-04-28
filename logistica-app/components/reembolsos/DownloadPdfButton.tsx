@@ -37,7 +37,7 @@ export function DownloadPdfButton({ costo, actividad, pagadorName }: DownloadPdf
         }
       }
 
-      const res = await fetch('/api/reembolsos/pdf', {
+      const res = await fetch('/api/reembolsos/exportar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -45,14 +45,14 @@ export function DownloadPdfButton({ costo, actividad, pagadorName }: DownloadPdf
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}))
-        throw new Error(errData.error || 'Error al generar el PDF')
+        throw new Error(errData.error || 'Error al generar el documento')
       }
 
-      // Download file
+      // Descargar documento
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
-      const filename = res.headers.get('Content-Disposition')?.match(/filename="([^"]+)"/)?.[1] || `Reembolso_${costo.id}.pdf`
+      const filename = res.headers.get('Content-Disposition')?.match(/filename="([^"]+)"/)? .[1] || `Reembolso_${costo.id}.xlsx`
       
       a.href = url
       a.download = filename
@@ -72,18 +72,18 @@ export function DownloadPdfButton({ costo, actividad, pagadorName }: DownloadPdf
       <button
         onClick={handleDownload}
         disabled={isPending}
-        title="Generar PDF Oficial"
+        title="Descargar Excel Oficial"
         className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-100 hover:bg-violet-100 text-zinc-600 hover:text-violet-700 text-xs font-bold uppercase rounded-lg transition-colors disabled:opacity-50"
       >
         {isPending ? (
           <>
             <Loader2 className="size-3.5 animate-spin" strokeWidth={2} />
-            <span>Generando...</span>
+            <span>Exportando...</span>
           </>
         ) : (
           <>
             <FileDown className="size-3.5" strokeWidth={2} />
-            <span>PDF Oficial</span>
+            <span>Excel Oficial</span>
           </>
         )}
       </button>
