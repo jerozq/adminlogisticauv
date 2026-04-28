@@ -52,7 +52,7 @@ export function DownloadPdfButton({ costo, actividad, pagadorName }: DownloadPdf
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
-      const filename = res.headers.get('Content-Disposition')?.match(/filename="([^"]+)"/)? .[1] || `Reembolso_${costo.id}.xlsx`
+      const filename = res.headers.get('Content-Disposition')?.match(/filename="([^"]+)"/)?.[1] ?? `Reembolso_${costo.id}.xlsx`
       
       a.href = url
       a.download = filename
