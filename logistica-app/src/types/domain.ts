@@ -44,8 +44,11 @@ export const TRANSICIONES_VALIDAS: Record<EstadoActividad, EstadoActividad[]> = 
 // Partes / Pagadores
 // ---------------------------------------------------------------
 
-/** Quién desembolsó un gasto operativo en campo. */
-export type Pagador = 'jero' | 'socio' | 'caja_proyecto' | 'anticipo_uv'
+/**
+ * Quién desembolsó un gasto operativo en campo.
+ * Puede ser el UUID de un socio o 'pago_unidad' (fondos del proyecto/UV).
+ */
+export type Pagador = string
 
 /** Modo de registro del costo. */
 export type ModoRegistroCosto = 'por_item' | 'delegado'

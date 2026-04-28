@@ -276,7 +276,7 @@ export async function agregarCosto(
     itemId: form.item_id,
     descripcion: form.descripcion,
     monto: form.monto,
-    pagador: form.pagador as 'jero' | 'socio' | 'caja_proyecto' | 'anticipo_uv',
+    pagador: form.pagador,
     soporteUrl: form.soporte_url,
     modoRegistro: form.modo_registro ?? 'por_item',
     cantidad: form.cantidad ?? 1,
