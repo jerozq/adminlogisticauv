@@ -11,6 +11,7 @@ import {
   Eye,
   Printer,
   ArrowLeft,
+  Receipt,
 } from 'lucide-react'
 import type { DatosExportacion } from '@/actions/exportar-cotizacion'
 import { CotizacionDocPreview } from './CotizacionDocPreview'
@@ -86,6 +87,7 @@ export function CotizacionExportEditor({ datos }: Props) {
   )
 
   const [downloading, setDownloading] = useState(false)
+  const [downloadingCC, setDownloadingCC] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPreview, setShowPreview] = useState(false)
 
@@ -107,7 +109,7 @@ export function CotizacionExportEditor({ datos }: Props) {
     []
   )
 
-  // ---- Descarga ----
+  // ---- Descarga cotización ----
   async function handleDescargar() {
     setDownloading(true)
     setError(null)
@@ -156,6 +158,57 @@ export function CotizacionExportEditor({ datos }: Props) {
       setError(e instanceof Error ? e.message : 'Error desconocido')
     } finally {
       setDownloading(false)
+    }
+  }
+
+  // ---- Descarga cuenta de cobro ----
+  async function handleDescargarCuentaCobro() {
+    setDownloadingCC(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/generar-cuenta-cobro', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requerimiento_id: requerimiento.id,
+          requerimiento: {
+            fecha_inicio:         requerimiento.fecha_inicio,
+            fecha_fin:            requerimiento.fecha_fin,
+            numero_requerimiento: requerimiento.numero_requerimiento,
+            nombre_actividad:     requerimiento.nombre_actividad,
+            municipio:            requerimiento.municipio,
+            departamento:         requerimiento.departamento,
+            responsable_nombre:   requerimiento.responsable_nombre,
+          },
+          items: items.map((i) => ({
+            descripcion:     i.descripcion,
+            cantidad:        i.cantidad,
+            precio_unitario: i.precio_unitario,
+          })),
+          gran_total: totals.gran_total,
+          cotizacion_fecha: datos.cotizacion?.created_at ?? null,
+          nombreArchivo: `CuentaCobro_${requerimiento.numero_requerimiento ?? requerimiento.nombre_actividad}.docx`,
+        }),
+      })
+
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        throw new Error(json.error ?? `Error ${res.status}`)
+      }
+
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      const disp = res.headers.get('Content-Disposition') ?? ''
+      const fnMatch = disp.match(/filename[*]?=(?:UTF-8'')?["']?([^"';\n]+)/)
+      a.download = fnMatch ? decodeURIComponent(fnMatch[1]) : 'CuentaCobro.docx'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error desconocido')
+    } finally {
+      setDownloadingCC(false)
     }
   }
 
@@ -517,6 +570,25 @@ export function CotizacionExportEditor({ datos }: Props) {
             <Download className="size-4" />
           )}
           {downloading ? 'Generando…' : 'Descargar .docx'}
+        </button>
+
+        {/* Botón cuenta de cobro */}
+        <button
+          onClick={handleDescargarCuentaCobro}
+          disabled={downloadingCC || items.length === 0 || totals.gran_total === 0}
+          className="w-full flex items-center justify-center gap-2.5 py-3.5 text-sm
+                     font-bold text-white rounded-2xl
+                     bg-gradient-to-r from-emerald-600 to-teal-600
+                     hover:from-emerald-500 hover:to-teal-500
+                     disabled:opacity-50 transition-all shadow-md shadow-emerald-900/20
+                     active:scale-[0.98] border border-emerald-400/20"
+        >
+          {downloadingCC ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Receipt className="size-4" />
+          )}
+          {downloadingCC ? 'Generando cuenta de cobro…' : 'Generar Cuenta de Cobro'}
         </button>
       </div>
     </div>

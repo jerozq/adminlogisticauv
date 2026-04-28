@@ -5,7 +5,8 @@ const nextConfig = {
   skipMiddlewareUrlNormalize: true,
   // Incluir archivos estáticos no-JS en el bundle serverless de Vercel
   outputFileTracingIncludes: {
-    '/api/generar-cotizacion': ['./templates/**'],
+    '/api/generar-cotizacion':    ['./templates/**'],
+    '/api/generar-cuenta-cobro':  ['./templates/**'],
   },
   turbopack: {
     root: require('path').resolve(__dirname, '..'),
