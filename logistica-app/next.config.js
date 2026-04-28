@@ -3,6 +3,10 @@ const nextConfig = {
   // output: 'export' eliminado — incompatible con middleware
   skipTrailingSlashRedirect: true,
   skipMiddlewareUrlNormalize: true,
+  // Incluir archivos estáticos no-JS en el bundle serverless de Vercel
+  outputFileTracingIncludes: {
+    '/api/generar-cotizacion': ['./templates/**'],
+  },
   turbopack: {
     root: require('path').resolve(__dirname, '..'),
   },
