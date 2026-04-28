@@ -323,7 +323,7 @@ export function FormCostoAvanzado({
               Variaciones de precio
             </p>
             {totalPorItem > 0 && (
-              <span className="text-xs font-bold text-blue-600">
+              <span className="text-xs font-bold text-white/70">
                 Total: {fmt(totalPorItem)}
               </span>
             )}
@@ -396,8 +396,8 @@ export function FormCostoAvanzado({
 
           <button
             onClick={agregarFila}
-            className="flex items-center gap-1.5 text-xs font-semibold text-blue-600
-                       hover:text-blue-700 transition-colors"
+            className="flex items-center gap-1.5 text-xs font-semibold text-white/50
+                       hover:text-white/80 transition-colors"
           >
             <Plus strokeWidth={2} className="size-3.5" />
             Agregar variación
@@ -408,7 +408,7 @@ export function FormCostoAvanzado({
       {/* ── Modo Delegado: campo total único ────────── */}
       {modo === 'delegado' && (
         <div>
-          <label className="text-xs font-semibold text-zinc-500 mb-1.5 block">
+          <label className="text-xs font-semibold text-white/40 mb-1.5 block">
             Costo de Ejecución Total (COP)
           </label>
           <input
@@ -424,7 +424,7 @@ export function FormCostoAvanzado({
             inputMode="numeric"
           />
           {parseFloat(montoTotal) > 0 && (
-            <p className="mt-1 text-xs font-bold text-zinc-500">
+            <p className="mt-1 text-xs font-bold text-white/50">
               {fmt(parseFloat(montoTotal))}
             </p>
           )}
@@ -492,7 +492,7 @@ export function FormCostoAvanzado({
 
       {/* ── Error ────────────────────────────────────── */}
       {errorMsg && (
-        <div className="flex items-center gap-2 bg-red-50 text-red-700 text-sm px-4 py-3 rounded-xl ring-1 ring-red-200">
+        <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 text-red-300 text-sm px-4 py-3 rounded-xl">
           <AlertTriangle strokeWidth={1.5} className="size-4 shrink-0" />
           <span className="text-xs">{errorMsg}</span>
           <button onClick={() => setErrorMsg(null)} className="ml-auto">

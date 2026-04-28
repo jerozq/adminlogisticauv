@@ -84,20 +84,18 @@ export function TabCostosReales({
 
   return (
     <div className="space-y-4">
-      {/* Resumen de liquidación en tiempo real */}
-      <ResumenLiquidacion
-        costos={costos}
-        ingresoTotal={ingresoTotal}
-        itemsCotizados={itemsCotizados}
-        participaciones={participaciones}
-      />
-
-      {/* Gestión de socios */}
-      <div className="mt-4 glass-panel rounded-3xl p-5">
-        <GestionSocios
-          actividadId={actividadId}
-          initialParticipaciones={participaciones ?? []}
-        />
+      {/* Cabecera de sección: título + botón top-right */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-bold text-white/70 uppercase tracking-wider">Costos Reales</h3>
+        <button
+          onClick={() => setShowForm((v) => !v)}
+          className="flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold text-white
+                     bg-white/10 hover:bg-white/20 border border-white/15
+                     backdrop-blur-md shadow-lg transition-all"
+        >
+          <ReceiptText strokeWidth={1.5} size={15} />
+          Agregar costo
+        </button>
       </div>
 
       {/* Error global */}
@@ -111,17 +109,20 @@ export function TabCostosReales({
         </div>
       )}
 
-      {/* Acciones principales */}
-      <div className="flex">
-        <button
-          onClick={() => setShowForm((v) => !v)}
-          className="flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-medium text-white
-                     bg-white/10 hover:bg-white/20 border border-white/10
-                     backdrop-blur-md shadow-lg transition-all"
-        >
-          <ReceiptText strokeWidth={1.5} size={16} />
-          Registrar Gasto
-        </button>
+      {/* Resumen de liquidación en tiempo real */}
+      <ResumenLiquidacion
+        costos={costos}
+        ingresoTotal={ingresoTotal}
+        itemsCotizados={itemsCotizados}
+        participaciones={participaciones}
+      />
+
+      {/* Gestión de socios */}
+      <div className="glass-panel rounded-3xl p-5">
+        <GestionSocios
+          actividadId={actividadId}
+          initialParticipaciones={participaciones ?? []}
+        />
       </div>
 
       {/* Formulario avanzado */}
@@ -183,7 +184,7 @@ export function TabCostosReales({
                 <div className="flex items-start gap-3">
                   <div className="flex-1 min-w-0">
                     {/* Nombre */}
-                    <p className="text-sm font-semibold text-zinc-900 truncate">
+                    <p className="text-sm font-semibold text-white/90 truncate">
                       {costo.concepto
                         ? `${costo.cotizacion_items?.descripcion ?? costo.descripcion ?? 'Gasto'} — ${costo.concepto}`
                         : costo.cotizacion_items?.descripcion ?? costo.descripcion ?? 'Gasto sin descripción'}
@@ -259,12 +260,12 @@ export function TabCostosReales({
 
                   {/* Monto + delete */}
                   <div className="text-right shrink-0">
-                    <p className="text-base font-extrabold text-zinc-900">{fmt(costo.monto)}</p>
+                    <p className="text-base font-extrabold text-white/90">{fmt(costo.monto)}</p>
                     <button
                       onClick={() => handleDelete(costo.id)}
                       disabled={isDeleting}
-                      className="mt-1 p-1.5 text-zinc-300 hover:text-red-500 rounded-lg
-                                 hover:bg-red-50 transition-colors disabled:opacity-50"
+                      className="mt-1 p-1.5 text-white/30 hover:text-red-400 rounded-lg
+                                 hover:bg-red-500/10 transition-colors disabled:opacity-50"
                       title="Eliminar gasto"
                     >
                       {isDeleting ? (

@@ -64,8 +64,10 @@ export function ResumenLiquidacion({ costos, ingresoTotal, itemsCotizados, parti
 
   if (ingresoTotal === 0 && costos.length === 0) {
     return (
-      <div className="text-center py-6 text-sm text-zinc-400 bg-zinc-50 rounded-2xl ring-1 ring-zinc-200">
-        Agrega gastos para ver la liquidacion estimada
+      <div className="text-center py-6 text-sm text-white/40
+                      bg-white/[0.03] backdrop-blur-[16px] border border-white/10
+                      rounded-2xl">
+        Agrega gastos para ver la liquidación estimada
       </div>
     )
   }
@@ -73,45 +75,48 @@ export function ResumenLiquidacion({ costos, ingresoTotal, itemsCotizados, parti
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl p-5 transition-all hover:bg-white/10">
+        {/* 1. Resumen de Gastos */}
+        <div className="bg-white/[0.03] backdrop-blur-[16px] border border-white/10 rounded-2xl shadow-xl p-5 transition-all hover:bg-white/10">
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-400">Lo que entró</span>
-              <TrendingUp className="size-5 text-emerald-500" />
-            </div>
-            <div>
-              <p className="text-xl font-black font-mono text-emerald-500">
-                {fmt(ingresoTotal)}
-              </p>
-              <p className="text-[10px] text-zinc-400 mt-0.5 font-mono">Total cotizado</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl p-5 transition-all hover:bg-white/10">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-400">Lo que salió</span>
+              <span className="text-[11px] font-bold uppercase tracking-widest text-white/40">Resumen de Gastos</span>
               <TrendingDown className="size-5 text-rose-400" />
             </div>
             <div>
               <p className="text-xl font-black font-mono text-rose-400">
                 {fmt(gastos_totales)}
               </p>
-              <p className="text-[10px] text-zinc-400 mt-0.5 font-mono">Costos reales</p>
+              <p className="text-[10px] text-white/40 mt-0.5 font-mono">Costos reales</p>
             </div>
           </div>
         </div>
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-xl p-5 transition-all hover:bg-white/10">
+        {/* 2. Balance Actual */}
+        <div className="bg-white/[0.03] backdrop-blur-[16px] border border-white/10 rounded-2xl shadow-xl p-5 transition-all hover:bg-white/10">
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-400">Utilidad Neta</span>
-              <DollarSign className="size-5 text-blue-500" />
+              <span className="text-[11px] font-bold uppercase tracking-widest text-white/40">Balance Actual</span>
+              <DollarSign className="size-5 text-blue-400" />
             </div>
             <div>
-              <p className={`text-xl font-black font-mono ${utilidad_neta >= 0 ? 'text-blue-500' : 'text-rose-400'}`}>
+              <p className={`text-xl font-black font-mono ${utilidad_neta >= 0 ? 'text-blue-400' : 'text-rose-400'}`}>
                 {fmt(utilidad_neta)}
               </p>
-              <p className="text-[10px] text-zinc-400 mt-0.5 font-mono">{utilidad_neta >= 0 ? 'Ganancia operativa' : 'Pérdida operativa'}</p>
+              <p className="text-[10px] text-white/40 mt-0.5 font-mono">{utilidad_neta >= 0 ? 'Ganancia operativa' : 'Pérdida operativa'}</p>
+            </div>
+          </div>
+        </div>
+        {/* 3. Lo que entró */}
+        <div className="bg-white/[0.03] backdrop-blur-[16px] border border-white/10 rounded-2xl shadow-xl p-5 transition-all hover:bg-white/10">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-white/40">Lo que entró</span>
+              <TrendingUp className="size-5 text-emerald-500" />
+            </div>
+            <div>
+              <p className="text-xl font-black font-mono text-emerald-500">
+                {fmt(ingresoTotal)}
+              </p>
+              <p className="text-[10px] text-white/40 mt-0.5 font-mono">Total cotizado</p>
             </div>
           </div>
         </div>
