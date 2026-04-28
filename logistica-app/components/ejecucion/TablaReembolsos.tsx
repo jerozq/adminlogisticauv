@@ -987,11 +987,11 @@ export function TablaReembolsos({ actividadId, initialReembolsos }: Props) {
     showToast('Formato guardado correctamente.', 'success')
   }
 
-  // ── Exportar PDF individual ───────────────────────────────────
+  // ── Exportar documento individual ────────────────────────────
   async function handleExportOne(reembolso: ReembolsoProps) {
     setExportingId(reembolso.id)
     try {
-      const response = await fetch('/api/reembolsos/pdf', {
+      const response = await fetch('/api/reembolsos/exportar', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
@@ -1010,15 +1010,17 @@ export function TablaReembolsos({ actividadId, initialReembolsos }: Props) {
       const url  = URL.createObjectURL(blob)
       const a    = document.createElement('a')
       a.href     = url
-      a.download = `FORMATO-${reembolso.tipo}-${reembolso.documento}.pdf`
+      const disposition = response.headers.get('Content-Disposition')
+      a.download = disposition?.match(/filename="([^"]+)"/)?.[1]
+        ?? `FORMATO-${reembolso.tipo}-${reembolso.documento}.xlsx`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
 
-      showToast('PDF generado exitosamente.', 'success')
+      showToast('Documento generado exitosamente.', 'success')
     } catch {
-      showToast('No se pudo generar el PDF.', 'error')
+      showToast('No se pudo generar el documento.', 'error')
     } finally {
       setExportingId(null)
     }
