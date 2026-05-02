@@ -174,6 +174,8 @@ export function CotizacionExportEditor({ datos }: Props) {
           requerimiento: {
             fecha_inicio:         requerimiento.fecha_inicio,
             fecha_fin:            requerimiento.fecha_fin,
+            hora_inicio:          requerimiento.hora_inicio,
+            hora_fin:             requerimiento.hora_fin,
             numero_requerimiento: requerimiento.numero_requerimiento,
             nombre_actividad:     requerimiento.nombre_actividad,
             municipio:            requerimiento.municipio,

@@ -18,6 +18,7 @@ export interface DatosExportacion {
     fecha_inicio: string | null
     fecha_fin: string | null
     hora_inicio: string | null
+    hora_fin: string | null
     responsable_nombre: string | null
   }
   cotizacion: {
@@ -60,7 +61,7 @@ export async function cargarDatosExportacion(
   const { data: req, error: errReq } = await sb
     .from('requerimientos')
     .select(
-      'id, numero_requerimiento, nombre_actividad, municipio, departamento, fecha_inicio, fecha_fin, hora_inicio, responsable_nombre'
+      'id, numero_requerimiento, nombre_actividad, municipio, departamento, fecha_inicio, fecha_fin, hora_inicio, hora_fin, responsable_nombre'
     )
     .eq('id', requerimientoId)
     .single()
@@ -141,6 +142,7 @@ export async function cargarDatosExportacion(
       fecha_inicio: req.fecha_inicio,
       fecha_fin: req.fecha_fin,
       hora_inicio: req.hora_inicio,
+      hora_fin: req.hora_fin,
       responsable_nombre: req.responsable_nombre,
     },
     cotizacion,

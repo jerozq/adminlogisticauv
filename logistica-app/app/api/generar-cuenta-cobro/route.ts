@@ -85,6 +85,25 @@ function fmtDateDoc(s: string | null | undefined): string {
   return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
+function fmtTimeDoc(s: string | null | undefined): string {
+  if (!s) return ''
+  const raw = s.trim()
+
+  // HH:mm o HH:mm:ss
+  const simple = raw.match(/^(\d{2}):(\d{2})(?::\d{2})?$/)
+  if (simple) return `${simple[1]}:${simple[2]}`
+
+  // ISO u otros formatos parseables por Date
+  const d = new Date(raw)
+  if (!Number.isNaN(d.getTime())) {
+    return d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', hour12: false })
+  }
+
+  // Fallback: intenta extraer HH:mm dentro del string
+  const embedded = raw.match(/(\d{2}:\d{2})/)
+  return embedded?.[1] ?? raw
+}
+
 // ─── Tipos del body ───────────────────────────────────────────────────────────
 interface ItemCC {
   descripcion: string
@@ -97,6 +116,8 @@ interface GenerarCuentaCobroBody {
   requerimiento: {
     fecha_inicio: string | null
     fecha_fin: string | null
+    hora_inicio: string | null
+    hora_fin: string | null
     numero_requerimiento: string | null
     nombre_actividad: string
     municipio: string | null
@@ -211,10 +232,14 @@ export async function POST(req: NextRequest) {
       .map((i) => `${i.descripcion} (${i.cantidad} × ${fmt(i.precio_unitario)})`)
       .join('; ')
 
+    const fechaCotizacion = fmtDateDoc(cotizacion_fecha ?? new Date().toISOString())
+
     const docData = {
       // Cuenta de cobro
       numero_cuenta:   String(numero_cuenta),
-      fecha:           fmtDateDoc(cotizacion_fecha ?? new Date().toISOString()),
+      fecha:           fechaCotizacion,
+      cotizacion_fecha: fechaCotizacion,
+      fecha_de_cotizacion: fechaCotizacion,
       año:             new Date().getFullYear().toString(),
 
       // Actividad
@@ -224,10 +249,13 @@ export async function POST(req: NextRequest) {
       departamento:         requerimiento.departamento ?? '',
       fecha_inicio:         fmtDateDoc(requerimiento.fecha_inicio),
       fecha_fin:            fmtDateDoc(requerimiento.fecha_fin),
+      hora_inicio:          fmtTimeDoc(requerimiento.hora_inicio),
+      hora_fin:             fmtTimeDoc(requerimiento.hora_fin),
       responsable:          requerimiento.responsable_nombre ?? '',
 
       // Valor
       valor_numeros:       fmt(gran_total),
+      gran_total:          fmt(gran_total),
       valor_letras,
 
       // Tabla de ítems (loop {{#items}} … {{/items}})
