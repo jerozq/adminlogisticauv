@@ -28,9 +28,9 @@ export default function RootLayout({
     <html
       lang="es"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col" suppressHydrationWarning>
+      <body className="min-h-full flex flex-col bg-[#0a0b0f] text-slate-200" suppressHydrationWarning>
         <ThemeProvider>
           <AppShell>{children}</AppShell>
         </ThemeProvider>

@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+html {
+  color-scheme: dark;
+}
+
 @theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -109,8 +113,9 @@
   --chart-6: #0e7490;   /* cyan-700 */
 }
 
-:root[data-theme='dark'] {
-  --background: #0d0f12;
+/* Force permanent dark mode — these vars always override the light block above */
+:root {
+  --background: #0a0b0f;
   --foreground: #e4e4e7;   /* zinc-200 */
 
   --background-raw: 13 15 18;
@@ -191,7 +196,7 @@
 }
 
 body {
-  background-color: var(--background);
+  background-color: #0a0b0f;
   /* Mesh gradient — cuatro puntos de color para que el backdrop-blur
      de las tarjetas tenga suficiente textura y el cristal se note     */
   background-image:

@@ -26,21 +26,21 @@ function Field({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="flex items-center gap-1 text-xs font-medium text-zinc-500 uppercase tracking-wide">
+      <label className="flex items-center gap-1 text-xs font-medium text-slate-400 uppercase tracking-wide">
         {icon}
         {label}
       </label>
       {readonly ? (
-        <p className="rounded-lg bg-zinc-50 px-3 py-2 text-sm text-zinc-800 ring-1 ring-zinc-200 min-h-9">
-          {value || <span className="text-zinc-400 italic">No especificado</span>}
+        <p className="rounded-lg bg-white/5 px-3 py-2 text-sm text-slate-200 border border-white/10 min-h-9">
+          {value || <span className="text-slate-500 italic">No especificado</span>}
         </p>
       ) : (
         <input
           type={type}
           value={value}
           onChange={e => onChange?.(e.target.value)}
-          className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-800 outline-none
-                     focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+          className="rounded-lg border border-white/20 bg-black/20 px-3 py-2 text-sm text-slate-100 outline-none
+                     focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all"
         />
       )}
     </div>
@@ -54,24 +54,24 @@ export function RequerimientoHeader({ encabezado, onChange, readonly }: Requerim
   return (
     <div className="flex flex-col gap-6">
       {/* Número de requerimiento */}
-      <div className="rounded-2xl bg-blue-50 p-4 ring-1 ring-blue-100">
-        <p className="text-xs font-semibold uppercase tracking-widest text-blue-500 mb-1">
+      <div className="rounded-2xl bg-blue-500/10 p-4 border border-blue-500/20">
+        <p className="text-xs font-semibold uppercase tracking-widest text-blue-400 mb-1">
           Número de requerimiento
         </p>
         {readonly ? (
-          <h2 className="text-base font-bold text-blue-900 leading-snug">
-            {encabezado.numeroRequerimiento || <span className="text-blue-400 italic font-normal">Sin número</span>}
+          <h2 className="text-base font-bold text-blue-300 leading-snug">
+            {encabezado.numeroRequerimiento || <span className="text-blue-500 italic font-normal">Sin número</span>}
           </h2>
         ) : (
           <input
             value={encabezado.numeroRequerimiento}
             onChange={e => set('numeroRequerimiento')(e.target.value)}
             placeholder="Ej: 629PE"
-            className="w-full bg-transparent text-base font-bold text-blue-900 outline-none border-b border-blue-300 pb-1 focus:border-blue-500 placeholder:font-normal placeholder:text-blue-400"
+            className="w-full bg-transparent text-base font-bold text-blue-300 outline-none border-b border-blue-500/40 pb-1 focus:border-blue-400 placeholder:font-normal placeholder:text-blue-500"
           />
         )}
         {encabezado.nombreActividad && (
-          <p className="mt-1 text-xs text-blue-600">{encabezado.nombreActividad}</p>
+          <p className="mt-1 text-xs text-blue-400">{encabezado.nombreActividad}</p>
         )}
       </div>
 

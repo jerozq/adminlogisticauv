@@ -127,17 +127,17 @@ export default function GestionSocios({
   // ── Indicador de suma ────────────────────────────────────────
 
   const sumaColor = sumaOk
-    ? 'text-green-600 dark:text-green-400'
+    ? 'text-green-400'
     : sumaPorcentajes > 100
-      ? 'text-red-600 dark:text-red-400'
-      : 'text-amber-600 dark:text-amber-400'
+      ? 'text-red-400'
+      : 'text-amber-400'
 
   // ── Render ───────────────────────────────────────────────────
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+        <h3 className="text-base font-semibold text-slate-100">
           Distribución de socios
         </h3>
         <span className={`text-sm font-medium tabular-nums ${sumaColor}`}>
@@ -154,7 +154,7 @@ export default function GestionSocios({
             className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-3 space-y-2"
           >
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+              <span className="text-sm font-medium text-slate-200">
                 {socio.nombreSocio}
               </span>
               <button
@@ -169,7 +169,7 @@ export default function GestionSocios({
 
             {/* Porcentaje */}
             <div className="flex items-center gap-3">
-              <label className="text-xs text-gray-500 w-24 shrink-0">% Participación</label>
+              <label className="text-xs text-slate-400 w-24 shrink-0">% Participación</label>
               <input
                 type="range"
                 min={0}
@@ -209,14 +209,14 @@ export default function GestionSocios({
                 step={0.5}
                 value={socio.porcentaje}
                 onChange={(e) => actualizarCampo(idx, 'porcentaje', Number(e.target.value))}
-                className="w-20 rounded border border-gray-300 dark:border-gray-600 px-2 py-1 text-sm text-right bg-white dark:bg-gray-700 dark:text-gray-100"
+                className="w-20 rounded border border-white/20 px-2 py-1 text-sm text-right bg-black/20 text-slate-100"
               />
               <span className="text-xs text-gray-400">%</span>
             </div>
 
             {/* Aporte de capital */}
             <div className="flex items-center gap-3">
-              <label className="text-xs text-gray-500 w-24 shrink-0">Aporte ($)</label>
+              <label className="text-xs text-slate-400 w-24 shrink-0">Aporte ($)</label>
               <input
                 type="number"
                 min={0}
@@ -224,7 +224,7 @@ export default function GestionSocios({
                 value={socio.montoAportado}
                 onChange={(e) => actualizarCampo(idx, 'montoAportado', Number(e.target.value))}
                 onBlur={(e) => handleBlurMonto(socio.socioId, Number(e.target.value))}
-                className="w-36 rounded border border-gray-300 dark:border-gray-600 px-2 py-1 text-sm text-right bg-white dark:bg-gray-700 dark:text-gray-100"
+                className="w-36 rounded border border-white/20 px-2 py-1 text-sm text-right bg-black/20 text-slate-100"
                 placeholder="0"
               />
             </div>
@@ -233,8 +233,8 @@ export default function GestionSocios({
       </div>
 
       {/* Formulario para agregar socio */}
-      <details className="rounded-lg border border-dashed border-gray-300 dark:border-gray-600 p-3">
-        <summary className="cursor-pointer text-sm text-blue-600 dark:text-blue-400 select-none">
+      <details className="rounded-lg border border-dashed border-white/20 p-3">
+        <summary className="cursor-pointer text-sm text-blue-400 select-none">
           Agregar socio
         </summary>
         <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
@@ -243,14 +243,14 @@ export default function GestionSocios({
             placeholder="ID del socio (ej: ana)"
             value={nuevoSocioId}
             onChange={(e) => setNuevoSocioId(e.target.value)}
-            className="col-span-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
+            className="col-span-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-400"
           />
           <input
             type="text"
             placeholder="Nombre del Socio (ej: Ana)"
             value={nuevoNombre}
             onChange={(e) => setNuevoNombre(e.target.value)}
-            className="col-span-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
+            className="col-span-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-400"
           />
           <div className="flex items-center gap-2">
             <input
@@ -260,7 +260,7 @@ export default function GestionSocios({
               step={0.5}
               value={nuevoPorcentaje === 0 ? '' : nuevoPorcentaje}
               onChange={(e) => setNuevoPorcentaje(e.target.value === '' ? 0 : Number(e.target.value))}
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-400"
               placeholder="% Participación"
             />
           </div>
@@ -271,7 +271,7 @@ export default function GestionSocios({
               step={1000}
               value={nuevoMonto === 0 ? '' : nuevoMonto}
               onChange={(e) => setNuevoMonto(e.target.value === '' ? 0 : Number(e.target.value))}
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-slate-400"
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-400"
               placeholder="Aporte inicial ($)"
             />
           </div>
@@ -287,7 +287,7 @@ export default function GestionSocios({
 
       {/* Mensajes de error / éxito */}
       {error && (
-        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        <p className="text-sm text-red-400">{error}</p>
       )}
       {success && (
         <p className="text-sm text-green-600 dark:text-green-400">

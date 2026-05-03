@@ -70,21 +70,21 @@ export function FileUploader({ onParsed }: FileUploaderProps) {
           'flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed',
           'px-6 py-12 text-center cursor-pointer transition-colors',
           loading
-            ? 'border-blue-300 bg-blue-50 cursor-wait'
+            ? 'border-blue-500/40 bg-blue-500/10 cursor-wait'
             : dragging
-            ? 'border-blue-500 bg-blue-50'
-            : 'border-zinc-300 bg-zinc-50 hover:border-blue-400 hover:bg-blue-50',
+            ? 'border-blue-500 bg-blue-500/10'
+            : 'border-white/20 bg-white/5 hover:border-blue-400/60 hover:bg-blue-500/5',
         ].join(' ')}
       >
         {loading ? (
           <>
             <Loader2 strokeWidth={1.5} className="size-10 animate-spin text-blue-500" />
-            <p className="text-sm font-medium text-blue-700">Procesando {fileName}…</p>
+            <p className="text-sm font-medium text-blue-400">Procesando {fileName}…</p>
             <p className="text-xs text-blue-500">Analizando con IA · extrayendo ítems, encabezado y reembolsos</p>
           </>
         ) : (
           <>
-            <div className="flex size-16 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-zinc-200">
+            <div className="flex size-16 items-center justify-center rounded-full bg-white/10 border border-white/20">
               {fileName ? (
                 <FileSpreadsheet strokeWidth={1.5} className="size-8 text-green-500" />
               ) : (
@@ -92,10 +92,10 @@ export function FileUploader({ onParsed }: FileUploaderProps) {
               )}
             </div>
             <div>
-              <p className="text-sm font-semibold text-zinc-800">
+              <p className="text-sm font-semibold text-slate-200">
                 {fileName ?? 'Arrastra tu Excel aquí'}
               </p>
-              <p className="mt-1 text-xs text-zinc-500">
+              <p className="mt-1 text-xs text-slate-400">
                 o{' '}
                 <span className="font-medium text-blue-600 underline underline-offset-2">
                   haz clic para buscar
@@ -112,8 +112,8 @@ export function FileUploader({ onParsed }: FileUploaderProps) {
         <div className={[
           'flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium ring-1',
           usedAI
-            ? 'bg-violet-50 text-violet-700 ring-violet-200'
-            : 'bg-zinc-50 text-zinc-600 ring-zinc-200',
+            ? 'bg-violet-500/10 text-violet-300 border border-violet-500/20'
+            : 'bg-white/5 text-slate-400 border border-white/10',
         ].join(' ')}>
           <span>{usedAI ? '✦ Procesado con IA (Gemini)' : '⚙ Procesado con parser de coordenadas'}</span>
         </div>
@@ -121,7 +121,7 @@ export function FileUploader({ onParsed }: FileUploaderProps) {
 
       {/* Error */}
       {error && (
-        <div className="flex items-start gap-3 rounded-xl bg-red-50 p-4 text-sm text-red-700 ring-1 ring-red-200">
+        <div className="flex items-start gap-3 rounded-xl bg-red-500/10 p-4 text-sm text-red-400 border border-red-500/20">
           <AlertCircle strokeWidth={1.5} className="mt-0.5 size-4 shrink-0" />
           <p>{error}</p>
         </div>

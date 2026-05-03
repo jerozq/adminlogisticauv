@@ -177,13 +177,12 @@ export default async function Home(props: {
                 'shadow-[0_4px_30px_rgba(0,0,0,0.08),0_1px_0_0_rgba(255,255,255,0.80)_inset]',
                 // Hover
                 'hover:bg-white/20',
-                'hover:shadow-[0_8px_40px_rgba(0,0,0,0.12),0_1px_0_0_rgba(255,255,255,0.90)_inset]',
+                'hover:shadow-[0_8px_40px_rgba(0,0,0,0.40),0_1px_0_0_rgba(255,255,255,0.08)_inset]',
                 'hover:scale-[1.025] hover:-translate-y-0.5',
                 'transition-all duration-200 ease-out',
-                // Dark mode
-                'dark:bg-white/5 dark:border-white/10',
-                'dark:hover:bg-white/10',
-                'dark:shadow-[0_4px_30px_rgba(0,0,0,0.40),0_1px_0_0_rgba(255,255,255,0.08)_inset]',
+                'bg-white/5 border-white/10',
+                'hover:bg-white/10',
+                'shadow-[0_4px_30px_rgba(0,0,0,0.40),0_1px_0_0_rgba(255,255,255,0.08)_inset]',
               ].join(' ')}
             >
               {/* Gradiente de acento por módulo */}
@@ -195,7 +194,7 @@ export default async function Home(props: {
               <div className="relative z-10 flex flex-col gap-5 h-full">
                 {/* Icono + Badge */}
                 <div className="flex items-start justify-between">
-                  <div className="grid place-items-center size-14 rounded-2xl bg-white/20 dark:bg-white/8 border border-white/30 dark:border-white/12 backdrop-blur-sm shadow-sm">
+                  <div className="grid place-items-center size-14 rounded-2xl bg-white/8 border border-white/12 backdrop-blur-sm shadow-sm">
                     <Icon strokeWidth={1.5} className={`size-7 ${iconColor}`} />
                   </div>
                   {badge && (
@@ -237,9 +236,9 @@ export default async function Home(props: {
             className={[
               'group flex items-center justify-between',
               'rounded-2xl px-6 py-4',
-              'backdrop-blur-xl bg-white/8 dark:bg-white/4',
-              'border border-white/15 dark:border-white/8',
-              'hover:bg-white/15 dark:hover:bg-white/8',
+              'backdrop-blur-xl bg-white/4',
+              'border border-white/8',
+              'hover:bg-white/8',
               'shadow-[0_2px_16px_rgba(0,0,0,0.06)]',
               'transition-all duration-150',
             ].join(' ')}

@@ -379,13 +379,13 @@ export function CotizacionEditor({
             <thead>
               <tr className="text-left text-xs [color:var(--text-muted)] [background:var(--surface)] border-b [border-color:var(--surface-border)]">
                 <th className="px-3 py-2.5 font-semibold w-9">#</th>
-                <th className="px-3 py-2.5 font-semibold min-w-[220px]">Descripción</th>
+                <th className="px-3 py-2.5 font-semibold min-w-[200px]">Descripción</th>
                 <th className="px-3 py-2.5 font-semibold min-w-[130px]">Categoría</th>
-                <th className="px-3 py-2.5 font-semibold min-w-[100px]">Unidad</th>
-                <th className="px-3 py-2.5 font-semibold w-24 text-right">Cantidad</th>
-                <th className="px-3 py-2.5 font-semibold w-32 text-right">Precio Unit.</th>
-                <th className="px-3 py-2.5 font-semibold w-32 text-right">Total</th>
-                <th className="px-3 py-2.5 font-semibold w-20 text-center">Pass-through</th>
+                <th className="px-3 py-2.5 font-semibold min-w-[90px]">Unidad</th>
+                <th className="px-3 py-2.5 font-semibold min-w-[80px] text-right whitespace-nowrap">Cantidad</th>
+                <th className="px-3 py-2.5 font-semibold min-w-[140px] text-right whitespace-nowrap">Precio Unit.</th>
+                <th className="px-3 py-2.5 font-semibold min-w-[120px] text-right whitespace-nowrap">Total</th>
+                <th className="px-3 py-2.5 font-semibold min-w-[90px] text-center whitespace-nowrap">Pass-through</th>
                 <th className="px-3 py-2.5 w-10"></th>
               </tr>
             </thead>
@@ -447,7 +447,7 @@ export function CotizacionEditor({
                   </td>
 
                   {/* Precio unitario */}
-                  <td className="px-2 py-1.5">
+                  <td className="px-2 py-1.5 min-w-[140px]">
                     <input
                       type="number"
                       min={0}
@@ -456,7 +456,7 @@ export function CotizacionEditor({
                       onChange={(e) =>
                         setItem(idx, { precioUnitario: parseFloat(e.target.value) || 0 })
                       }
-                      className="w-full rounded-lg border border-transparent bg-transparent px-2 py-1 text-sm text-right [color:var(--text-primary)] hover:[border-color:var(--surface-border)] focus:[border-color:var(--input-ring)] focus:[background:var(--input-bg)] focus:outline-none transition-colors"
+                      className="w-full min-w-[110px] rounded-lg border border-transparent bg-transparent px-2 py-1 text-sm text-right [color:var(--text-primary)] hover:[border-color:var(--surface-border)] focus:[border-color:var(--input-ring)] focus:[background:var(--input-bg)] focus:outline-none transition-colors"
                     />
                   </td>
 

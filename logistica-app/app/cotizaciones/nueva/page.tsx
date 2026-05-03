@@ -143,7 +143,7 @@ export default function NuevaCotizacionPage() {
   return (
     <div className="min-h-screen bg-zinc-50">
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-zinc-200 bg-white/80 backdrop-blur-sm">
+      <header className="sticky top-0 z-10 border-b border-white/10 bg-black/60 backdrop-blur-sm">
         <div className="mx-auto flex max-w-2xl flex-col gap-3 px-4 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-base font-bold text-zinc-900">Nueva cotización</h1>
@@ -290,13 +290,13 @@ export default function NuevaCotizacionPage() {
 
       {/* Footer de navegación fijo */}
       {step !== 1 && step !== 4 && (
-        <div className="fixed bottom-0 left-0 right-0 border-t border-zinc-200 bg-white/90 backdrop-blur-sm">
+        <div className="fixed bottom-0 left-0 right-0 border-t border-white/10 bg-black/80 backdrop-blur-sm">
           <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 py-3">
             <button
               onClick={() => setStep((step - 1) as WizardStep)}
               disabled={saving}
-              className="flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-4 py-2.5
-                         text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 transition-colors"
+              className="flex items-center gap-1.5 rounded-xl border border-white/20 bg-white/5 px-4 py-2.5
+                         text-sm font-medium text-slate-300 hover:bg-white/10 disabled:opacity-50 transition-colors"
             >
               <ChevronLeft className="size-4" />
               Atrás

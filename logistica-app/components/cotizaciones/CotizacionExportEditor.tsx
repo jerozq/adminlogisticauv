@@ -223,10 +223,10 @@ export function CotizacionExportEditor({ datos }: Props) {
     return (
       <div className="space-y-4">
         {/* Barra de acciones de previsualización */}
-        <div className="no-print flex items-center justify-between gap-3 bg-white rounded-2xl ring-1 ring-zinc-200 px-4 py-3">
+        <div className="no-print flex items-center justify-between gap-3 bg-white/5 rounded-2xl border border-white/10 px-4 py-3">
           <button
             onClick={() => setShowPreview(false)}
-            className="flex items-center gap-1.5 text-sm font-semibold text-zinc-600 hover:text-zinc-900"
+            className="flex items-center gap-1.5 text-sm font-semibold text-slate-300 hover:text-slate-100"
           >
             <ArrowLeft className="size-4" />
             Volver a editar
@@ -258,7 +258,7 @@ export function CotizacionExportEditor({ datos }: Props) {
         </div>
 
         {error && (
-          <div className="no-print flex items-center gap-2 bg-red-50 text-red-700 text-sm px-4 py-3 rounded-xl ring-1 ring-red-200">
+          <div className="flex items-start gap-2 text-xs text-red-400 bg-red-500/10 rounded-xl px-3 py-2.5 ring-1 ring-red-500/20">
             <AlertTriangle className="size-4 shrink-0" />
             <span>{error}</span>
           </div>
@@ -278,17 +278,17 @@ export function CotizacionExportEditor({ datos }: Props) {
   return (
     <div className="space-y-6">
       {/* ---- Info actividad ---- */}
-      <div className="bg-white rounded-2xl ring-1 ring-zinc-200 p-4">
-        <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
+      <div className="bg-white/5 rounded-2xl border border-white/10 p-4">
+        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
           Actividad
         </p>
-        <p className="font-bold text-zinc-900 text-base">
+        <p className="font-bold text-slate-100 text-base">
           {[
             requerimiento.numero_requerimiento ?? null,
             requerimiento.municipio ?? null,
           ].filter(Boolean).join(' — ') || 'Sin identificador'}
         </p>
-        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm text-zinc-500">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-sm text-slate-400">
           {requerimiento.municipio && (
             <span>
               {requerimiento.municipio}
@@ -309,7 +309,7 @@ export function CotizacionExportEditor({ datos }: Props) {
       </div>
 
       {/* ---- Aviso de edición ---- */}
-      <div className="flex items-start gap-2 text-xs text-blue-700 bg-blue-50 rounded-xl px-3 py-2.5">
+      <div className="flex items-start gap-2 text-xs text-blue-400 bg-blue-500/10 rounded-xl px-3 py-2.5">
         <PenLine className="size-3.5 shrink-0 mt-0.5" />
         <span>
           Puedes editar descripción, cantidad y precio unitario antes de descargar.
@@ -318,15 +318,15 @@ export function CotizacionExportEditor({ datos }: Props) {
       </div>
 
       {/* ---- Tabla de ítems editable ---- */}
-      <div className="bg-white rounded-2xl ring-1 ring-zinc-200 overflow-hidden">
-        <div className="px-4 py-3 bg-zinc-50 border-b border-zinc-100">
-          <h2 className="text-sm font-bold text-zinc-700">
+      <div className="bg-white/5 rounded-2xl border border-white/10 overflow-hidden">
+        <div className="px-4 py-3 bg-white/5 border-b border-white/10">
+          <h2 className="text-sm font-bold text-slate-200">
             Ítems de cotización ({items.length})
           </h2>
         </div>
 
         {items.length === 0 ? (
-          <div className="py-10 text-center text-sm text-zinc-400">
+          <div className="py-10 text-center text-sm text-slate-500">
             Sin ítems en la cotización
           </div>
         ) : (
@@ -348,8 +348,8 @@ export function CotizacionExportEditor({ datos }: Props) {
                     <tr
                       key={item.id}
                       className={`group transition-colors ${
-                        item.es_passthrough ? 'bg-amber-50/60' : 'bg-white'
-                      } hover:bg-zinc-50`}
+                        item.es_passthrough ? 'bg-amber-500/10' : ''
+                      } hover:bg-white/5`}
                     >
                       {/* Descripción */}
                       <td className="px-4 py-2">
@@ -361,7 +361,7 @@ export function CotizacionExportEditor({ datos }: Props) {
                           }
                           className="w-full min-w-[180px] border-b border-transparent
                                      focus:border-blue-400 focus:outline-none bg-transparent
-                                     text-zinc-900 text-sm py-0.5"
+                                     text-slate-100 text-sm py-0.5"
                         />
                         {item.es_passthrough && (
                           <span className="text-[10px] text-amber-600 font-semibold block">
@@ -380,7 +380,7 @@ export function CotizacionExportEditor({ datos }: Props) {
                           }
                           className="w-16 text-right border-b border-transparent
                                      focus:border-blue-400 focus:outline-none bg-transparent
-                                     text-zinc-900 text-sm py-0.5"
+                                     text-slate-100 text-sm py-0.5"
                           min="0"
                           step="1"
                         />
@@ -396,14 +396,14 @@ export function CotizacionExportEditor({ datos }: Props) {
                           }
                           className="w-28 text-right border-b border-transparent
                                      focus:border-blue-400 focus:outline-none bg-transparent
-                                     text-zinc-900 text-sm py-0.5"
+                                     text-slate-100 text-sm py-0.5"
                           min="0"
                           step="1000"
                         />
                       </td>
 
                       {/* Total */}
-                      <td className="px-3 py-2 text-right font-semibold text-zinc-900 whitespace-nowrap">
+                      <td className="px-3 py-2 text-right font-semibold text-slate-100 whitespace-nowrap">
                         {fmtCOP(total)}
                       </td>
 
@@ -428,19 +428,19 @@ export function CotizacionExportEditor({ datos }: Props) {
 
       {/* ---- Reembolsos ---- */}
       {reembolsos.length > 0 && (
-        <div className="bg-white rounded-2xl ring-1 ring-zinc-200 overflow-hidden">
-          <div className="px-4 py-3 bg-zinc-50 border-b border-zinc-100">
-            <h2 className="text-sm font-bold text-zinc-700">
+        <div className="bg-white/5 rounded-2xl border border-white/10 overflow-hidden">
+          <div className="px-4 py-3 bg-white/5 border-b border-white/10">
+            <h2 className="text-sm font-bold text-slate-200">
               Reembolsos beneficiarios ({reembolsos.length})
             </h2>
-            <p className="text-xs text-zinc-400 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5">
               Dinero de terceros · No editable aquí
             </p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-zinc-400 uppercase tracking-wider border-b border-zinc-100">
+                <tr className="text-left text-xs text-slate-400 uppercase tracking-wider border-b border-white/10">
                   <th className="px-4 py-2.5 font-semibold">Beneficiario</th>
                   <th className="px-3 py-2.5 font-semibold text-right">Transporte</th>
                   <th className="px-3 py-2.5 font-semibold text-right">Alojamiento</th>
@@ -449,23 +449,23 @@ export function CotizacionExportEditor({ datos }: Props) {
                   <th className="px-3 py-2.5 font-semibold text-right">Total</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-50">
+              <tbody className="divide-y divide-white/5">
                 {reembolsos.map((r) => (
-                  <tr key={r.id} className="bg-white">
-                    <td className="px-4 py-2 text-zinc-700">{r.nombre_beneficiario}</td>
-                    <td className="px-3 py-2 text-right text-zinc-600">
+                  <tr key={r.id} className="hover:bg-white/5">
+                    <td className="px-4 py-2 text-slate-300">{r.nombre_beneficiario}</td>
+                    <td className="px-3 py-2 text-right text-slate-400">
                       {r.valor_transporte > 0 ? fmtCOP(r.valor_transporte) : '—'}
                     </td>
-                    <td className="px-3 py-2 text-right text-zinc-600">
+                    <td className="px-3 py-2 text-right text-slate-400">
                       {r.valor_alojamiento > 0 ? fmtCOP(r.valor_alojamiento) : '—'}
                     </td>
-                    <td className="px-3 py-2 text-right text-zinc-600">
+                    <td className="px-3 py-2 text-right text-slate-400">
                       {r.valor_alimentacion > 0 ? fmtCOP(r.valor_alimentacion) : '—'}
                     </td>
-                    <td className="px-3 py-2 text-right text-zinc-600">
+                    <td className="px-3 py-2 text-right text-slate-400">
                       {r.valor_otros > 0 ? fmtCOP(r.valor_otros) : '—'}
                     </td>
-                    <td className="px-3 py-2 text-right font-semibold text-zinc-900">
+                    <td className="px-3 py-2 text-right font-semibold text-slate-100">
                       {fmtCOP(r.total_reembolso)}
                     </td>
                   </tr>
@@ -477,10 +477,10 @@ export function CotizacionExportEditor({ datos }: Props) {
       )}
 
       {/* ---- Resumen de totales ---- */}
-      <div className="bg-white rounded-2xl ring-1 ring-zinc-200 overflow-hidden">
-        <div className="px-4 py-3 bg-zinc-50 border-b border-zinc-100">
-          <h2 className="text-sm font-bold text-zinc-700">Resumen de totales</h2>
-          <p className="text-xs text-zinc-400 mt-0.5">
+      <div className="bg-white/5 rounded-2xl border border-white/10 overflow-hidden">
+        <div className="px-4 py-3 bg-white/5 border-b border-white/10">
+          <h2 className="text-sm font-bold text-slate-200">Resumen de totales</h2>
+          <p className="text-xs text-slate-400 mt-0.5">
             Se inyectarán en la plantilla Word con estos valores
           </p>
         </div>
@@ -504,7 +504,7 @@ export function CotizacionExportEditor({ datos }: Props) {
                 placeholder="{{total_inhumaciones}}"
                 value={totals.total_inhumaciones}
               />
-              <div className="flex justify-between text-sm text-zinc-500 pl-1">
+              <div className="flex justify-between text-sm text-slate-400 pl-1">
                 <span>↳ Cantidad inhumaciones</span>
                 <span className="font-mono text-xs text-zinc-400">
                   {'{{cantidad_inhumaciones}}'} = {totals.cantidad_inhumaciones}
@@ -518,17 +518,17 @@ export function CotizacionExportEditor({ datos }: Props) {
             </>
           )}
 
-          <div className="h-px bg-zinc-100 my-2" />
+          <div className="h-px bg-white/10 my-2" />
 
           {/* Gran Total */}
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-extrabold text-zinc-900">Gran Total</p>
-              <p className="text-[10px] font-mono text-zinc-400">
+              <p className="text-sm font-extrabold text-slate-100">Gran Total</p>
+              <p className="text-[10px] font-mono text-slate-400">
                 {'{{gran_total}}'}
               </p>
             </div>
-            <p className="text-xl font-extrabold text-green-700">
+            <p className="text-xl font-extrabold text-emerald-400">
               {fmtCOP(totals.gran_total)}
             </p>
           </div>
@@ -537,7 +537,7 @@ export function CotizacionExportEditor({ datos }: Props) {
 
       {/* ---- Error ---- */}
       {error && (
-        <div className="flex items-center gap-2 bg-red-50 text-red-700 text-sm px-4 py-3 rounded-xl ring-1 ring-red-200">
+        <div className="flex items-center gap-2 bg-red-500/10 text-red-400 text-sm px-4 py-3 rounded-xl ring-1 ring-red-500/20">
           <AlertTriangle className="size-4 shrink-0" />
           <span>{error}</span>
         </div>
@@ -563,8 +563,8 @@ export function CotizacionExportEditor({ datos }: Props) {
           onClick={handleDescargar}
           disabled={downloading || items.length === 0}
           className="w-full flex items-center justify-center gap-2 py-3 text-sm
-                     font-semibold text-zinc-600 bg-zinc-100 rounded-2xl hover:bg-zinc-200
-                     disabled:opacity-50 transition-colors active:scale-[0.98]"
+                     font-semibold text-slate-300 bg-white/5 rounded-2xl hover:bg-white/10
+                     border border-white/10 disabled:opacity-50 transition-colors active:scale-[0.98]"
         >
           {downloading ? (
             <Loader2 className="size-4 animate-spin" />
@@ -612,10 +612,10 @@ function TotalRow({
   return (
     <div className="flex items-start justify-between gap-2">
       <div className="min-w-0">
-        <p className="text-sm text-zinc-700">{label}</p>
-        <p className="text-[10px] font-mono text-zinc-400 truncate">{placeholder}</p>
+        <p className="text-sm text-slate-300">{label}</p>
+        <p className="text-[10px] font-mono text-slate-500 truncate">{placeholder}</p>
       </div>
-      <p className="text-sm font-semibold text-zinc-900 whitespace-nowrap shrink-0">
+      <p className="text-sm font-semibold text-slate-100 whitespace-nowrap shrink-0">
         {fmtCOP(value)}
       </p>
     </div>

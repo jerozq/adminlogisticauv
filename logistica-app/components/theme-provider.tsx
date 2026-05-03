@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 
-type Theme = 'light' | 'dark'
+type Theme = 'dark'
 
 interface ThemeContextValue {
   theme: Theme
@@ -10,7 +10,7 @@ interface ThemeContextValue {
 }
 
 const ThemeContext = React.createContext<ThemeContextValue>({
-  theme: 'light',
+  theme: 'dark',
   setTheme: () => {},
 })
 
@@ -19,25 +19,8 @@ export function useTheme() {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = React.useState<Theme>('light')
-
-  React.useEffect(() => {
-    const stored = localStorage.getItem('theme') as Theme | null
-    if (stored === 'dark' || stored === 'light') {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setThemeState(stored)
-      document.documentElement.setAttribute('data-theme', stored)
-    }
-  }, [])
-
-  const setTheme = React.useCallback((newTheme: Theme) => {
-    setThemeState(newTheme)
-    localStorage.setItem('theme', newTheme)
-    document.documentElement.setAttribute('data-theme', newTheme)
-  }, [])
-
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <ThemeContext.Provider value={{ theme: 'dark', setTheme: () => {} }}>
       {children}
     </ThemeContext.Provider>
   )

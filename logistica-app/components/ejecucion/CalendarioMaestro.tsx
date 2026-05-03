@@ -84,15 +84,15 @@ export function CalendarioMaestro({ actividades }: { actividades: ActividadCalen
 
   if (totalItems === 0) {
     return (
-      <div className="rounded-2xl p-10 text-center bg-white/60 backdrop-blur-xl border border-white/40 shadow-sm">
-        <p className="text-sm font-semibold text-slate-700">No hay ítems de cronograma para mostrar.</p>
-        <p className="text-xs text-slate-500 mt-1">Genera o completa cronogramas para verlos en el Calendario Maestro.</p>
+      <div className="rounded-2xl p-10 text-center bg-white/5 backdrop-blur-xl border border-white/10 shadow-sm">
+        <p className="text-sm font-semibold text-slate-300">No hay ítems de cronograma para mostrar.</p>
+        <p className="text-xs text-slate-400 mt-1">Genera o completa cronogramas para verlos en el Calendario Maestro.</p>
       </div>
     )
   }
 
   return (
-    <div className="rounded-3xl p-3 md:p-4 bg-white/60 backdrop-blur-xl border border-white/40 shadow-sm calendar-master-wrapper">
+    <div className="rounded-3xl p-3 md:p-4 bg-white/5 backdrop-blur-xl border border-white/10 shadow-sm calendar-master-wrapper">
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
         locale={esLocale}

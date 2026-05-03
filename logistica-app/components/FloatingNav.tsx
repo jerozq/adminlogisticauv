@@ -3,19 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import {
-  Activity,
-  Landmark,
-  ReceiptText,
-  BookOpen,
-  Home,
-  FileUp,
-  ChevronDown,
-  X,
-  LogOut,
-  User,
+import { Activity, Landmark, ReceiptText, BookOpen, Home, FileUp, ChevronDown, X, LogOut, User,
 } from 'lucide-react'
-import { ThemeToggle } from '@/components/ThemeToggle'
 import { createClient } from '@/utils/supabase/client'
 import { signOut } from '@/actions/auth'
 
@@ -103,12 +92,11 @@ export function FloatingNav() {
           'group flex items-center gap-2 px-4 py-2 rounded-full',
           'backdrop-blur-2xl',
           open
-            ? 'bg-white/25 dark:bg-white/12 border-white/40 dark:border-white/20'
-            : 'bg-white/15 dark:bg-white/8 border-white/25 dark:border-white/12',
+            ? 'bg-white/12 border-white/20'
+            : 'bg-white/8 border-white/12',
           'border',
-          'shadow-[0_4px_24px_rgba(0,0,0,0.10),0_1px_0_0_rgba(255,255,255,0.80)_inset]',
-          'dark:shadow-[0_4px_24px_rgba(0,0,0,0.40),0_1px_0_0_rgba(255,255,255,0.08)_inset]',
-          'hover:bg-white/25 dark:hover:bg-white/14',
+          'shadow-[0_4px_24px_rgba(0,0,0,0.40),0_1px_0_0_rgba(255,255,255,0.08)_inset]',
+          'hover:bg-white/14',
           'transition-all duration-200 ease-out',
           open ? 'scale-[1.02]' : 'scale-100',
         ].join(' ')}
@@ -133,10 +121,9 @@ export function FloatingNav() {
             'mt-2 w-80 sm:w-96',
             'rounded-3xl overflow-hidden',
             'backdrop-blur-3xl',
-            'bg-white/95 dark:bg-slate-950/95',
-            'border border-white/20 dark:border-slate-700/50',
-            'shadow-[0_8px_32px_rgba(0,0,0,0.12),0_1px_0_0_rgba(255,255,255,0.85)_inset]',
-            'dark:shadow-[0_8px_32px_rgba(0,0,0,0.50),0_1px_0_0_rgba(255,255,255,0.10)_inset]',
+            'bg-slate-950/95',
+            'border border-slate-700/50',
+            'shadow-[0_8px_32px_rgba(0,0,0,0.50),0_1px_0_0_rgba(255,255,255,0.10)_inset]',
             // Animación de entrada
             'animate-in fade-in slide-in-from-top-2 duration-150',
           ].join(' ')}
@@ -152,8 +139,8 @@ export function FloatingNav() {
                   className={[
                     'flex items-center gap-2.5 p-2.5 rounded-2xl text-sm transition-all duration-150',
                     isActive
-                      ? 'bg-white/40 dark:bg-white/12 [color:var(--text-primary)] font-bold shadow-[0_2px_8px_rgba(0,0,0,0.04)]'
-                      : '[color:var(--text-secondary)] hover:bg-white/30 dark:hover:bg-white/8 hover:[color:var(--text-primary)] font-medium',
+                      ? 'bg-white/12 [color:var(--text-primary)] font-bold shadow-[0_2px_8px_rgba(0,0,0,0.04)]'
+                      : '[color:var(--text-secondary)] hover:bg-white/8 hover:[color:var(--text-primary)] font-medium',
                   ].join(' ')}
                 >
                   <Icon strokeWidth={isActive ? 2 : 1.5} className="size-4 shrink-0" />
@@ -167,10 +154,10 @@ export function FloatingNav() {
           </div>
 
           {/* Footer del Menú (Perfil y Controles) */}
-          <div className="border-t border-white/20 dark:border-white/10 p-3 bg-white/5 dark:bg-black/10 flex flex-col gap-3">
+          <div className="border-t border-white/10 p-3 bg-black/10 flex flex-col gap-3">
             {/* Info del usuario */}
             <div className="flex items-center gap-2 overflow-hidden px-1">
-              <div className="grid place-items-center size-7 rounded-full bg-white/30 dark:bg-white/10 shrink-0 shadow-inner">
+              <div className="grid place-items-center size-7 rounded-full bg-white/10 shrink-0 shadow-inner">
                 <User strokeWidth={1.5} className="size-3.5 [color:var(--text-primary)]" />
               </div>
               <span className="text-xs font-medium truncate [color:var(--text-secondary)]">
@@ -178,19 +165,12 @@ export function FloatingNav() {
               </span>
             </div>
 
-            {/* Tema y Cerrar Sesión */}
-            <div className="flex items-center justify-between gap-2 px-1">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold uppercase tracking-widest [color:var(--text-muted)]">
-                  Tema
-                </span>
-                <ThemeToggle />
-              </div>
-
+            {/* Cerrar Sesión */}
+            <div className="flex items-center justify-end gap-2 px-1">
               <form action={signOut}>
                 <button
                   type="submit"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-red-400 bg-red-500/10 hover:bg-red-500/20 transition-colors"
                 >
                   <LogOut strokeWidth={2} className="size-3.5 shrink-0" />
                   Salir

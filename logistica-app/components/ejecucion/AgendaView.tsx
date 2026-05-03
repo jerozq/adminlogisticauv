@@ -38,12 +38,12 @@ const CATEGORY_ICONS: Record<string, React.ComponentType<{ className?: string }>
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  'Logística': 'bg-blue-100 text-blue-700 ring-blue-200/50 dark:bg-blue-900/30 dark:text-blue-300',
-  'Alimentación': 'bg-amber-100 text-amber-700 ring-amber-200/50 dark:bg-amber-900/30 dark:text-amber-300',
-  'Materiales': 'bg-emerald-100 text-emerald-700 ring-emerald-200/50 dark:bg-emerald-900/30 dark:text-emerald-300',
-  'Alojamiento': 'bg-purple-100 text-purple-700 ring-purple-200/50 dark:bg-purple-900/30 dark:text-purple-300',
-  'Transporte': 'bg-rose-100 text-rose-700 ring-rose-200/50 dark:bg-rose-900/30 dark:text-rose-300',
-  'Otro': 'bg-zinc-100 text-zinc-600 ring-zinc-200/50 dark:bg-white/10 dark:text-zinc-400',
+  'Logística': 'bg-blue-900/30 text-blue-300 ring-blue-500/20',
+  'Alimentación': 'bg-amber-900/30 text-amber-300 ring-amber-500/20',
+  'Materiales': 'bg-emerald-900/30 text-emerald-300 ring-emerald-500/20',
+  'Alojamiento': 'bg-purple-900/30 text-purple-300 ring-purple-500/20',
+  'Transporte': 'bg-rose-900/30 text-rose-300 ring-rose-500/20',
+  'Otro': 'bg-white/10 text-zinc-400 ring-white/10',
 }
 
 function parseCategoryFromDesc(desc: string): { cat: string; cleanDesc: string } {
@@ -273,7 +273,7 @@ export function AgendaView({
           <p className="text-[10px] [color:var(--text-muted)] font-bold uppercase tracking-wider mt-0.5 flex items-center gap-2">
             Línea de tiempo inteligente · {hitos.length} hitos
             {isMockMode && (
-              <span className="px-1.5 py-0.5 rounded-md bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/30 text-[9px] tracking-widest">
+              <span className="px-1.5 py-0.5 rounded-md bg-orange-500/20 text-orange-400 border border-orange-500/30 text-[9px] tracking-widest">
                 MOCK MODE
               </span>
             )}
@@ -312,7 +312,7 @@ export function AgendaView({
           <div key={group.date} className="relative">
             {/* Encabezado del día */}
             <div className="sticky top-16 z-20 mb-6 -ml-2">
-              <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full backdrop-blur-2xl bg-white/10 dark:bg-white/5 border border-white/20 shadow-xl">
+              <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full backdrop-blur-2xl bg-white/5 border border-white/20 shadow-xl">
                 <span className="size-5 rounded-full bg-blue-600 text-[10px] font-black text-white flex items-center justify-center">
                   {group.dayNum}
                 </span>
@@ -323,7 +323,7 @@ export function AgendaView({
             </div>
 
             {/* Línea vertical */}
-            <div className="absolute left-3 top-8 bottom-0 w-[1px] bg-white/10 dark:bg-white/5 z-0" />
+            <div className="absolute left-3 top-8 bottom-0 w-[1px] bg-white/5 z-0" />
 
             <div className="space-y-4 ml-3 pl-8 relative z-10">
               {group.items.map((item) => {
@@ -335,7 +335,7 @@ export function AgendaView({
                 return (
                   <div key={`${item.fecha}-${item.hora}-${globalIdx}`} className="group relative">
                     {/* Nodo de la línea */}
-                    <div className="absolute -left-[37px] top-4 size-4 rounded-full border-2 border-background bg-zinc-200 dark:bg-zinc-800 shadow-[0_0_10px_rgba(255,255,255,0.1)] group-hover:scale-125 transition-transform" />
+                    <div className="absolute -left-[37px] top-4 size-4 rounded-full border-2 border-background bg-zinc-800 shadow-[0_0_10px_rgba(255,255,255,0.1)] group-hover:scale-125 transition-transform" />
 
                     <div className="surface-card rounded-2xl p-4 flex items-center justify-between gap-4 group/card hover:shadow-lg transition-all border border-transparent hover:[border-color:var(--surface-border)]">
                       <div className="flex items-start gap-4">

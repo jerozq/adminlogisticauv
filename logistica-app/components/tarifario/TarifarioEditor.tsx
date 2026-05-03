@@ -42,12 +42,12 @@ const fmtDate = (iso: string) =>
   }).format(new Date(iso))
 
 const CATEGORIA_COLOR: Record<string, string> = {
-  'Alimentación': 'bg-orange-500/10 text-orange-700 dark:text-orange-300 border border-orange-500/20',
-  'Logística':    'bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/20',
-  'Transporte':   'bg-violet-500/10 text-violet-700 dark:text-violet-300 border border-violet-500/20',
-  'Alojamiento':  'bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-500/20',
-  'Personal':     'bg-pink-500/10 text-pink-700 dark:text-pink-300 border border-pink-500/20',
-  'Otro':         'bg-zinc-500/10 text-zinc-600 dark:text-zinc-300 border border-zinc-500/20',
+  'Alimentación': 'bg-orange-500/10 text-orange-300 border border-orange-500/20',
+  'Logística':    'bg-blue-500/10 text-blue-300 border border-blue-500/20',
+  'Transporte':   'bg-violet-500/10 text-violet-300 border border-violet-500/20',
+  'Alojamiento':  'bg-teal-500/10 text-teal-300 border border-teal-500/20',
+  'Personal':     'bg-pink-500/10 text-pink-300 border border-pink-500/20',
+  'Otro':         'bg-zinc-500/10 text-zinc-300 border border-zinc-500/20',
 }
 
 interface Props {
@@ -542,9 +542,9 @@ export function TarifarioEditor({
       </div>
 
       {/* ── Table ── */}
-      <div className="rounded-3xl border border-white/20 bg-white/40 dark:bg-white/5 backdrop-blur-xl overflow-hidden">
+      <div className="rounded-3xl border border-white/20 bg-white/5 backdrop-blur-xl overflow-hidden">
         {/* Table header */}
-        <div className="hidden sm:grid grid-cols-[100px_1fr_128px_96px_148px] gap-x-4 px-5 py-2 bg-black/5 dark:bg-white/5 border-b border-white/10 text-[11px] font-bold uppercase tracking-widest [color:var(--text-muted)]">
+        <div className="hidden sm:grid grid-cols-[100px_1fr_128px_96px_148px] gap-x-4 px-5 py-2 bg-white/5 border-b border-white/10 text-[11px] font-bold uppercase tracking-widest [color:var(--text-muted)]">
           <button onClick={() => handleSort('codigo_item')} className="text-left hover:[color:var(--text-primary)] transition-colors">
             Código <SortIcon col="codigo_item" sortKey={sortKey} />
           </button>
@@ -658,7 +658,7 @@ export function TarifarioEditor({
 
         {/* ── Pagination footer ── */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between gap-4 px-5 py-3 border-t border-white/10 bg-black/5 dark:bg-white/5">
+          <div className="flex items-center justify-between gap-4 px-5 py-3 border-t border-white/10 bg-white/5">
             <span className="text-xs [color:var(--text-muted)] hidden sm:block">
               Página {page} de {totalPages}
             </span>

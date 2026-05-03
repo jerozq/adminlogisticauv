@@ -37,7 +37,7 @@ export function GaleriaEvidencias({ evidencias }: { evidencias: EvidenciaGlobal[
             placeholder="Buscar por descripción o actividad..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 bg-white/50 border border-zinc-200/60 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-300 transition-all"
+            className="w-full pl-9 pr-4 py-2.5 bg-white/5 border border-white/20 rounded-xl text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-all"
           />
         </div>
       </div>
@@ -48,15 +48,15 @@ export function GaleriaEvidencias({ evidencias }: { evidencias: EvidenciaGlobal[
           <div key={ev.id} className="glass-panel rounded-3xl overflow-hidden group flex flex-col hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
             {/* Image Preview Container */}
             <div 
-              className="aspect-video relative bg-zinc-100 cursor-pointer overflow-hidden border-b border-zinc-200/50"
+              className="aspect-video relative bg-white/5 cursor-pointer overflow-hidden border-b border-white/10"
               onClick={() => setSelectedUrl(ev.soporte_url)}
             >
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity z-10 flex items-center justify-center">
                 <Camera className="size-8 text-white" strokeWidth={1.5} />
               </div>
               {ev.soporte_url.toLowerCase().includes('.pdf') ? (
-                <div className="w-full h-full flex flex-col items-center justify-center text-zinc-400">
-                  <span className="text-xs font-bold uppercase tracking-widest bg-zinc-200/50 px-3 py-1 rounded-full">Documento PDF</span>
+                <div className="w-full h-full flex flex-col items-center justify-center text-slate-500">
+                  <span className="text-xs font-bold uppercase tracking-widest bg-white/10 px-3 py-1 rounded-full">Documento PDF</span>
                 </div>
               ) : (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -71,23 +71,23 @@ export function GaleriaEvidencias({ evidencias }: { evidencias: EvidenciaGlobal[
             {/* Details */}
             <div className="p-4 flex flex-col flex-1">
               <div className="flex items-start justify-between mb-2">
-                <h3 className="font-semibold text-sm text-zinc-800 line-clamp-2 leading-tight flex-1 pr-2" title={ev.descripcion}>
+                <h3 className="font-semibold text-sm text-slate-200 line-clamp-2 leading-tight flex-1 pr-2" title={ev.descripcion}>
                   {ev.descripcion || 'Sin descripción'}
                 </h3>
-                <span className="font-extrabold text-sm text-zinc-900 shrink-0 bg-zinc-100/80 px-2 py-0.5 rounded-lg border border-zinc-200/50">
+                <span className="font-extrabold text-sm text-slate-100 shrink-0 bg-white/5 px-2 py-0.5 rounded-lg border border-white/10">
                   {fmt(ev.monto)}
                 </span>
               </div>
               
               <div className="mt-auto space-y-1.5 pt-3">
-                <Link href={`/ejecucion/${ev.actividad_id}`} className="flex items-center gap-1.5 text-[11px] text-zinc-500 hover:text-violet-600 transition-colors">
+                <Link href={`/ejecucion/${ev.actividad_id}`} className="flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-violet-400 transition-colors">
                   <LinkIcon strokeWidth={1.5} className="size-3 shrink-0" />
                   <span className="truncate">{ev.nombre_actividad}</span>
                 </Link>
-                <div className="flex items-center justify-between text-[11px] text-zinc-400">
+                <div className="flex items-center justify-between text-[11px] text-slate-500">
                   <span className="flex items-center gap-1">
                     <User strokeWidth={1.5} className="size-3" />
-                    Pagó: <span className="capitalize font-medium text-zinc-500">{ev.pagador}</span>
+                    Pagó: <span className="capitalize font-medium text-slate-400">{ev.pagador}</span>
                   </span>
                   <span className="flex items-center gap-1">
                     <Calendar strokeWidth={1.5} className="size-3" />

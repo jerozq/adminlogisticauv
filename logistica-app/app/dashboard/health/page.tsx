@@ -31,7 +31,7 @@ function ServiceCard({
   service: ServiceStatus
 }) {
   return (
-    <div className="bg-white rounded-2xl ring-1 ring-zinc-200 p-5">
+    <div className="bg-white/5 rounded-2xl border border-white/10 p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-zinc-900 text-sm">{name}</p>
@@ -83,7 +83,7 @@ export default async function HealthPage() {
   return (
     <div className="min-h-screen bg-zinc-50">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white border-b border-zinc-200 px-4 py-3">
+      <div className="sticky top-0 z-10 bg-black/60 backdrop-blur-md border-b border-white/10 px-4 py-3">
         <div className="max-w-xl mx-auto flex items-center gap-3">
           <Link
             href="/"

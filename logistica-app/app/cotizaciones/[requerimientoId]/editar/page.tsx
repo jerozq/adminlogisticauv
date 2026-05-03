@@ -34,27 +34,27 @@ export default async function EditarCotizacionPage({
   // (Para simplificar, el editor solo puede editar la última, pero el PDF sí podría ver cualquier versión si le pasamos el ID, por ahora solo veamos la última en el editor)
 
   return (
-    <div className="min-h-screen bg-zinc-50 flex flex-col">
+    <div className="min-h-screen bg-[#0a0b0f] flex flex-col text-slate-200">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white border-b border-zinc-200 px-4 py-3 shrink-0">
+      <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-md border-b border-white/10 px-4 py-3 shrink-0">
         <div className="max-w-[1400px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <Link
               href="/cotizaciones"
-              className="p-2 -ml-2 rounded-xl hover:bg-zinc-100 transition-colors"
+              className="p-2 -ml-2 rounded-xl hover:bg-white/10 transition-colors"
               aria-label="Volver a la lista"
             >
-              <ArrowLeft strokeWidth={1.5} className="size-5 text-zinc-600" />
+              <ArrowLeft strokeWidth={1.5} className="size-5 text-slate-300" />
             </Link>
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <Edit3 strokeWidth={1.5} className="size-4 text-blue-500 shrink-0" />
-                <h1 className="font-bold text-zinc-900 text-sm truncate">
+                <h1 className="font-bold text-slate-100 text-sm truncate">
                   {vista === 'pdf' ? 'Previsualizar Cotización' : 'Editar Cotización'}
                 </h1>
               </div>
-              <p className="text-xs text-zinc-400 truncate">
+              <p className="text-xs text-slate-400 truncate">
                 {datos.encabezado.numeroRequerimiento
                   ? `N° ${datos.encabezado.numeroRequerimiento} · `
                   : ''}
@@ -66,7 +66,7 @@ export default async function EditarCotizacionPage({
           <div className="flex items-center gap-2 shrink-0">
             <Link
               href={`/cotizaciones/${requerimientoId}/editar?vista=${vista === 'pdf' ? 'editar' : 'pdf'}`}
-              className="flex items-center gap-2 rounded-xl bg-zinc-100 px-4 py-2 text-xs font-bold text-zinc-700 hover:bg-zinc-200 transition-colors"
+              className="flex items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-4 py-2 text-xs font-bold text-slate-300 hover:bg-white/10 transition-colors"
             >
               {vista === 'pdf' ? (
                 <>
@@ -82,7 +82,7 @@ export default async function EditarCotizacionPage({
             </Link>
             <Link
               href={`/cotizaciones/${requerimientoId}/exportar`}
-              className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 transition-colors shadow-sm"
+              className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-500 transition-colors shadow-md shadow-blue-900/30"
             >
               Descargar Word
             </Link>
@@ -114,10 +114,10 @@ export default async function EditarCotizacionPage({
 
         {/* Sidebar (Historial) */}
         <div className="w-full md:w-80 shrink-0">
-          <div className="glass-panel rounded-3xl p-5 sticky top-24">
+          <div className="glass-panel rounded-3xl p-5 sticky top-24 bg-white/5 border border-white/10 backdrop-blur-md">
             <div className="flex items-center gap-2 mb-4">
-              <History className="size-4 text-zinc-500" />
-              <h3 className="font-bold text-sm text-zinc-800">Línea de Tiempo</h3>
+              <History className="size-4 text-slate-400" />
+              <h3 className="font-bold text-sm text-slate-200">Línea de Tiempo</h3>
             </div>
             
             <div className="space-y-4">
@@ -127,30 +127,30 @@ export default async function EditarCotizacionPage({
                   <div key={h.id} className="relative pl-6">
                     {/* Line connection */}
                     {i !== historial.length - 1 && (
-                      <div className="absolute left-[9px] top-6 bottom-[-24px] w-0.5 bg-zinc-200/60" />
+                      <div className="absolute left-[9px] top-6 bottom-[-24px] w-0.5 bg-white/10" />
                     )}
                     {/* Dot */}
-                    <div className={`absolute left-0 top-1 size-5 rounded-full border-[3px] border-white shadow-sm flex items-center justify-center ${isCurrent ? 'bg-blue-500' : 'bg-zinc-300'}`} />
+                    <div className={`absolute left-0 top-1 size-5 rounded-full border-[3px] border-white/20 shadow-sm flex items-center justify-center ${isCurrent ? 'bg-blue-500' : 'bg-slate-700'}`} />
                     
                     <div>
                       <div className="flex items-center justify-between">
-                        <span className={`text-sm font-bold ${isCurrent ? 'text-zinc-900' : 'text-zinc-600'}`}>
+                        <span className={`text-sm font-bold ${isCurrent ? 'text-slate-100' : 'text-slate-300'}`}>
                           Versión {h.version}
                         </span>
-                        <span className="text-[10px] text-zinc-400 font-medium">
+                        <span className="text-[10px] text-slate-500 font-medium">
                           {new Date(h.created_at).toLocaleDateString('es-CO')}
                         </span>
                       </div>
-                      <p className="text-xs text-zinc-500 mt-0.5">
+                      <p className="text-xs text-slate-400 mt-0.5">
                         {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(h.total_general)}
                       </p>
                       {isCurrent && (
-                        <div className="mt-2 inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                        <div className="mt-2 inline-flex items-center rounded-md bg-blue-500/10 px-2 py-1 text-xs font-bold text-blue-300 border border-blue-500/20">
                           Actual (Editable)
                         </div>
                       )}
                       {!isCurrent && (
-                         <div className="mt-2 inline-flex items-center rounded-md bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-600">
+                         <div className="mt-2 inline-flex items-center rounded-md bg-white/5 px-2 py-1 text-xs font-medium text-slate-400 border border-white/10">
                           Archivada
                         </div>
                       )}
