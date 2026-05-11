@@ -8,10 +8,10 @@ import {
   Lock,
   CheckCircle2,
   Loader2,
-  ExternalLink,
   ChevronLeft,
   ChevronRight,
-  FileText,
+  List,
+  PenSquare,
 } from 'lucide-react'
 import { FileUploader } from '@/components/cotizaciones/FileUploader'
 import { RequerimientoHeader } from '@/components/cotizaciones/RequerimientoHeader'
@@ -23,6 +23,27 @@ import type {
   RequerimientoEncabezado,
   WizardStep,
 } from '@/types/cotizacion'
+
+const ENCABEZADO_VACIO: RequerimientoEncabezado = {
+  numeroRequerimiento: '',
+  nombreActividad: '',
+  objeto: '',
+  direccionTerritorial: '',
+  municipio: '',
+  departamento: '',
+  lugarDetalle: '',
+  fechaSolicitud: '',
+  fechaInicio: '',
+  fechaFin: '',
+  horaInicio: '',
+  horaFin: '',
+  responsableNombre: '',
+  responsableCedula: '',
+  responsableCelular: '',
+  responsableCorreo: '',
+  numVictimas: 0,
+  montoReembolsoDeclarado: 0,
+}
 
 // ============================================================
 // Indicador de pasos
@@ -55,7 +76,7 @@ function StepIndicator({ current }: { current: WizardStep }) {
                     ? 'bg-emerald-500 text-white'
                     : active
                     ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
-                    : 'bg-zinc-100 text-zinc-400',
+                    : 'bg-white/10 text-slate-500',
                 ].join(' ')}
               >
                 {done ? <CheckCircle2 className="size-4" /> : step.icon}
@@ -63,7 +84,7 @@ function StepIndicator({ current }: { current: WizardStep }) {
               <span
                 className={[
                   'hidden sm:block text-xs font-medium',
-                  active ? 'text-blue-700' : done ? 'text-emerald-600' : 'text-zinc-400',
+                  active ? 'text-blue-400' : done ? 'text-emerald-400' : 'text-slate-500',
                 ].join(' ')}
               >
                 {step.label}
@@ -73,7 +94,7 @@ function StepIndicator({ current }: { current: WizardStep }) {
               <div
                 className={[
                   'mx-1 h-0.5 w-8 sm:w-12 rounded transition-colors',
-                  done ? 'bg-emerald-400' : 'bg-zinc-200',
+                  done ? 'bg-emerald-400' : 'bg-white/10',
                 ].join(' ')}
               />
             )}
@@ -141,14 +162,14 @@ export default function NuevaCotizacionPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50">
+    <div className="min-h-screen">
       {/* Header */}
       <header className="sticky top-0 z-10 border-b border-white/10 bg-black/60 backdrop-blur-sm">
         <div className="mx-auto flex max-w-2xl flex-col gap-3 px-4 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-base font-bold text-zinc-900">Nueva cotización</h1>
+            <h1 className="text-base font-bold text-slate-100">Nueva cotización</h1>
             {fileName && (
-              <span className="max-w-[160px] truncate rounded-full bg-zinc-100 px-3 py-1 text-xs text-zinc-500">
+              <span className="max-w-[160px] truncate rounded-full bg-white/10 px-3 py-1 text-xs text-slate-400">
                 {fileName}
               </span>
             )}
@@ -163,13 +184,37 @@ export default function NuevaCotizacionPage() {
         {step === 1 && (
           <section className="flex flex-col gap-4">
             <div>
-              <h2 className="text-lg font-bold text-zinc-800">Carga el requerimiento</h2>
-              <p className="mt-1 text-sm text-zinc-500">
+              <h2 className="text-lg font-bold text-slate-200">Carga el requerimiento</h2>
+              <p className="mt-1 text-sm text-slate-400">
                 Excel de la Unidad para las Víctimas (formato UARIV).
                 El sistema extrae automáticamente encabezado e ítems, incluyendo servicios de inhumación.
               </p>
             </div>
             <FileUploader onParsed={onParsed} />
+
+            {/* Separador */}
+            <div className="flex items-center gap-3 mt-2">
+              <div className="flex-1 h-px bg-white/10" />
+              <span className="text-xs text-slate-500">o</span>
+              <div className="flex-1 h-px bg-white/10" />
+            </div>
+
+            {/* Creación manual sin archivo */}
+            <button
+              type="button"
+              onClick={() => {
+                setFileName('manual')
+                setEncabezado(ENCABEZADO_VACIO)
+                setItems([])
+                setCronogramaSugerido([])
+                setStep(2)
+              }}
+              className="flex items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/5
+                         px-4 py-3 text-sm font-medium text-slate-300 hover:bg-white/10 transition-colors"
+            >
+              <PenSquare className="size-4" />
+              Crear requerimiento manualmente
+            </button>
           </section>
         )}
 
@@ -177,8 +222,8 @@ export default function NuevaCotizacionPage() {
         {step === 2 && encabezado && (
           <section className="flex flex-col gap-6">
             <div>
-              <h2 className="text-lg font-bold text-zinc-800">Verifica el encabezado</h2>
-              <p className="mt-1 text-sm text-zinc-500">
+              <h2 className="text-lg font-bold text-slate-200">Verifica el encabezado</h2>
+              <p className="mt-1 text-sm text-slate-400">
                 Corrige los datos extraídos del Excel si es necesario.
               </p>
             </div>
@@ -194,14 +239,14 @@ export default function NuevaCotizacionPage() {
           <section className="flex flex-col gap-6">
             {/* Error de guardado arriba para que siempre sea visible */}
             {saveError && (
-              <div className="flex items-start gap-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200">
+              <div className="flex items-start gap-3 rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-400 ring-1 ring-red-500/20">
                 <span className="mt-0.5 text-lg leading-none">⚠️</span>
                 <span>{saveError}</span>
               </div>
             )}
             <div>
-              <h2 className="text-lg font-bold text-zinc-800">Edita la cotización</h2>
-              <p className="mt-1 text-sm text-zinc-500">
+              <h2 className="text-lg font-bold text-slate-200">Edita la cotización</h2>
+              <p className="mt-1 text-sm text-slate-400">
                 Ajusta cantidades, precios y añade o elimina ítems.
                 Los <span className="font-semibold text-amber-600">ítems passthrough</span> son costos
                 de terceros sin margen de utilidad.
@@ -218,12 +263,12 @@ export default function NuevaCotizacionPage() {
         {/* ─── Paso 4: Confirmación ─── */}
         {step === 4 && savedIds && (
           <section className="flex flex-col items-center gap-6 py-8 text-center">
-            <div className="flex size-20 items-center justify-center rounded-full bg-emerald-100">
+            <div className="flex size-20 items-center justify-center rounded-full bg-emerald-500/20">
               <CheckCircle2 className="size-10 text-emerald-500" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-zinc-900">¡Cotización guardada!</h2>
-              <p className="mt-2 text-sm text-zinc-500">
+              <h2 className="text-xl font-bold text-slate-100">¡Cotización guardada!</h2>
+              <p className="mt-2 text-sm text-slate-400">
                 Se creó el requerimiento y la cotización versión 1 en Supabase.
               </p>
             </div>
@@ -249,23 +294,12 @@ export default function NuevaCotizacionPage() {
             </div>
 
             <div className="flex flex-col gap-2 w-full sm:flex-row sm:justify-center">
-              {savedIds && (
-                <a
-                  href={`/cotizaciones/${savedIds.requerimientoId}/exportar`}
-                  className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
-                >
-                  <FileText className="size-4" />
-                  Previsualizar y Exportar Word
-                </a>
-              )}
               <a
-                href={`https://supabase.com/dashboard/project/vqodvkqvutkgvaqdcwtq/editor`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 rounded-xl bg-zinc-800 px-5 py-3 text-sm font-semibold text-white hover:bg-zinc-700 transition-colors"
+                href="/cotizaciones"
+                className="flex items-center justify-center gap-2 rounded-xl bg-zinc-700 px-5 py-3 text-sm font-semibold text-white hover:bg-zinc-600 transition-colors"
               >
-                <ExternalLink className="size-4" />
-                Ver en Supabase
+                <List className="size-4" />
+                Ver cotizaciones
               </a>
               <button
                 onClick={() => {

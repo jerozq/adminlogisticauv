@@ -11,7 +11,7 @@ import {
   Clock,
   Calendar,
 } from 'lucide-react'
-import { subirArchivoEvidencia } from '@/actions/agenda-semanal'
+import { subirArchivoEvidencia, subirYRegistrarEvidencia } from '@/actions/agenda-semanal'
 import type { HitoCronogramaIA } from '@/actions/cronograma-ia'
 
 // ============================================================
@@ -186,15 +186,25 @@ function EntregableModal({
       formData.append('file', file)
       formData.append('id', form.id)
 
-      const result = await subirArchivoEvidencia(formData)
-
-      if (!result.ok || !result.url) {
-        console.error('Upload error:', result.error)
-        alert('Error al subir la evidencia: ' + result.error)
-        return
+      if (mode === 'edit') {
+        // Flujo transaccional: Storage upload → URL → INSERT en BD en una sola acción.
+        // Si el registro en BD falla, la UI notifica al usuario explícitamente.
+        const result = await subirYRegistrarEvidencia(form.id, formData)
+        if (!result.ok || !result.url) {
+          alert('Error al subir la evidencia: ' + result.error)
+          return
+        }
+        setForm({ ...form, evidencia_url: result.url })
+      } else {
+        // Modo alta: el entregable aún no existe en BD; subir solo a Storage
+        // y persistir la URL junto con el alta del entregable al guardar.
+        const result = await subirArchivoEvidencia(formData)
+        if (!result.ok || !result.url) {
+          alert('Error al subir la evidencia: ' + result.error)
+          return
+        }
+        setForm({ ...form, evidencia_url: result.url })
       }
-
-      setForm({ ...form, evidencia_url: result.url })
     } catch (err) {
       console.error('Upload failed:', err)
       alert('Error al procesar la evidencia')
@@ -475,14 +485,20 @@ export function AgendaSemanal({
           return
         }
 
-        // Si hay evidencia_url, también actualizar eso
+        // Si hay evidencia_url, también actualizar eso.
+        // En modo edición el upload ya llamó subirYRegistrarEvidencia (atómico),
+        // pero actualizamos igualmente para garantizar consistencia.
         if (ent.evidencia_url) {
           const evidResult = await subirEvidenciaEntregable(
             ent.id,
             ent.evidencia_url
           )
           if (!evidResult.ok) {
-            // Evidencia no crítica: el entregable se guardó correctamente
+            alert(
+              `El entregable se guardó, pero no se pudo registrar la evidencia en la base de datos: ${
+                evidResult.error ?? 'Error desconocido'
+              }. Por favor, sube la evidencia nuevamente.`
+            )
           }
         }
       } else {
@@ -500,14 +516,19 @@ export function AgendaSemanal({
           return
         }
 
-        // Si hay evidencia_url, guardarla
+        // Si hay evidencia_url, guardarla en BD (paso crítico).
+        // Si falla, notificar al usuario explícitamente.
         if (ent.evidencia_url && result.id) {
           const evidResult = await subirEvidenciaEntregable(
             result.id,
             ent.evidencia_url
           )
           if (!evidResult.ok) {
-            // Evidencia no crítica: el entregable se guardó correctamente
+            alert(
+              `El entregable se creó, pero no se pudo registrar la evidencia en la base de datos: ${
+                evidResult.error ?? 'Error desconocido'
+              }. Por favor, sube la evidencia nuevamente.`
+            )
           }
         }
       }

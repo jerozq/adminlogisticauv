@@ -1,6 +1,7 @@
 'use server'
 
 import ExcelJS from 'exceljs'
+import { PDFParse } from 'pdf-parse'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { generateObject } from 'ai'
 import { z } from 'zod'
@@ -13,6 +14,7 @@ import {
   RequerimientoEncabezado,
   TarifarioSugerencia,
 } from '@/types/cotizacion'
+import { crearCuentaProyecto } from '@/actions/tesoreria'
 
 // ============================================================
 // Utilidades de celda
@@ -607,7 +609,7 @@ REGLAS IMPORTANTES:
   const userPrompt = `${fileName ? `=== NOMBRE DEL ARCHIVO ===\n${fileName}\n\n` : ''}=== HOJA: FORMATO MATERIAL APOYO ===\n${formatoText}`
 
   const { object } = await generateObject({
-    model: google('gemini-2.0-flash'),
+    model: google('gemini-2.5-flash'),
     schema: ExcelParseAISchema,
     system: systemPrompt,
     prompt: userPrompt,
@@ -652,7 +654,9 @@ REGLAS IMPORTANTES:
     opcionesTarifario: [],
   }))
 
-  const reembolsos: ReembolsoDetalleDraft[] = []
+  const reembolsos: ReembolsoDetalleDraft[] = sheetAloj
+    ? parseAlojamientoTransporte(sheetAloj)
+    : []
 
   const baseIso = toIsoDateTime(encabezado.fechaInicio, encabezado.horaInicio)
   const cronogramaSugerido: CronogramaEntregaDraft[] = object.cronograma
@@ -724,30 +728,60 @@ async function enrichItemsConTarifario(
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  const enriched = await Promise.all(
-    items.map(async (item): Promise<CotizacionItemDraft> => {
-      const keywords = extractKeywords(item.descripcion)
-      if (keywords.length === 0) return item
+  // Recopilar keywords principales de todos los ítems (1 sola query en lugar de N)
+  const itemKeywords = items.map(item => ({
+    item,
+    keywords: extractKeywords(item.descripcion),
+  }))
 
-      // ── 1. Consultar tarifario por palabra clave principal ──
-      let query = sb
-        .from('tarifario_2026')
-        .select('id, codigo_item, descripcion, precio_venta, unidad_medida, categoria')
-        .ilike('descripcion', `%${keywords[0]}%`)
-        .limit(25)
+  const uniqueKeywords = [
+    ...new Set(
+      itemKeywords
+        .filter(ik => ik.keywords.length > 0)
+        .map(ik => ik.keywords[0])
+    ),
+  ]
 
-      // Filtrar por categoría si coincide con una categoría conocida
-      if (item.categoria && TARIFARIO_CATEGORIAS.has(item.categoria)) {
-        query = query.eq('categoria', item.categoria)
-      }
+  if (uniqueKeywords.length === 0) return items
 
-      const { data } = await query
-      if (!data || data.length === 0) return item
+  // ── 1. Una sola query con OR sobre todas las keywords ──────────
+  const orFilter = uniqueKeywords
+    .map(kw => `descripcion.ilike.%${kw}%`)
+    .join(',')
 
-      // ── 2. Puntuar candidatos ──────────────────────────────
-      const unitNorm = normalizeUnit(item.unidadMedida)
+  const { data: allRows } = await sb
+    .from('tarifario_2026')
+    .select('id, codigo_item, descripcion, precio_venta, unidad_medida, categoria')
+    .or(orFilter)
+    .limit(500)
 
-      const scored = data.map(row => {
+  if (!allRows || allRows.length === 0) return items
+
+  // ── 2. Puntuar y seleccionar candidatos localmente ─────────────
+  return itemKeywords.map(({ item, keywords }) => {
+    if (keywords.length === 0) return item
+
+    const kw0 = keywords[0].toLowerCase()
+
+    // Filtrar las filas que coincidan con el keyword principal de este ítem
+    const candidates = allRows.filter(row =>
+      row.descripcion.toLowerCase().includes(kw0)
+    )
+
+    // Aplicar filtro de categoría si aplica
+    const pool =
+      item.categoria && TARIFARIO_CATEGORIAS.has(item.categoria)
+        ? candidates.filter(row => row.categoria === item.categoria).length > 0
+          ? candidates.filter(row => row.categoria === item.categoria)
+          : candidates
+        : candidates
+
+    if (pool.length === 0) return item
+
+    const unitNorm = normalizeUnit(item.unidadMedida)
+
+    const scored = pool
+      .map(row => {
         const descLower = row.descripcion.toLowerCase()
         let score = 1 // base: ya matcheó keyword[0]
 
@@ -759,64 +793,60 @@ async function enrichItemsConTarifario(
         // Bonus por unidad de medida
         const rowUnitNorm = normalizeUnit(row.unidad_medida ?? '')
         if (unitNorm && rowUnitNorm) {
-          if (unitNorm === rowUnitNorm) score += 4           // coincidencia exacta
+          if (unitNorm === rowUnitNorm) score += 4 // coincidencia exacta
           else if (rowUnitNorm.includes(unitNorm) || unitNorm.includes(rowUnitNorm)) score += 1
         }
 
         return { row, score }
-      }).sort((a, b) => b.score - a.score)
+      })
+      .sort((a, b) => b.score - a.score)
 
-      const best = scored[0]
-      const suggestion: TarifarioSugerencia = {
-        id: best.row.id as string,
-        codigoItem: best.row.codigo_item as string,
-        descripcion: best.row.descripcion as string,
-        precioVenta: Number(best.row.precio_venta),
-        unidadMedida: (best.row.unidad_medida as string) ?? 'und',
-        categoria: (best.row.categoria as string) ?? '',
+    const best = scored[0]
+    const suggestion: TarifarioSugerencia = {
+      id: best.row.id as string,
+      codigoItem: best.row.codigo_item as string,
+      descripcion: best.row.descripcion as string,
+      precioVenta: Number(best.row.precio_venta),
+      unidadMedida: (best.row.unidad_medida as string) ?? 'und',
+      categoria: (best.row.categoria as string) ?? '',
+    }
+
+    // ── 3. Decidir si aplicar precio automáticamente ──────
+    // Alta confianza: unidad coincide exactamente Y score >= 5
+    // O resultado único con score suficiente
+    const highConfidence = best.score >= 5 || (pool.length === 1 && best.score >= 2)
+
+    if (highConfidence) {
+      return {
+        ...item,
+        tarifarioId: suggestion.id,
+        codigoItem: suggestion.codigoItem,
+        precioUnitario: suggestion.precioVenta,
+        unidadMedida: suggestion.unidadMedida,
+        fuente: 'tarifario' as const,
+        opcionesTarifario: [],
       }
+    }
 
-      // ── 3. Decidir si aplicar precio automáticamente ──────
-      // Alta confianza: unidad coincide exactamente Y score >= 5
-      // O resultado único con score suficiente
-      const highConfidence =
-        best.score >= 5 ||
-        (data.length === 1 && best.score >= 2)
+    // Sin alta confianza → devolver todos los candidatos rankeados para que el usuario elija
+    const candidatos: TarifarioSugerencia[] = scored
+      .filter(s => s.score >= 1)
+      .slice(0, 8)
+      .map(s => ({
+        id: s.row.id as string,
+        codigoItem: s.row.codigo_item as string,
+        descripcion: s.row.descripcion as string,
+        precioVenta: Number(s.row.precio_venta),
+        unidadMedida: (s.row.unidad_medida as string) ?? 'und',
+        categoria: (s.row.categoria as string) ?? '',
+      }))
 
-      if (highConfidence) {
-        return {
-          ...item,
-          tarifarioId: suggestion.id,
-          codigoItem: suggestion.codigoItem,
-          precioUnitario: suggestion.precioVenta,
-          unidadMedida: suggestion.unidadMedida,
-          fuente: 'tarifario' as const,
-          opcionesTarifario: [],
-        }
-      }
+    if (candidatos.length > 0) {
+      return { ...item, opcionesTarifario: candidatos }
+    }
 
-      // Sin alta confianza → devolver todos los candidatos rankeados para que el usuario elija
-      const candidatos: TarifarioSugerencia[] = scored
-        .filter(s => s.score >= 1)
-        .slice(0, 8)
-        .map(s => ({
-          id: s.row.id as string,
-          codigoItem: s.row.codigo_item as string,
-          descripcion: s.row.descripcion as string,
-          precioVenta: Number(s.row.precio_venta),
-          unidadMedida: (s.row.unidad_medida as string) ?? 'und',
-          categoria: (s.row.categoria as string) ?? '',
-        }))
-
-      if (candidatos.length > 0) {
-        return { ...item, opcionesTarifario: candidatos }
-      }
-
-      return item
-    })
-  )
-
-  return enriched
+    return item
+  })
 }
 
 // ============================================================
@@ -905,6 +935,119 @@ function injectInhumacionItem(
 }
 
 // ============================================================
+// Parser de PDF (UARIV)
+// ============================================================
+
+async function parsearRequerimientoPDF(
+  buffer: Buffer,
+  fileName: string
+): Promise<{ ok: true; data: ParsedRequerimiento; usedAI: boolean } | { ok: false; error: string }> {
+  let pdfText = ''
+  let parser: PDFParse | null = null
+  try {
+    parser = new PDFParse({ data: buffer })
+    const result = await parser.getText()
+    pdfText = result.text ?? ''
+  } catch {
+    return { ok: false, error: 'No se pudo leer el PDF. Asegúrese de que el archivo no esté dañado.' }
+  } finally {
+    await parser?.destroy().catch(() => undefined)
+  }
+
+  if (pdfText.trim().length < 50) {
+    return {
+      ok: false,
+      error: 'El PDF no contiene texto legible. Asegúrese de que no sea una imagen escaneada.',
+    }
+  }
+
+  const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY
+  if (!apiKey) {
+    return { ok: false, error: 'Se requiere configuración de IA (GOOGLE_GENERATIVE_AI_API_KEY) para procesar PDFs.' }
+  }
+
+  const google = createGoogleGenerativeAI({ apiKey })
+
+  const systemPrompt = `Eres un extractor de datos especializado en formularios de requerimientos logísticos de la UARIV (Unidad para las Víctimas de Colombia).
+Se te entrega el texto extraído de un PDF de requerimiento logístico.
+Extrae los datos estructurados según el esquema indicado.
+
+REGLAS IMPORTANTES:
+- El NÚMERO DE REQUERIMIENTO (ej: 629PE, A-2025-001) aparece en el nombre del archivo y/o cerca de "N° DE REQUERIMIENTO", "NÚMERO", "REQUERIMIENTO N°".
+- Las fechas deben estar en formato YYYY-MM-DD.
+- Si un campo no está presente, usa string vacío "" o 0 para números.
+- Para los ÍTEMS: extrae solo bienes o servicios concretos. IGNORA encabezados de sección como "ALIMENTACIÓN", "MATERIALES", "CONCEPTO", etc.
+- ALOJAMIENTO es un servicio cotizable (categoría "Alojamiento"), NO un reembolso.
+- Genera el CRONOGRAMA como hitos editables basados en fechas y observaciones del documento.
+- El MONTO solicitado es un número en pesos colombianos (COP), sin signos de moneda.`
+
+  try {
+    const { object } = await generateObject({
+      model: google('gemini-2.5-flash'),
+      schema: ExcelParseAISchema,
+      system: systemPrompt,
+      prompt: `=== NOMBRE DEL ARCHIVO ===\n${fileName}\n\n=== CONTENIDO DEL PDF ===\n${pdfText.slice(0, 12000)}`,
+      temperature: 0,
+    })
+
+    const encabezado: RequerimientoEncabezado = {
+      numeroRequerimiento: object.encabezado.numeroRequerimiento,
+      nombreActividad: object.encabezado.nombreActividad,
+      objeto: '',
+      direccionTerritorial: object.encabezado.direccionTerritorial,
+      municipio: object.encabezado.municipio,
+      departamento: object.encabezado.departamento,
+      lugarDetalle: object.encabezado.lugarDetalle,
+      fechaSolicitud: object.encabezado.fechaSolicitud,
+      fechaInicio: object.encabezado.fechaInicio,
+      fechaFin: object.encabezado.fechaFin,
+      horaInicio: object.encabezado.horaInicio,
+      horaFin: object.encabezado.horaFin,
+      responsableNombre: object.encabezado.responsableNombre,
+      responsableCedula: object.encabezado.responsableCedula,
+      responsableCelular: object.encabezado.responsableCelular,
+      responsableCorreo: object.encabezado.responsableCorreo,
+      numVictimas: object.encabezado.numVictimas,
+      montoReembolsoDeclarado: object.encabezado.montoReembolsoDeclarado,
+    }
+
+    const items: CotizacionItemDraft[] = object.items.map(it => ({
+      id: crypto.randomUUID(),
+      tarifarioId: null,
+      codigoItem: '',
+      descripcion: it.descripcion,
+      categoria: it.categoria,
+      unidadMedida: it.unidadMedida,
+      cantidad: it.cantidad,
+      precioUnitario: 0,
+      esPassthrough: false,
+      excluirDeFinanzas: false,
+      ocultarEnCotizacion: false,
+      fuente: 'excel' as const,
+      opcionesTarifario: [],
+    }))
+
+    const enrichedItems = await enrichItemsConTarifario(items)
+    const baseIso = toIsoDateTime(encabezado.fechaInicio, encabezado.horaInicio)
+    const cronogramaSugerido: CronogramaEntregaDraft[] = object.cronograma
+      .map((h, idx) => {
+        const iso = toIsoDateTime(h.fecha, h.hora) ?? baseIso
+        if (!iso || !h.descripcion?.trim()) return null
+        const dt = new Date(iso)
+        dt.setMinutes(dt.getMinutes() + idx)
+        return { descripcion: h.descripcion.trim(), fechaHoraLimite: dt.toISOString() }
+      })
+      .filter((h): h is CronogramaEntregaDraft => Boolean(h))
+
+    const data = withNumero({ encabezado, items: enrichedItems, reembolsos: [], cronogramaSugerido }, fileName)
+    return { ok: true, data, usedAI: true }
+  } catch (err) {
+    console.error('[parsearRequerimientoPDF]', err)
+    return { ok: false, error: 'Error al procesar el PDF con IA. Verifique que el archivo sea legible.' }
+  }
+}
+
+// ============================================================
 // Server Action principal
 // ============================================================
 
@@ -919,8 +1062,8 @@ export async function parsearRequerimientoExcel(
 
     const fileName = (file as File).name || ''
     const ext = fileName.split('.').pop()?.toLowerCase()
-    if (!['xlsx', 'xlsm', 'xls'].includes(ext ?? '')) {
-      return { ok: false, error: 'El archivo debe ser un Excel (.xlsx, .xlsm o .xls).' }
+    if (!['xlsx', 'xlsm', 'xls', 'pdf'].includes(ext ?? '')) {
+      return { ok: false, error: 'El archivo debe ser un Excel (.xlsx, .xlsm o .xls) o un PDF (.pdf).' }
     }
 
     if (file.size > 10 * 1024 * 1024) {
@@ -928,6 +1071,11 @@ export async function parsearRequerimientoExcel(
     }
 
     const arrayBuffer = await file.arrayBuffer()
+
+    // ── Rama PDF ──────────────────────────────────────────────
+    if (ext === 'pdf') {
+      return await parsearRequerimientoPDF(Buffer.from(arrayBuffer), fileName)
+    }
     const workbook = new ExcelJS.Workbook()
     await workbook.xlsx.load(arrayBuffer)
 
@@ -964,7 +1112,10 @@ export async function parsearRequerimientoExcel(
         const aiResult = await parseConIA(sheetFormato, sheetAloj, fileName)
         const enrichedItems = await enrichItemsConTarifario(aiResult.items)
         const finalItems = injectInhumacionItem(enrichedItems, sheetAloj)
-        const data = withNumero({ ...aiResult, items: finalItems, reembolsos: [] }, fileName)
+        const reembolsosAloj = aiResult.reembolsos.length > 0
+          ? aiResult.reembolsos
+          : sheetAloj ? parseAlojamientoTransporte(sheetAloj) : []
+        const data = withNumero({ ...aiResult, items: finalItems, reembolsos: reembolsosAloj }, fileName)
         return { ok: true, data, usedAI: true }
       } catch (aiErr) {
         console.warn('[parsearRequerimientoExcel] IA falló, usando parser de coordenadas:', aiErr)
@@ -976,8 +1127,9 @@ export async function parsearRequerimientoExcel(
     const { encabezado, items } = parseFormatoMaterialApoyo(sheetFormato)
     const enrichedItems = await enrichItemsConTarifario(items)
     const finalItems = injectInhumacionItem(enrichedItems, sheetAloj)
+    const reembolsosAloj = sheetAloj ? parseAlojamientoTransporte(sheetAloj) : []
     const cronogramaSugerido = buildCronogramaFallback(encabezado, finalItems)
-    const data = withNumero({ encabezado, items: finalItems, reembolsos: [], cronogramaSugerido }, fileName)
+    const data = withNumero({ encabezado, items: finalItems, reembolsos: reembolsosAloj, cronogramaSugerido }, fileName)
 
     return { ok: true, data, usedAI: false }
   } catch (err) {
@@ -987,6 +1139,44 @@ export async function parsearRequerimientoExcel(
       error: 'Error al procesar el archivo Excel. Verifica que el formato sea correcto.',
     }
   }
+}
+
+// ============================================================
+// Helpers de resiliencia (módulo): retry con backoff para 429
+// ============================================================
+
+function isTransientFetchMsg(msg: string) {
+  const m = msg.toLowerCase()
+  return (
+    m.includes('fetch failed') ||
+    m.includes('network') ||
+    m.includes('econnreset') ||
+    m.includes('etimedout') ||
+    m.includes('enotfound')
+  )
+}
+
+async function withRetryModule<
+  T extends { error: { message?: string; code?: string; status?: number } | null }
+>(op: () => PromiseLike<T>, retries = 3): Promise<T> {
+  let last: T | null = null
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const result = await op()
+    last = result
+    const err = result.error
+    if (!err) return result
+    const msg = err.message ?? ''
+    const status = (err as { status?: number }).status
+    const is429 =
+      status === 429 ||
+      msg.includes('429') ||
+      msg.toLowerCase().includes('too many requests')
+    const isTransient = is429 || isTransientFetchMsg(msg)
+    if (!isTransient || attempt === retries) return result
+    const delay = is429 ? 1000 * (attempt + 1) : 250 * (attempt + 1)
+    await new Promise((resolve) => setTimeout(resolve, delay))
+  }
+  return last as T
 }
 
 // ============================================================
@@ -1029,19 +1219,23 @@ export async function guardarCotizacion(
       )
     }
 
-    async function withRetry<T extends { error: { message?: string; code?: string } | null }>(
+    async function withRetry<T extends { error: { message?: string; code?: string; status?: number } | null }>(
       op: () => PromiseLike<T>,
-      retries = 2
+      retries = 3
     ): Promise<T> {
       let last: T | null = null
       for (let attempt = 0; attempt <= retries; attempt++) {
         const result = await op()
         last = result
-        const msg = result.error?.message ?? ''
-        if (!msg || !isTransientFetchError(msg) || attempt === retries) {
-          return result
-        }
-        await new Promise(resolve => setTimeout(resolve, 250 * (attempt + 1)))
+        const err = result.error
+        if (!err) return result
+        const msg = err.message ?? ''
+        const status = (err as { status?: number }).status
+        const is429 = status === 429 || msg.includes('429') || msg.toLowerCase().includes('too many requests')
+        const isTransient = is429 || isTransientFetchError(msg)
+        if (!isTransient || attempt === retries) return result
+        const delay = is429 ? 1000 * (attempt + 1) : 250 * (attempt + 1)
+        await new Promise(resolve => setTimeout(resolve, delay))
       }
       return last as T
     }
@@ -1080,91 +1274,67 @@ export async function guardarCotizacion(
       return { ok: false, error: `Error al guardar requerimiento: ${reqError?.message}` }
     }
 
-    // 2. Calcular totales
-    const subtotalServicios = items
-      .filter(i => !i.esPassthrough)
-      .reduce((sum, i) => sum + i.cantidad * i.precioUnitario, 0)
-
-    // 3. Insertar cotización v1
-    const { data: cot, error: cotError } = await withRetry(() =>
-      sb
-        .from('cotizaciones')
-        .insert({
-          requerimiento_id: req.id,
-          version: 1,
-          estado: 'borrador',
-          subtotal_servicios: subtotalServicios,
-          total_reembolsos: 0,
-          total_general: subtotalServicios,
-        })
-        .select('id')
-        .single()
-    )
-
-    if (cotError || !cot) {
-      return { ok: false, error: `Error al guardar cotización: ${cotError?.message}` }
+    // 1.5 Auto-crear cuenta virtual PROYECTO (idempotente)
+    try {
+      await crearCuentaProyecto(
+        req.id,
+        encabezado.nombreActividad || 'Sin nombre',
+        encabezado.numeroRequerimiento || req.id.substring(0, 8).toUpperCase(),
+      )
+    } catch (cuentaErr) {
+      console.warn('[auto-cuenta] No se pudo crear cuenta virtual:', cuentaErr)
     }
 
-    // 4. Insertar ítems
+    // 2. Insertar ítems de servicio en items_requerimiento
     if (items.length > 0) {
       const itemRows = items.map(i => ({
-        cotizacion_id: cot.id,
-        tarifario_id: i.tarifarioId || null,
-        codigo_item: i.codigoItem || null,
-        descripcion: i.descripcion,
-        categoria: i.categoria || null,
-        unidad_medida: i.unidadMedida || null,
-        cantidad: i.cantidad,
-        precio_unitario: i.precioUnitario,
-        es_passthrough: i.esPassthrough,
-        fuente: i.fuente,
+        requerimiento_id: req.id,
+        tarifario_id:     i.tarifarioId || null,
+        codigo_item:      i.codigoItem || null,
+        descripcion:      i.descripcion,
+        categoria:        i.categoria || null,
+        tipo:             i.esPassthrough ? 'PASIVO_TERCERO' : 'SERVICIO',
+        unidad_medida:    i.unidadMedida || null,
+        cantidad:         i.cantidad,
+        precio_unitario:  i.precioUnitario,
+        estado:           'ACTIVO',
+        fuente:           i.fuente,
       }))
 
       const { error: itemsError } = await withRetry(() =>
-        sb.from('cotizacion_items').insert(itemRows)
+        sb.from('items_requerimiento').insert(itemRows)
       )
       if (itemsError) {
         return { ok: false, error: `Error al guardar ítems: ${itemsError.message}` }
       }
     }
 
-    // 5. Insertar reembolsos
+    // 3. Insertar reembolsos como items tipo REEMBOLSO
     if (reembolsos.length > 0) {
       const reembolsoRows = reembolsos.map(r => ({
-        cotizacion_id: cot.id,
-        nombre_beneficiario: r.nombreBeneficiario,
-        documento_identidad: r.documentoIdentidad || null,
-        municipio_origen: r.municipioOrigen || null,
-        municipio_destino: r.municipioDestino || null,
-        valor_transporte: r.valorTransporte,
-        valor_alojamiento: r.valorAlojamiento,
-        valor_alimentacion: r.valorAlimentacion,
-        valor_otros: r.valorOtros,
+        requerimiento_id:       req.id,
+        descripcion:            `Reembolso: ${r.nombreBeneficiario}`,
+        tipo:                   'REEMBOLSO',
+        unidad_medida:          'und',
+        cantidad:               1,
+        precio_unitario:        (r.valorTransporte ?? 0) + (r.valorAlojamiento ?? 0) + (r.valorAlimentacion ?? 0) + (r.valorOtros ?? 0),
+        estado:                 'ACTIVO',
+        fuente:                 'excel',
+        beneficiario_nombre:    r.nombreBeneficiario || null,
+        beneficiario_documento: r.documentoIdentidad || null,
+        municipio_origen:       r.municipioOrigen || null,
+        notas:                  r.municipioDestino ? `Destino: ${r.municipioDestino}` : null,
       }))
 
       const { error: reembolsosError } = await withRetry(() =>
-        sb.from('reembolsos_detalle').insert(reembolsoRows)
+        sb.from('items_requerimiento').insert(reembolsoRows)
       )
       if (reembolsosError) {
         return { ok: false, error: `Error al guardar reembolsos: ${reembolsosError.message}` }
       }
     }
 
-    // 6. Registrar en historial
-    const { error: historialError } = await withRetry(() =>
-      sb.from('cotizacion_historial').insert({
-        cotizacion_id: cot.id,
-        tipo_cambio: 'version_creada',
-        descripcion: `Cotización v1 generada desde Excel: ${fileName}`,
-        datos_nuevos: { items: items.length, reembolsos: reembolsos.length },
-      })
-    )
-
-    if (historialError) {
-      return { ok: false, error: `Error al registrar historial: ${historialError.message}` }
-    }
-
-    // 7. Sembrar cronograma sugerido en Ejecución (editable por el usuario)
+    // 4. Sembrar cronograma sugerido en Ejecución (editable por el usuario)
     if (cronogramaSugerido.length > 0) {
       const hitos = cronogramaSugerido
         .filter((h) => h.descripcion?.trim() && h.fechaHoraLimite)
@@ -1197,7 +1367,7 @@ export async function guardarCotizacion(
       }
     }
 
-    return { ok: true, requerimientoId: req.id, cotizacionId: cot.id }
+    return { ok: true, requerimientoId: req.id, cotizacionId: req.id }
   } catch (err) {
     console.error('[guardarCotizacion]', err)
     return { ok: false, error: 'Error inesperado al guardar en la base de datos.' }
@@ -1205,15 +1375,12 @@ export async function guardarCotizacion(
 }
 
 // ============================================================
-// Supabase helper (server-side, lazy)
+// Supabase helper (server-side, con sesión del usuario vía SSR)
 // ============================================================
 
 async function getSupabaseServer() {
-  const { createClient } = await import('@supabase/supabase-js')
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const { createClient } = await import('@/utils/supabase/server')
+  return createClient()
 }
 
 // ============================================================
@@ -1234,47 +1401,41 @@ export async function listarRequerimientosConCotizaciones(): Promise<{
   try {
     const sb = await getSupabaseServer()
 
-    const { data, error } = await sb
-      .from('requerimientos')
-      .select(`
-        id,
-        numero_requerimiento,
-        nombre_actividad,
-        municipio,
-        departamento,
-        estado,
-        cotizaciones (
-          id,
-          version,
-          estado,
-          total_general
-        )
-      `)
-      .order('created_at', { ascending: false })
+    const [reqResult, itemsResult] = await Promise.all([
+      sb
+        .from('requerimientos')
+        .select('id, numero_requerimiento, nombre_actividad, municipio, departamento, estado, created_at')
+        .order('created_at', { ascending: false }),
+      sb
+        .from('items_requerimiento')
+        .select('requerimiento_id, precio_total, tipo')
+        .in('tipo', ['SERVICIO', 'PASIVO_TERCERO'])
+        .eq('estado', 'ACTIVO'),
+    ])
 
-    if (error) {
-      console.error('[listarRequerimientosConCotizaciones]', error)
+    if (reqResult.error) {
+      console.error('[listarRequerimientosConCotizaciones]', reqResult.error)
       return []
     }
 
-    return (data ?? []).map((req: Record<string, unknown>) => {
-      const cots = (req.cotizaciones as Record<string, unknown>[] | null) ?? []
-      const latestCot = cots.length > 0
-        ? cots.reduce((prev, cur) => (Number(cur.version) > Number(prev.version) ? cur : prev))
-        : null
+    // Aggregate totals by requerimiento_id
+    const totalesPor: Record<string, number> = {}
+    for (const item of (itemsResult.data ?? [])) {
+      const rid = item.requerimiento_id as string
+      totalesPor[rid] = (totalesPor[rid] ?? 0) + Number(item.precio_total ?? 0)
+    }
 
-      return {
-        id: req.id as string,
-        numero: (req.numero_requerimiento as string) || '—',
-        nombre: (req.nombre_actividad as string) || 'Sin nombre',
-        municipio: (req.municipio as string) || '—',
-        departamento: (req.departamento as string) || '—',
-        estadoReq: (req.estado as string) || '—',
-        version: latestCot ? Number(latestCot.version) : 0,
-        estadoCot: latestCot ? (latestCot.estado as string) : '—',
-        total: latestCot ? Number(latestCot.total_general) : 0,
-      }
-    })
+    return (reqResult.data ?? []).map((req: Record<string, unknown>) => ({
+      id:           req.id as string,
+      numero:       (req.numero_requerimiento as string) || '—',
+      nombre:       (req.nombre_actividad as string) || 'Sin nombre',
+      municipio:    (req.municipio as string) || '—',
+      departamento: (req.departamento as string) || '—',
+      estadoReq:    (req.estado as string) || '—',
+      version:      1,
+      estadoCot:    (req.estado as string) || '—',
+      total:        totalesPor[req.id as string] ?? 0,
+    }))
   } catch (err) {
     console.error('[listarRequerimientosConCotizaciones]', err)
     return []
@@ -1306,21 +1467,13 @@ export async function cargarCotizacion(requerimientoId: string): Promise<
 
     if (reqError || !req) return { ok: false }
 
-    const { data: cots, error: cotError } = await sb
-      .from('cotizaciones')
-      .select('id, version, estado, subtotal_servicios, total_reembolsos, total_general')
-      .eq('requerimiento_id', requerimientoId)
-      .order('version', { ascending: false })
-      .limit(1)
-
-    if (cotError || !cots || cots.length === 0) return { ok: false }
-
-    const cot = cots[0]
-
     const { data: itemRows, error: itemsError } = await sb
-      .from('cotizacion_items')
+      .from('items_requerimiento')
       .select('*')
-      .eq('cotizacion_id', cot.id)
+      .eq('requerimiento_id', requerimientoId)
+      .in('tipo', ['SERVICIO', 'PASIVO_TERCERO'])
+      .neq('estado', 'CANCELADO')
+      .order('created_at', { ascending: true })
 
     if (itemsError) return { ok: false }
 
@@ -1354,7 +1507,7 @@ export async function cargarCotizacion(requerimientoId: string): Promise<
       unidadMedida:        (row.unidad_medida as string) ?? 'und',
       cantidad:            Number(row.cantidad ?? 1),
       precioUnitario:      Number(row.precio_unitario ?? 0),
-      esPassthrough:       Boolean(row.es_passthrough),
+      esPassthrough:       (row.tipo as string) === 'PASIVO_TERCERO',
       excluirDeFinanzas:   false,
       ocultarEnCotizacion: false,
       fuente:              (row.fuente as FuenteItem) ?? 'manual',
@@ -1366,9 +1519,9 @@ export async function cargarCotizacion(requerimientoId: string): Promise<
       encabezado,
       items,
       cotizacion: {
-        id:      cot.id as string,
-        version: Number(cot.version),
-        estado:  (cot.estado as string) ?? 'borrador',
+        id:      requerimientoId,
+        version: 1,
+        estado:  (req.estado as string) ?? 'generado',
       },
       requerimientoEstado: (req.estado as string) ?? 'generado',
     }
@@ -1392,24 +1545,33 @@ export async function listarHistorialCotizaciones(requerimientoId: string): Prom
   try {
     const sb = await getSupabaseServer()
 
-    const { data, error } = await sb
-      .from('cotizaciones')
-      .select('id, version, estado, total_general, created_at')
-      .eq('requerimiento_id', requerimientoId)
-      .order('version', { ascending: false })
+    const [reqResult, itemsResult] = await Promise.all([
+      sb.from('requerimientos').select('id, estado, created_at').eq('id', requerimientoId).single(),
+      sb
+        .from('items_requerimiento')
+        .select('precio_total')
+        .eq('requerimiento_id', requerimientoId)
+        .in('tipo', ['SERVICIO', 'PASIVO_TERCERO'])
+        .eq('estado', 'ACTIVO'),
+    ])
 
-    if (error) {
-      console.error('[listarHistorialCotizaciones]', error)
+    if (reqResult.error || !reqResult.data) {
+      console.error('[listarHistorialCotizaciones]', reqResult.error)
       return []
     }
 
-    return (data ?? []).map((row: Record<string, unknown>) => ({
-      id:            row.id as string,
-      version:       Number(row.version),
-      estado:        (row.estado as string) ?? 'borrador',
-      total_general: Number(row.total_general ?? 0),
-      created_at:    (row.created_at as string) ?? new Date().toISOString(),
-    }))
+    const total = (itemsResult.data ?? []).reduce(
+      (sum, r) => sum + Number(r.precio_total ?? 0),
+      0
+    )
+
+    return [{
+      id:            requerimientoId,
+      version:       1,
+      estado:        (reqResult.data.estado as string) ?? 'generado',
+      total_general: total,
+      created_at:    (reqResult.data.created_at as string) ?? new Date().toISOString(),
+    }]
   } catch (err) {
     console.error('[listarHistorialCotizaciones]', err)
     return []
@@ -1458,71 +1620,102 @@ export async function actualizarCotizacion(
       return { ok: false, error: `Error al actualizar requerimiento: ${reqError.message}` }
     }
 
-    // 2. Get current max version to determine next version number
-    const { data: maxVersionData } = await sb
-      .from('cotizaciones')
-      .select('version')
-      .eq('requerimiento_id', requerimientoId)
-      .order('version', { ascending: false })
-      .limit(1)
+    // 2. Eliminar ítems anteriores y re-insertar con los nuevos valores
+    const { error: deleteError } = await withRetryModule(() =>
+      sb
+        .from('items_requerimiento')
+        .delete()
+        .eq('requerimiento_id', requerimientoId)
+        .in('tipo', ['SERVICIO', 'PASIVO_TERCERO'])
+    )
 
-    const nextVersion = ((maxVersionData?.[0]?.version as number) ?? 0) + 1
-
-    // 3. Calculate totals
-    const subtotalServicios = items
-      .filter(i => !i.esPassthrough)
-      .reduce((sum, i) => sum + i.cantidad * i.precioUnitario, 0)
-
-    // 4. Insert new cotización version
-    const { data: newCot, error: cotError } = await sb
-      .from('cotizaciones')
-      .insert({
-        requerimiento_id:    requerimientoId,
-        version:             nextVersion,
-        estado:              'borrador',
-        subtotal_servicios:  subtotalServicios,
-        total_reembolsos:    0,
-        total_general:       subtotalServicios,
-      })
-      .select('id')
-      .single()
-
-    if (cotError || !newCot) {
-      return { ok: false, error: `Error al crear nueva versión: ${cotError?.message}` }
+    if (deleteError) {
+      return { ok: false, error: `Error al limpiar ítems anteriores: ${deleteError.message}` }
     }
 
-    // 5. Insert items
+    // 3. Insertar nuevos ítems
     if (items.length > 0) {
       const itemRows = items.map(i => ({
-        cotizacion_id: newCot.id,
-        tarifario_id:  i.tarifarioId || null,
-        codigo_item:   i.codigoItem || null,
-        descripcion:   i.descripcion,
-        categoria:     i.categoria || null,
-        unidad_medida: i.unidadMedida || null,
-        cantidad:      i.cantidad,
-        precio_unitario: i.precioUnitario,
-        es_passthrough: i.esPassthrough,
-        fuente:        i.fuente,
+        requerimiento_id: requerimientoId,
+        tarifario_id:     i.tarifarioId || null,
+        codigo_item:      i.codigoItem || null,
+        descripcion:      i.descripcion,
+        categoria:        i.categoria || null,
+        tipo:             i.esPassthrough ? 'PASIVO_TERCERO' : 'SERVICIO',
+        unidad_medida:    i.unidadMedida || null,
+        cantidad:         i.cantidad,
+        precio_unitario:  i.precioUnitario,
+        estado:           'ACTIVO',
+        fuente:           i.fuente,
       }))
 
-      const { error: itemsError } = await sb.from('cotizacion_items').insert(itemRows)
+      const { error: itemsError } = await withRetryModule(() =>
+        sb.from('items_requerimiento').insert(itemRows)
+      )
       if (itemsError) {
         return { ok: false, error: `Error al guardar ítems: ${itemsError.message}` }
       }
     }
 
-    // 6. Register in historial
-    await sb.from('cotizacion_historial').insert({
-      cotizacion_id: newCot.id,
-      tipo_cambio:   'version_creada',
-      descripcion:   `Cotización v${nextVersion} guardada desde el editor`,
-      datos_nuevos:  { items: items.length },
-    })
-
-    return { ok: true, cotizacionId: newCot.id as string }
+    return { ok: true, cotizacionId: requerimientoId }
   } catch (err) {
     console.error('[actualizarCotizacion]', err)
     return { ok: false, error: 'Error inesperado al actualizar la cotización.' }
   }
 }
+
+// ============================================================
+// sincronizarItemsExportacion
+// Persiste los ítems editados en la página de exportación ANTES
+// de generar cualquier documento (Word / Cuenta de Cobro).
+// Gate: el documento SOLO se genera si !error (patrón Task-1).
+// ============================================================
+
+export async function sincronizarItemsExportacion(
+  items: { id: string; descripcion: string; cantidad: number; precio_unitario: number }[]
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (items.length === 0) return { ok: true }
+
+  try {
+    const sb = await getSupabaseServer()
+
+    // Actualizar cada ítem por su ID con retry para 429
+    for (const item of items) {
+      const { error } = await withRetryModule(() =>
+        sb
+          .from('items_requerimiento')
+          .update({
+            descripcion:     item.descripcion,
+            cantidad:        item.cantidad,
+            precio_unitario: item.precio_unitario,
+          })
+          .eq('id', item.id)
+      )
+
+      if (error) {
+        return {
+          ok: false,
+          error: `Error al sincronizar ítem "${item.descripcion}": ${error.message}`,
+        }
+      }
+    }
+
+    return { ok: true }
+  } catch (err) {
+    console.error('[sincronizarItemsExportacion]', err)
+    return { ok: false, error: 'Error inesperado al sincronizar ítems antes de exportar.' }
+  }
+}
+
+// ============================================================
+// crearRequerimientoManual
+// Crea un requerimiento sin archivo, con solo el encabezado.
+// Los ítems se agregan después desde el editor.
+// ============================================================
+
+export async function crearRequerimientoManual(
+  encabezado: RequerimientoEncabezado
+): Promise<{ ok: true; requerimientoId: string } | { ok: false; error: string }> {
+  return guardarCotizacion(encabezado, [], [], 'manual', [])
+}
+

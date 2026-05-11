@@ -247,16 +247,14 @@ export async function marcarEntregaPendiente(
 // ============================================================
 
 /**
- * listarCostos mantiene la query directa a Supabase porque el componente UI
- * requiere el JOIN con cotizacion_items (descripcion, precio_total, categoria).
- * Es una query de presentación que no tiene equivalente en el dominio puro.
- * TODO: Considerar un ReadModel/Proyección dedicada si crece la complejidad.
+ * listarCostos — query directa a Supabase para el componente UI.
+ * cotizacion_items fue eliminada en FASE 1; se retorna null en ese campo.
  */
 export async function listarCostos(actividadId: string): Promise<EjecucionCostoConItem[]> {
   const sb = getSupabase()
   const { data, error } = await sb
     .from('ejecucion_costos')
-    .select('*, cotizacion_items(descripcion, precio_total, categoria)')
+    .select('*')
     .eq('actividad_id', actividadId)
     .order('created_at', { ascending: true })
 
@@ -264,7 +262,7 @@ export async function listarCostos(actividadId: string): Promise<EjecucionCostoC
     if (isMissingTable(error)) return []
     throw new Error(error.message)
   }
-  return data ?? []
+  return (data ?? []).map(row => ({ ...row, cotizacion_items: null }))
 }
 
 export async function agregarCosto(
@@ -307,22 +305,60 @@ export async function agregarCosto(
 }
 
 /**
- * Inserta múltiples filas de costo en un solo server action.
- * Usado por el modo "Por Ítem" cuando hay variaciones de precio.
+ * Inserta múltiples filas de costo en un solo bulk insert (1 request a Supabase).
+ * Evita rate-limiting por múltiples requests secuenciales.
  */
 export async function agregarCostoBatch(
   actividadId: string,
   filas: NuevoCostoForm[]
 ): Promise<EjecucionCostoRow[]> {
-  const results: EjecucionCostoRow[] = []
-  for (const form of filas) {
-    const row = await agregarCosto(actividadId, form)
-    results.push(row)
-  }
+  if (filas.length === 0) return []
+
+  const sb = getSupabase()
+  const { data: { user } } = await sb.auth.getUser()
+
+  const rows = filas.map(form => ({
+    actividad_id:    actividadId,
+    item_id:         form.item_id ?? null,
+    descripcion:     form.descripcion || null,
+    monto:           form.monto,
+    pagador:         form.pagador,
+    soporte_url:     form.soporte_url ?? null,
+    modo_registro:   form.modo_registro ?? 'por_item',
+    cantidad:        form.cantidad ?? 1,
+    precio_unitario: form.precio_unitario ?? null,
+    concepto:        form.concepto ?? null,
+    actualizado_por: user?.id ?? null,
+  }))
+
+  const { data, error } = await sb
+    .from('ejecucion_costos')
+    .insert(rows)
+    .select()
+
+  if (error) throw new Error(`[agregarCostoBatch] ${error.message}`)
+
   revalidatePath(`/ejecucion/${actividadId}`)
+  revalidatePath('/ejecucion')
   // @ts-expect-error -- revalidateTag not yet in Next.js types
   revalidateTag(`costos:${actividadId}`)
-  return results
+
+  return (data ?? []).map(r => ({
+    id:              r.id as string,
+    actividad_id:    r.actividad_id as string,
+    item_id:         r.item_id as string | null,
+    descripcion:     r.descripcion as string | null,
+    monto:           r.monto as number,
+    pagador:         r.pagador as EjecucionCostoRow['pagador'],
+    soporte_url:     r.soporte_url as string | null,
+    notas:           r.notas as string | null,
+    modo_registro:   r.modo_registro as EjecucionCostoRow['modo_registro'],
+    cantidad:        r.cantidad as number,
+    precio_unitario: r.precio_unitario as number | null,
+    concepto:        r.concepto as string | null,
+    created_at:      r.created_at as string,
+    updated_at:      r.updated_at as string,
+  }))
 }
 
 export async function eliminarCosto(costoId: string, actividadId?: string): Promise<void> {
@@ -344,19 +380,12 @@ export async function eliminarCosto(costoId: string, actividadId?: string): Prom
 export async function listarItemsCotizados(actividadId: string): Promise<ItemCotizado[]> {
   const sb = getSupabase()
 
-  const { data: cots } = await sb
-    .from('cotizaciones')
-    .select('id')
-    .eq('requerimiento_id', actividadId)
-    .order('version', { ascending: false })
-    .limit(1)
-
-  if (!cots?.length) return []
-
   const { data, error } = await sb
-    .from('cotizacion_items')
+    .from('items_requerimiento')
     .select('id, descripcion, cantidad, precio_unitario, precio_total, categoria')
-    .eq('cotizacion_id', cots[0].id)
+    .eq('requerimiento_id', actividadId)
+    .in('tipo', ['SERVICIO', 'PASIVO_TERCERO'])
+    .neq('estado', 'CANCELADO')
     .order('categoria')
 
   if (error) return []
@@ -535,4 +564,32 @@ export async function getActividadBasica(actividadId: string): Promise<Actividad
 
   if (error) return null
   return data as ActividadBasica
+}
+
+// ============================================================
+// ACTUALIZAR HORAS DE ACTIVIDAD
+// ============================================================
+
+export async function actualizarHorasActividad(
+  actividadId: string,
+  hora_inicio: string | null,
+  hora_fin: string | null
+): Promise<{ ok: boolean; error?: string }> {
+  const sb = getSupabase()
+
+  const updates: Record<string, string | null> = {}
+  if (hora_inicio !== undefined) updates.hora_inicio = hora_inicio
+  if (hora_fin !== undefined) updates.hora_fin = hora_fin
+
+  const { error } = await sb
+    .from('requerimientos')
+    .update(updates)
+    .eq('id', actividadId)
+
+  if (error) return { ok: false, error: error.message }
+
+  revalidatePath(`/ejecucion/${actividadId}`)
+  // @ts-expect-error -- revalidateTag not yet in Next.js types
+  revalidateTag(`act:${actividadId}`)
+  return { ok: true }
 }

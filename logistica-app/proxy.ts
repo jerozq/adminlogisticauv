@@ -6,13 +6,31 @@ const isDev = process.env.NODE_ENV === 'development'
 
 function log(message: string, data?: unknown): void {
   if (isDev) {
-    console.log(`[Middleware] ${message}`, data ?? '')
+    console.log(`[Proxy] ${message}`, data ?? '')
   }
 }
 
-export async function middleware(request: NextRequest): Promise<NextResponse> {
+type RequestKind = 'navigation' | 'prefetch' | 'rsc'
+
+function getRequestKind(request: NextRequest): RequestKind {
+  const isPrefetch =
+    request.headers.get('purpose') === 'prefetch' ||
+    request.headers.get('next-router-prefetch') === '1'
+  const isRsc = request.headers.get('rsc') === '1' || request.headers.has('next-router-state-tree')
+
+  if (isPrefetch) return 'prefetch'
+  if (isRsc) return 'rsc'
+  return 'navigation'
+}
+
+export async function proxy(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl
-  log('Protegiendo ruta:', pathname)
+  const requestKind = getRequestKind(request)
+  const isNavigation = requestKind === 'navigation'
+
+  if (isNavigation) {
+    log('Protegiendo ruta:', pathname)
+  }
 
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -54,7 +72,14 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       return NextResponse.redirect(loginUrl)
     }
 
-    log('Usuario autenticado:', user.email)
+    if (isNavigation) {
+      log('Usuario autenticado:', user.email)
+    }
+
+    if (isDev) {
+      response.headers.set('x-proxy-request-kind', requestKind)
+    }
+
     return response
   } catch (err) {
     // Captura de último recurso — NUNCA propagar excepción en Edge
@@ -64,8 +89,8 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 }
 
 // ============ MATCHER ============
-// Allowlist explícita: el middleware solo se invoca en estas rutas.
-// La raíz '/' y '/login' quedan fuera intencionalmente → nunca causan MIDDLEWARE_INVOCATION_FAILED.
+// Allowlist explícita: el proxy solo se invoca en estas rutas.
+// La raíz '/' y '/login' quedan fuera intencionalmente.
 export const config = {
   matcher: [
     '/dashboard/:path*',

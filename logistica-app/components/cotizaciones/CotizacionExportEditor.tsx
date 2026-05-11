@@ -12,9 +12,13 @@ import {
   Printer,
   ArrowLeft,
   Receipt,
+  RefreshCw,
 } from 'lucide-react'
 import type { DatosExportacion } from '@/actions/exportar-cotizacion'
+import type { DocumentosProyectoState } from '@/actions/documentos-proyecto'
+import { sincronizarItemsExportacion } from '@/actions/cotizaciones'
 import { CotizacionDocPreview } from './CotizacionDocPreview'
+import { DocumentosProyectoModal } from './DocumentosProyectoModal'
 
 // ============================================================
 // Helpers
@@ -65,12 +69,13 @@ function calcularTotales(items: ItemEditable[]) {
 // ============================================================
 interface Props {
   datos: DatosExportacion
+  documentosIniciales: DocumentosProyectoState
 }
 
 // ============================================================
 // Componente principal
 // ============================================================
-export function CotizacionExportEditor({ datos }: Props) {
+export function CotizacionExportEditor({ datos, documentosIniciales }: Props) {
   const { requerimiento, reembolsos } = datos
 
   // Estado de ítems editable (inicializado desde la DB)
@@ -88,7 +93,9 @@ export function CotizacionExportEditor({ datos }: Props) {
 
   const [downloading, setDownloading] = useState(false)
   const [downloadingCC, setDownloadingCC] = useState(false)
+  const [regenerating, setRegenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const [showPreview, setShowPreview] = useState(false)
 
   // Totales reactivos
@@ -109,12 +116,146 @@ export function CotizacionExportEditor({ datos }: Props) {
     []
   )
 
+  // ---- Regenerar todos los formatos (sincroniza BD → Excel + Word cotización) ----
+  async function handleRegenerarFormatos() {
+    setRegenerating(true)
+    setError(null)
+    setSuccessMsg(null)
+
+    try {
+      // 1. Validar datos mínimos
+      if (items.length === 0) {
+        setError(
+          'Error: No hay datos suficientes para generar el formato. Por favor, completa la información de costos/ítems primero.',
+        )
+        return
+      }
+
+      // 2. Sincronizar ítems en BD (PASO CRÍTICO — si falla, abortamos)
+      const syncResult = await sincronizarItemsExportacion(
+        items.map((i) => ({
+          id:              i.id,
+          descripcion:     i.descripcion,
+          cantidad:        i.cantidad,
+          precio_unitario: i.precio_unitario,
+        }))
+      )
+      if (!syncResult.ok) {
+        setError(`Error al sincronizar con la base de datos: ${syncResult.error}`)
+        return
+      }
+
+      // 3. Helper para disparar descarga de un blob
+      const triggerDownload = (blob: Blob, filename: string) => {
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = filename
+        a.click()
+        URL.revokeObjectURL(url)
+      }
+
+      const extractFilename = (headers: Headers, fallback: string) => {
+        const disp = headers.get('Content-Disposition') ?? ''
+        const m = disp.match(/filename[*]?=(?:UTF-8'')?["']?([^"';\n]+)/)
+        return m ? decodeURIComponent(m[1]) : fallback
+      }
+
+      // 4. Generar Word — Cotización
+      const resWord = await fetch('/api/generar-cotizacion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requerimiento: {
+            fecha_inicio:          requerimiento.fecha_inicio,
+            numero_requerimiento:  requerimiento.numero_requerimiento,
+            municipio:             requerimiento.municipio,
+            departamento:          requerimiento.departamento,
+          },
+          cotizacion_fecha: datos.cotizacion?.created_at ?? null,
+          items: items.map((i) => ({
+            descripcion:     i.descripcion,
+            cantidad:        i.cantidad,
+            precio_unitario: i.precio_unitario,
+            es_passthrough:  i.es_passthrough,
+          })),
+          totals,
+          nombreArchivo: `Cotizacion_${requerimiento.numero_requerimiento ?? requerimiento.nombre_actividad}.docx`,
+        }),
+      })
+      if (!resWord.ok) {
+        const json = await resWord.json().catch(() => ({}))
+        throw new Error(json.error ?? `Error generando Word (${resWord.status})`)
+      }
+      triggerDownload(
+        await resWord.blob(),
+        extractFilename(resWord.headers, `Cotizacion_${requerimiento.numero_requerimiento ?? 'SN'}.docx`),
+      )
+
+      // 5. Generar Excel — breve pausa para que el navegador no bloquee la segunda descarga
+      await new Promise((r) => setTimeout(r, 400))
+      const resExcel = await fetch('/api/cotizaciones/exportar-excel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requerimiento: {
+            fecha_inicio:          requerimiento.fecha_inicio,
+            numero_requerimiento:  requerimiento.numero_requerimiento,
+            nombre_actividad:      requerimiento.nombre_actividad,
+            municipio:             requerimiento.municipio,
+            departamento:          requerimiento.departamento,
+          },
+          cotizacion_fecha: datos.cotizacion?.created_at ?? null,
+          items: items.map((i) => ({
+            descripcion:     i.descripcion,
+            categoria:       i.categoria,
+            unidad_medida:   i.unidad_medida,
+            cantidad:        i.cantidad,
+            precio_unitario: i.precio_unitario,
+            es_passthrough:  i.es_passthrough,
+          })),
+          gran_total: totals.gran_total,
+        }),
+      })
+      if (!resExcel.ok) {
+        const json = await resExcel.json().catch(() => ({}))
+        throw new Error(json.error ?? `Error generando Excel (${resExcel.status})`)
+      }
+      triggerDownload(
+        await resExcel.blob(),
+        extractFilename(resExcel.headers, `Cotizacion_${requerimiento.numero_requerimiento ?? 'SN'}.xlsx`),
+      )
+
+      setSuccessMsg('¡Formatos regenerados y sincronizados correctamente!')
+      setTimeout(() => setSuccessMsg(null), 6000)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error desconocido al regenerar formatos')
+    } finally {
+      setRegenerating(false)
+    }
+  }
+
   // ---- Descarga cotización ----
   async function handleDescargar() {
     setDownloading(true)
     setError(null)
 
     try {
+      // ── Gate: sincronizar ítems en BD antes de generar el documento ──
+      // Si el bulk-update falla (error !== null), abortamos la generación.
+      const syncResult = await sincronizarItemsExportacion(
+        items.map((i) => ({
+          id:             i.id,
+          descripcion:    i.descripcion,
+          cantidad:       i.cantidad,
+          precio_unitario: i.precio_unitario,
+        }))
+      )
+      if (!syncResult.ok) {
+        setError(`Error al guardar cambios en la base de datos: ${syncResult.error}`)
+        return
+      }
+
       const res = await fetch('/api/generar-cotizacion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -166,6 +307,20 @@ export function CotizacionExportEditor({ datos }: Props) {
     setDownloadingCC(true)
     setError(null)
     try {
+      // ── Gate: sincronizar ítems en BD antes de generar el documento ──
+      const syncResult = await sincronizarItemsExportacion(
+        items.map((i) => ({
+          id:              i.id,
+          descripcion:     i.descripcion,
+          cantidad:        i.cantidad,
+          precio_unitario: i.precio_unitario,
+        }))
+      )
+      if (!syncResult.ok) {
+        setError(`Error al guardar cambios en la base de datos: ${syncResult.error}`)
+        return
+      }
+
       const res = await fetch('/api/generar-cuenta-cobro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -543,11 +698,45 @@ export function CotizacionExportEditor({ datos }: Props) {
         </div>
       )}
 
+      {/* ---- Toast de éxito ---- */}
+      {successMsg && (
+        <div className="flex items-center gap-2 bg-emerald-500/10 text-emerald-300 text-sm px-4 py-3 rounded-xl ring-1 ring-emerald-500/20">
+          <CheckCircle2 className="size-4 shrink-0" />
+          <span>{successMsg}</span>
+        </div>
+      )}
+
       {/* ---- Acciones ---- */}
       <div className="flex flex-col gap-3">
-        {/* Botón principal: previsualizar */}
+        <DocumentosProyectoModal
+          proyectoId={requerimiento.id}
+          identificadorProyecto={requerimiento.numero_requerimiento ?? requerimiento.nombre_actividad}
+          documentosIniciales={documentosIniciales}
+        />
+
+        {/* ══ BOTÓN REGENERAR FORMATOS (principal) ══ */}
         <button
-          onClick={() => { setError(null); setShowPreview(true) }}
+          onClick={handleRegenerarFormatos}
+          disabled={regenerating || items.length === 0}
+          className="w-full flex items-center justify-center gap-2.5 py-4 text-base
+                     font-bold text-white rounded-2xl
+                     bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600
+                     hover:from-indigo-500 hover:via-violet-500 hover:to-purple-500
+                     disabled:opacity-50 transition-all
+                     ring-1 ring-white/20 shadow-lg shadow-indigo-900/40
+                     active:scale-[0.98]"
+        >
+          {regenerating ? (
+            <Loader2 className="size-5 animate-spin" />
+          ) : (
+            <RefreshCw className="size-5" />
+          )}
+          {regenerating ? 'Sincronizando y Generando…' : 'Regenerar Formatos con IA'}
+        </button>
+
+        {/* Botón: previsualizar */}
+        <button
+          onClick={() => { setError(null); setSuccessMsg(null); setShowPreview(true) }}
           disabled={items.length === 0}
           className="w-full flex items-center justify-center gap-2.5 py-4 text-base
                      font-bold text-white bg-blue-600 rounded-2xl hover:bg-blue-700
@@ -557,8 +746,6 @@ export function CotizacionExportEditor({ datos }: Props) {
           <Eye className="size-5" />
           Previsualizar documento
         </button>
-
-        {/* Botón secundario: descargar .docx directo */}
         <button
           onClick={handleDescargar}
           disabled={downloading || items.length === 0}

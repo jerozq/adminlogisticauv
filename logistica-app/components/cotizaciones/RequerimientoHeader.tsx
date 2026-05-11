@@ -1,6 +1,6 @@
 'use client'
 
-import { MapPin, Calendar, User, Phone, Mail, Users, Banknote } from 'lucide-react'
+import { MapPin, Calendar, Clock, User, Phone, Mail, Users, Banknote } from 'lucide-react'
 import type { RequerimientoEncabezado } from '@/types/cotizacion'
 
 interface RequerimientoHeaderProps {
@@ -107,6 +107,22 @@ export function RequerimientoHeader({ encabezado, onChange, readonly }: Requerim
           type="date"
           readonly={readonly}
         />
+        <Field
+          label="Hora inicio"
+          value={encabezado.horaInicio}
+          onChange={set('horaInicio')}
+          icon={<Clock strokeWidth={1.5} className="size-3" />}
+          type="time"
+          readonly={readonly}
+        />
+        <Field
+          label="Hora fin"
+          value={encabezado.horaFin}
+          onChange={set('horaFin')}
+          icon={<Clock strokeWidth={1.5} className="size-3" />}
+          type="time"
+          readonly={readonly}
+        />
       </div>
 
       {/* Responsable */}
@@ -150,19 +166,19 @@ export function RequerimientoHeader({ encabezado, onChange, readonly }: Requerim
 
       {/* Números operativos */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="rounded-xl bg-zinc-50 p-4 ring-1 ring-zinc-200 text-center">
-          <Users strokeWidth={1.5} className="mx-auto mb-1 size-5 text-zinc-400" />
-          <p className="text-2xl font-bold text-zinc-800">{encabezado.numVictimas}</p>
-          <p className="text-xs text-zinc-500">Víctimas / participantes</p>
+        <div className="rounded-xl bg-white/5 p-4 ring-1 ring-white/10 text-center">
+          <Users strokeWidth={1.5} className="mx-auto mb-1 size-5 [color:var(--text-muted)]" />
+          <p className="text-2xl font-bold [color:var(--text-primary)]">{encabezado.numVictimas}</p>
+          <p className="text-xs [color:var(--text-muted)]">Víctimas / participantes</p>
         </div>
-        <div className="rounded-xl bg-emerald-50 p-4 ring-1 ring-emerald-200 text-center">
-          <Banknote strokeWidth={1.5} className="mx-auto mb-1 size-5 text-emerald-500" />
-          <p className="text-2xl font-bold text-emerald-800">
+        <div className="rounded-xl bg-emerald-500/10 p-4 ring-1 ring-emerald-500/20 text-center">
+          <Banknote strokeWidth={1.5} className="mx-auto mb-1 size-5 text-emerald-400" />
+          <p className="text-2xl font-bold text-emerald-400">
             {encabezado.montoReembolsoDeclarado > 0
               ? `$${encabezado.montoReembolsoDeclarado.toLocaleString('es-CO')}`
               : '—'}
           </p>
-          <p className="text-xs text-emerald-600">Monto reembolso declarado</p>
+          <p className="text-xs text-emerald-500">Monto reembolso declarado</p>
         </div>
       </div>
     </div>

@@ -21,8 +21,9 @@ venv/
 node_modules/
 
 # ── Documentos temporales de Office ──────────────────────────────
-~$*.docx
-~$*.xlsx
+.docx
+.xlsx
+.md
 
 # ── Sistema operativo ────────────────────────────────────────────
 .DS_Store

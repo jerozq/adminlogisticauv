@@ -1,11 +1,12 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { FileText, MapPin, Calendar, Clock, User } from 'lucide-react'
+import { FileText } from 'lucide-react'
 import { getSupabase } from '@/lib/supabase'
 import { getActivityRepository, makeGetReembolsosFromActivity } from '@/src/infrastructure/container'
-import { listarEntregas, listarCostos, listarItemsCotizados, listarParticipaciones } from '@/actions/ejecucion'
+import { listarEntregas } from '@/actions/ejecucion'
 import { ActivityTabs } from '@/components/ejecucion/ActivityTabs'
 import { CambiarEstadoButton } from '@/components/ejecucion/CambiarEstadoButton'
+import { MetaCardEjecucion } from '@/components/ejecucion/MetaCardEjecucion'
 import { AssistantAI } from '@/components/AssistantAI'
 import { PageHeader } from '@/components/PageHeader'
 import type { HitoCronogramaIA } from '@/actions/cronograma-ia'
@@ -61,9 +62,6 @@ export default async function ActividadDetailPage({
     entityResult,
     rawResult,
     entregas,
-    costos,
-    itemsCotizados,
-    participaciones,
     reembolsosResult,
   ] = await Promise.all([
     getActivityRepository().obtenerPorId(id),
@@ -76,21 +74,6 @@ export default async function ActividadDetailPage({
       () => listarEntregas(id),
       ['entregas', id],
       { tags: [`act:${id}`, `entregas:${id}`], revalidate: false }
-    )(),
-    unstable_cache(
-      () => listarCostos(id),
-      ['costos', id],
-      { tags: [`act:${id}`, `costos:${id}`], revalidate: false }
-    )(),
-    unstable_cache(
-      () => listarItemsCotizados(id),
-      ['items', id],
-      { tags: [`act:${id}`, `items:${id}`], revalidate: false }
-    )(),
-    unstable_cache(
-      () => listarParticipaciones(id),
-      ['participaciones', id],
-      { tags: [`act:${id}`, `participaciones:${id}`], revalidate: false }
     )(),
     reembolsoUC.execute({ actividadId: id }).catch(() => ({
       reembolsos: [],
@@ -125,29 +108,6 @@ export default async function ActividadDetailPage({
   const estadoCfg = ESTADO_CONFIG[actividad.estado] ?? {
     label: actividad.estado,
     cls: 'bg-zinc-100 text-zinc-600',
-  }
-
-  const fmtDate = (d: string | null) =>
-    d
-      ? new Date(d + 'T00:00').toLocaleDateString('es-CO', {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric',
-        })
-      : null
-
-  // Formatear hora: si es ISO string, extrae HH:MM; si es HH:MM ya, devuelve igual
-  const fmtTime = (t: string | null): string | null => {
-    if (!t) return null
-    // Si contiene 'T', es un ISO string → extrae HH:MM
-    if (t.includes('T')) {
-      const parts = t.split('T')[1]?.substring(0, 5)
-      return parts && /^\d{2}:\d{2}$/.test(parts) ? parts : null
-    }
-    // Si es HH:MM ya, valida y devuelve
-    if (/^\d{2}:\d{2}$/.test(t)) return t
-    // Otro formato inválido
-    return null
   }
 
   const tituloActividad = [
@@ -195,55 +155,19 @@ export default async function ActividadDetailPage({
 
       {/* Meta card */}
       <div className="max-w-2xl mx-auto px-4 pt-4 pb-2">
-        <div className="surface-card rounded-2xl p-4 mb-4">
-          <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs [color:var(--text-secondary)]">
-            {/* Estado */}
-            <span
-              className={`inline-flex items-center font-semibold px-2.5 py-1 rounded-full ${estadoCfg.cls}`}
-            >
-              {estadoCfg.label}
-            </span>
-
-            {actividad.municipio && (
-              <span className="flex items-center gap-1">
-                <MapPin strokeWidth={1.5} className="size-3.5 [color:var(--text-muted)]" />
-                {actividad.municipio}
-                {actividad.departamento ? `, ${actividad.departamento}` : ''}
-              </span>
-            )}
-
-            {actividad.fecha_inicio && (
-              <span className="flex items-center gap-1">
-                <Calendar strokeWidth={1.5} className="size-3.5 [color:var(--text-muted)]" />
-                {fmtDate(actividad.fecha_inicio)}
-                {actividad.fecha_fin && actividad.fecha_fin !== actividad.fecha_inicio
-                  ? ` → ${fmtDate(actividad.fecha_fin)}`
-                  : ''}
-              </span>
-            )}
-
-            {fmtTime(actividad.hora_inicio) && (
-              <span className="flex items-center gap-1">
-                <Clock strokeWidth={1.5} className="size-3.5 [color:var(--text-muted)]" />
-                {fmtTime(actividad.hora_inicio)}
-                {fmtTime(actividad.hora_fin) && ` - ${fmtTime(actividad.hora_fin)}`}
-              </span>
-            )}
-
-            {actividad.responsable_nombre && (
-              <span className="flex items-center gap-1">
-                <User strokeWidth={1.5} className="size-3.5 [color:var(--text-muted)]" />
-                {actividad.responsable_nombre}
-              </span>
-            )}
-          </div>
-
-          {actividad.num_victimas > 0 && (
-            <p className="text-xs [color:var(--text-muted)] mt-2">
-              {actividad.num_victimas} beneficiarios
-            </p>
-          )}
-        </div>
+        <MetaCardEjecucion
+          actividadId={id}
+          municipio={actividad.municipio}
+          departamento={actividad.departamento}
+          fechaInicio={actividad.fecha_inicio}
+          fechaFin={actividad.fecha_fin}
+          horaInicio={actividad.hora_inicio}
+          horaFin={actividad.hora_fin}
+          responsable={actividad.responsable_nombre}
+          numVictimas={actividad.num_victimas}
+          estadoLabel={estadoCfg.label}
+          estadoCls={estadoCfg.cls}
+        />
       </div>
 
       {/* Tabs */}
@@ -253,10 +177,6 @@ export default async function ActividadDetailPage({
           fechaInicio={actividad.fecha_inicio}
           horaInicio={actividad.hora_inicio}
           entregas={entregas}
-          costos={costos}
-          itemsCotizados={itemsCotizados}
-          ingresoTotal={ingresoTotal}
-          participaciones={participaciones}
           reembolsos={reembolsosProps}
           cronogramaIACache={cronogramaIACache}
           isMockMode={process.env.USE_MOCK_AI === 'true'}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { Upload, FileSpreadsheet, AlertCircle, Loader2 } from 'lucide-react'
+import { Upload, FileSpreadsheet, FileText, AlertCircle, Loader2 } from 'lucide-react'
 import { parsearRequerimientoExcel } from '@/actions/cotizaciones'
 import type { ParsedRequerimiento } from '@/types/cotizacion'
 
@@ -86,21 +86,22 @@ export function FileUploader({ onParsed }: FileUploaderProps) {
           <>
             <div className="flex size-16 items-center justify-center rounded-full bg-white/10 border border-white/20">
               {fileName ? (
-                <FileSpreadsheet strokeWidth={1.5} className="size-8 text-green-500" />
+                fileName.endsWith('.pdf')
+                  ? <FileText strokeWidth={1.5} className="size-8 text-orange-400" />
+                  : <FileSpreadsheet strokeWidth={1.5} className="size-8 text-green-500" />
               ) : (
                 <Upload strokeWidth={1.5} className="size-8 text-blue-500" />
-              )}
-            </div>
+              )}            </div>
             <div>
               <p className="text-sm font-semibold text-slate-200">
-                {fileName ?? 'Arrastra tu Excel aquí'}
+                {fileName ?? 'Arrastra tu Excel o PDF aquí'}
               </p>
               <p className="mt-1 text-xs text-slate-400">
                 o{' '}
-                <span className="font-medium text-blue-600 underline underline-offset-2">
+                <span className="font-medium text-blue-400 underline underline-offset-2">
                   haz clic para buscar
                 </span>
-                {' '}· .xlsx / .xlsm · máx. 10 MB
+                {' '}· .xlsx / .pdf · máx. 10 MB
               </p>
             </div>
           </>
@@ -131,7 +132,7 @@ export function FileUploader({ onParsed }: FileUploaderProps) {
       <input
         ref={inputRef}
         type="file"
-        accept=".xlsx,.xlsm,.xls"
+        accept=".xlsx,.xlsm,.xls,.pdf"
         className="hidden"
         onChange={onInputChange}
         aria-hidden

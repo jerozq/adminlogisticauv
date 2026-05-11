@@ -94,10 +94,10 @@ export default async function Home(props: {
       iconColor: '[color:var(--state-hold-fg)]',
     },
     {
-      href: '/dashboard/finanzas',
+      href: '/liquidaciones',
       icon: Landmark,
-      label: 'Finanzas',
-      description: 'KPIs · Utilidades · Distribución',
+      label: 'Liquidaciones',
+      description: 'Auditoría · Abonos · Costos',
       badge: null,
       stat: {
         icon: TrendingUp,

@@ -17,8 +17,10 @@ import {
   Plus,
   Lock,
   Unlock,
+  Wand2,
+  Upload,
 } from 'lucide-react'
-import { guardarReembolso, crearReembolso, eliminarReembolso } from '@/actions/reembolsos'
+import { guardarReembolso, crearReembolso, eliminarReembolso, materializarReembolsosAuto, importarReembolsosDesdeExcel } from '@/actions/reembolsos'
 import type { ReembolsoProps, TipoReembolso } from '@/src/core/domain/entities/Reembolso'
 
 // ============================================================
@@ -939,6 +941,131 @@ function FormatoCard({
 }
 
 // ---------------------------------------------------------------
+// EmptyStateConGenerar — estado vacío con botón de regeneración
+// y fallback de importación desde Excel
+// ---------------------------------------------------------------
+
+function EmptyStateConGenerar({
+  actividadId,
+  onGenerados,
+}: {
+  actividadId: string
+  onGenerados: (lista: ReembolsoProps[]) => void
+}) {
+  const [isPending, startTransition] = useTransition()
+  const [msg, setMsg] = useState<{ texto: string; tipo: 'ok' | 'warn' | 'error' } | null>(null)
+  const [showUpload, setShowUpload] = useState(false)
+  const [uploading, setUploading] = useState(false)
+
+  function handleGenerar() {
+    setMsg(null)
+    startTransition(async () => {
+      const result = await materializarReembolsosAuto(actividadId)
+      if (result.generados > 0) {
+        onGenerados(result.reembolsos)
+        setMsg({ texto: `${result.generados} formato${result.generados !== 1 ? 's' : ''} generado${result.generados !== 1 ? 's' : ''} correctamente.`, tipo: 'ok' })
+      } else {
+        // No data in DB — show upload fallback
+        setShowUpload(true)
+        setMsg({ texto: 'No hay datos de beneficiarios en la base de datos. Sube el Excel original para importarlos.', tipo: 'warn' })
+      }
+    })
+  }
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    setMsg(null)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const result = await importarReembolsosDesdeExcel(actividadId, fd)
+      if (result.error) {
+        setMsg({ texto: result.error, tipo: 'error' })
+      } else if (result.generados > 0) {
+        onGenerados(result.reembolsos)
+        setMsg({ texto: `${result.generados} formato${result.generados !== 1 ? 's' : ''} importado${result.generados !== 1 ? 's' : ''} correctamente.`, tipo: 'ok' })
+      } else {
+        setMsg({ texto: 'No se encontraron beneficiarios con valores de transporte en el Excel.', tipo: 'warn' })
+      }
+    } catch {
+      setMsg({ texto: 'Error inesperado al procesar el archivo.', tipo: 'error' })
+    } finally {
+      setUploading(false)
+      // Reset file input
+      e.target.value = ''
+    }
+  }
+
+  return (
+    <div className="bg-white/5 border border-white/10 rounded-2xl p-10 text-center backdrop-blur-md flex flex-col items-center gap-4">
+      <Receipt strokeWidth={1.5} className="size-8 text-white/25 mx-auto" />
+      <p className="text-sm font-medium text-white/50">Sin formatos detectados</p>
+      <p className="text-xs text-white/30 max-w-xs leading-relaxed mx-auto">
+        Los formatos se generan automáticamente desde los datos de beneficiarios
+        del requerimiento. Si no se generaron, usa el botón para volver a intentarlo.
+      </p>
+
+      {/* Botón principal: generar desde DB */}
+      <button
+        onClick={handleGenerar}
+        disabled={isPending || uploading}
+        className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl bg-violet-500/20 hover:bg-violet-500/30 border border-violet-500/30 text-violet-300 disabled:opacity-50 transition-all"
+      >
+        {isPending ? (
+          <Loader2 strokeWidth={1.5} className="size-4 animate-spin" />
+        ) : (
+          <Wand2 strokeWidth={1.5} className="size-4" />
+        )}
+        {isPending ? 'Generando…' : 'Generar Reembolsos'}
+      </button>
+
+      {/* Fallback: importar desde Excel */}
+      {showUpload && (
+        <div className="w-full max-w-sm space-y-3 pt-2 border-t border-white/10">
+          <p className="text-xs text-amber-400/80 leading-relaxed">
+            Sube el Excel del requerimiento (hoja ALOJAMIENTO) para importar los beneficiarios.
+          </p>
+          <label
+            className={`flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl border cursor-pointer transition-all ${
+              uploading
+                ? 'bg-white/5 border-white/10 text-white/30 cursor-wait'
+                : 'bg-amber-500/15 hover:bg-amber-500/25 border-amber-500/30 text-amber-300'
+            }`}
+          >
+            {uploading ? (
+              <Loader2 strokeWidth={1.5} className="size-4 animate-spin" />
+            ) : (
+              <Upload strokeWidth={1.5} className="size-4" />
+            )}
+            {uploading ? 'Importando…' : 'Importar desde Excel'}
+            <input
+              type="file"
+              accept=".xlsx,.xlsm,.xls"
+              onChange={handleFileUpload}
+              disabled={uploading}
+              className="hidden"
+            />
+          </label>
+        </div>
+      )}
+
+      {/* Mensajes */}
+      {msg && (
+        <p className={`text-xs font-medium ${
+          msg.tipo === 'ok' ? 'text-emerald-400' :
+          msg.tipo === 'error' ? 'text-red-400' :
+          'text-amber-400'
+        }`}>
+          {msg.texto}
+        </p>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------
 // TablaReembolsos — componente principal (ahora: Formatos)
 // ---------------------------------------------------------------
 
@@ -1062,15 +1189,10 @@ export function TablaReembolsos({ actividadId, initialReembolsos }: Props) {
 
       {/* ── Estado vacío (glass) ── */}
       {isEmpty && (
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-10 text-center backdrop-blur-md flex flex-col items-center gap-3">
-          <Receipt strokeWidth={1.5} className="size-8 text-white/25 mx-auto" />
-          <p className="text-sm font-medium text-white/50">Sin formatos detectados</p>
-          <p className="text-xs text-white/30 max-w-xs leading-relaxed mx-auto">
-            Los formatos se generan automáticamente cuando el requerimiento
-            contiene beneficiarios con valores de transporte o inhumación.
-            También puedes crearlos manualmente con el botón superior.
-          </p>
-        </div>
+        <EmptyStateConGenerar
+          actividadId={actividadId}
+          onGenerados={(lista) => setReembolsos(lista)}
+        />
       )}
 
       {/* ── Secciones por tipo con grid ── */}

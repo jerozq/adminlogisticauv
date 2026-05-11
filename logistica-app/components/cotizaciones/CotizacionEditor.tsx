@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Plus,
@@ -11,9 +11,10 @@ import {
   AlertCircle,
   ChevronDown,
   ChevronUp,
+  Sparkles,
 } from 'lucide-react'
 import type { CotizacionItemDraft, RequerimientoEncabezado } from '@/types/cotizacion'
-import { actualizarCotizacion } from '@/actions/cotizaciones'
+import { actualizarCotizacion, parsearRequerimientoExcel } from '@/actions/cotizaciones'
 
 // ─── Constantes ──────────────────────────────────────────────
 const CATEGORIAS = [
@@ -121,9 +122,11 @@ export function CotizacionEditor({
   requerimientoEstado,
 }: Props) {
   const router = useRouter()
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [encabezado, setEncabezado] = useState<RequerimientoEncabezado>(initialEncabezado)
   const [items, setItems] = useState<CotizacionItemDraft[]>(initialItems)
   const [saving, setSaving] = useState(false)
+  const [generatingAI, setGeneratingAI] = useState(false)
   const [result, setResult] = useState<{ ok: boolean; msg: string } | null>(null)
   const [headerOpen, setHeaderOpen] = useState(true)
 
@@ -160,6 +163,38 @@ export function CotizacionEditor({
     setItems((prev) => prev.filter((_, i) => i !== idx))
   }
 
+  async function handleRegenerarIA() {
+    fileInputRef.current?.click()
+  }
+
+  async function handleArchivoSeleccionado(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    // Limpiar para permitir re-selección del mismo archivo
+    e.target.value = ''
+
+    if (!confirm(`¿Analizar "${file.name}" con IA y reemplazar los ítems actuales con los extraídos? Los cambios no se guardan hasta que hagas clic en "Guardar cambios".`)) return
+
+    setGeneratingAI(true)
+    setResult(null)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await parsearRequerimientoExcel(formData)
+      if (res.ok) {
+        setItems(res.data.items)
+        setResult({ ok: true, msg: `IA extrajo ${res.data.items.length} ítem(s) del archivo. Revisa los precios y guarda cuando estés listo.` })
+      } else {
+        setResult({ ok: false, msg: res.error })
+      }
+    } catch (e) {
+      setResult({ ok: false, msg: e instanceof Error ? e.message : 'Error al procesar el archivo' })
+    } finally {
+      setGeneratingAI(false)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
   async function handleSave() {
     setSaving(true)
     setResult(null)
@@ -194,6 +229,15 @@ export function CotizacionEditor({
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Input de archivo oculto para regenerar con IA */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".xlsx,.xls,.pdf"
+        className="hidden"
+        onChange={handleArchivoSeleccionado}
+      />
+
       {/* ── Banner de resultado ── */}
       {result && (
         <div
@@ -358,13 +402,28 @@ export function CotizacionEditor({
               {totalPassthrough > 0 && ` · Pass-through: ${fmt(totalPassthrough)}`}
             </p>
           </div>
-          <button
-            onClick={addItem}
-            className="flex shrink-0 items-center gap-1.5 rounded-xl btn-primary px-3 py-2 text-xs font-semibold transition-colors"
-          >
-            <Plus strokeWidth={1.5} className="size-3.5" />
-            Agregar ítem
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <button
+              onClick={handleRegenerarIA}
+              disabled={generatingAI || saving}
+              title="Generar ítems automáticamente con IA usando los datos del requerimiento"
+              className="flex items-center gap-1.5 rounded-xl border [border-color:var(--surface-border)] bg-transparent px-3 py-2 text-xs font-semibold [color:var(--text-secondary)] hover:[background:var(--surface-raised)] disabled:opacity-50 transition-colors"
+            >
+              {generatingAI ? (
+                <Loader2 strokeWidth={1.5} className="size-3.5 animate-spin" />
+              ) : (
+                <Sparkles strokeWidth={1.5} className="size-3.5" />
+              )}
+              {generatingAI ? 'Generando...' : 'Regenerar con IA'}
+            </button>
+            <button
+              onClick={addItem}
+              className="flex items-center gap-1.5 rounded-xl btn-primary px-3 py-2 text-xs font-semibold transition-colors"
+            >
+              <Plus strokeWidth={1.5} className="size-3.5" />
+              Agregar ítem
+            </button>
+          </div>
         </div>
 
         {/* Datalist para unidades */}

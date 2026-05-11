@@ -72,6 +72,14 @@ function toSocioParticipacion(row: Record<string, unknown>): SocioParticipacion 
   })
 }
 
+function normalizarPagador(pagador: string): 'jero' | 'socio' | 'caja_proyecto' {
+  const valor = (pagador ?? '').trim().toLowerCase()
+  if (valor === 'jero' || valor === 'socio' || valor === 'caja_proyecto') return valor
+  if (valor.includes('jero')) return 'jero'
+  if (valor.includes('socio')) return 'socio'
+  return 'caja_proyecto'
+}
+
 
 export class SupabaseActivityRepository implements IActivityRepository {
   private readonly sb: SupabaseClient
@@ -93,7 +101,7 @@ export class SupabaseActivityRepository implements IActivityRepository {
     let query = this.sb
       .from('requerimientos')
       .select(
-        'id, numero_requerimiento, nombre_actividad, municipio, fecha_inicio, fecha_fin, hora_inicio, estado, cotizaciones(total_general, estado)'
+        'id, numero_requerimiento, nombre_actividad, municipio, fecha_inicio, fecha_fin, hora_inicio, estado'
       )
       .order('fecha_inicio', { ascending: true })
 
@@ -105,28 +113,37 @@ export class SupabaseActivityRepository implements IActivityRepository {
     if (error) throw new Error(`[SupabaseRepo] listarResumenes: ${error.message}`)
     if (!reqs?.length) return []
 
-    // Conteos de entregas en una sola query
     const ids = reqs.map((r) => r.id)
-    const { data: entregas } = await this.sb
-      .from('bitacora_entregas')
-      .select('actividad_id, estado')
-      .in('actividad_id', ids)
+
+    // Conteos de entregas + totales cotizados en paralelo
+    const [entregasRes, itemsRes] = await Promise.all([
+      this.sb
+        .from('bitacora_entregas')
+        .select('actividad_id, estado')
+        .in('actividad_id', ids),
+      this.sb
+        .from('items_requerimiento')
+        .select('requerimiento_id, precio_total')
+        .in('requerimiento_id', ids)
+        .in('tipo', ['SERVICIO', 'PASIVO_TERCERO'])
+        .eq('estado', 'ACTIVO'),
+    ])
 
     const countMap: Record<string, { total: number; listos: number }> = {}
-    for (const e of entregas ?? []) {
+    for (const e of entregasRes.data ?? []) {
       if (!countMap[e.actividad_id]) countMap[e.actividad_id] = { total: 0, listos: 0 }
       countMap[e.actividad_id].total++
       if (e.estado === 'listo') countMap[e.actividad_id].listos++
     }
 
-    return reqs.map((req) => {
-      const cots = (
-        req as unknown as { cotizaciones: Array<{ total_general: number; estado: string }> }
-      ).cotizaciones ?? []
-      const aprobada = cots.find((c) => c.estado === 'aprobada')
-      const ingreso  = aprobada?.total_general ?? cots[0]?.total_general ?? null
-      const counts   = countMap[req.id] ?? { total: 0, listos: 0 }
+    const ingresoPor: Record<string, number> = {}
+    for (const item of itemsRes.data ?? []) {
+      const rid = item.requerimiento_id as string
+      ingresoPor[rid] = (ingresoPor[rid] ?? 0) + Number(item.precio_total)
+    }
 
+    return reqs.map((req) => {
+      const counts = countMap[req.id] ?? { total: 0, listos: 0 }
       return {
         id:                   req.id,
         numeroRequerimiento:  req.numero_requerimiento,
@@ -138,7 +155,7 @@ export class SupabaseActivityRepository implements IActivityRepository {
         estado:               req.estado as EstadoActividad,
         totalEntregas:        counts.total,
         entregasListas:       counts.listos,
-        ingresoCotizado:      ingreso,
+        ingresoCotizado:      ingresoPor[req.id] ?? null,
       }
     })
   }
@@ -163,37 +180,23 @@ export class SupabaseActivityRepository implements IActivityRepository {
   // ──────────────────────────────────────────────────────────────
 
   async obtenerPorId(id: string): Promise<Actividad | null> {
-    // 1+2. Requerimiento base + Cotizaciones en paralelo (independientes entre sí)
-    const [reqResult, cotsResult] = await Promise.all([
-      this.sb
-        .from('requerimientos')
-        .select(
-          'id, numero_requerimiento, nombre_actividad, municipio, fecha_inicio, fecha_fin, hora_inicio, estado'
-        )
-        .eq('id', id)
-        .single(),
-      this.sb
-        .from('cotizaciones')
-        .select('id, version, total_general, estado')
-        .eq('requerimiento_id', id)
-        .order('version', { ascending: false })
-        .limit(5),
-    ])
+    const { data: req, error: errReq } = await this.sb
+      .from('requerimientos')
+      .select(
+        'id, numero_requerimiento, nombre_actividad, municipio, fecha_inicio, fecha_fin, hora_inicio, estado'
+      )
+      .eq('id', id)
+      .single()
 
-    const { data: req, error: errReq } = reqResult
     if (errReq || !req) return null
 
-    const cots = cotsResult.data ?? []
-    const cotizacion =
-      cots.find((c) => c.estado === 'aprobada') ?? cots[0] ?? null
-
-    // 3. Ítems, costos, entregas, participaciones y reembolsos — todos en paralelo
+    // Items, costos, entregas, participaciones y reembolsos — todos en paralelo
     const [items, costos, entregas, participaciones, reembolsosRequerimiento] = await Promise.all([
-      cotizacion ? this._fetchItems(cotizacion.id, id) : Promise.resolve([]),
+      this._fetchItems(id),
       this.listarCostos(id),
       this.listarEntregas(id),
       this.listarParticipaciones(id),
-      cotizacion ? this._fetchReembolsosBeneficiarios(cotizacion.id) : Promise.resolve([]),
+      this._fetchReembolsosBeneficiarios(id),
     ])
 
     return new Actividad({
@@ -213,47 +216,46 @@ export class SupabaseActivityRepository implements IActivityRepository {
     })
   }
 
-  private async _fetchReembolsosBeneficiarios(cotizacionId: string): Promise<ReembolsoBeneficiario[]> {
+  private async _fetchReembolsosBeneficiarios(requerimientoId: string): Promise<ReembolsoBeneficiario[]> {
     const { data, error } = await this.sb
-      .from('reembolsos_detalle')
+      .from('items_requerimiento')
       .select(
-        'nombre_beneficiario, documento_identidad, municipio_origen, municipio_destino, ' +
-        'valor_transporte, valor_alojamiento, valor_alimentacion, valor_otros'
+        'beneficiario_nombre, beneficiario_documento, municipio_origen, precio_unitario'
       )
-      .eq('cotizacion_id', cotizacionId)
-      .order('nombre_beneficiario')
+      .eq('requerimiento_id', requerimientoId)
+      .eq('tipo', 'REEMBOLSO')
+      .order('beneficiario_nombre')
 
-    // Tabla puede no existir en entornos locales sin migración aplicada
     if (error || !data) return []
 
     return (data as unknown as Record<string, unknown>[])
       .map((row: Record<string, unknown>) => ({
-        nombreBeneficiario: (row.nombre_beneficiario as string | null)?.trim() ?? '',
-        documentoIdentidad: (row.documento_identidad as string | null)?.trim() ?? '',
+        nombreBeneficiario: (row.beneficiario_nombre as string | null)?.trim() ?? '',
+        documentoIdentidad: (row.beneficiario_documento as string | null)?.trim() ?? '',
         municipioOrigen:    (row.municipio_origen as string | null)?.trim() ?? '',
-        municipioDestino:   (row.municipio_destino as string | null)?.trim() ?? '',
-        valorTransporte:    Number(row.valor_transporte ?? 0),
-        valorAlojamiento:   Number(row.valor_alojamiento ?? 0),
-        valorAlimentacion:  Number(row.valor_alimentacion ?? 0),
-        valorOtros:         Number(row.valor_otros ?? 0),
+        municipioDestino:   '',
+        valorTransporte:    Number(row.precio_unitario ?? 0),
+        valorAlojamiento:   0,
+        valorAlimentacion:  0,
+        valorOtros:         0,
       }))
-      // Filtramos filas sin nombre — no tienen sentido como reembolso
       .filter((b) => b.nombreBeneficiario.length > 0)
   }
 
-  private async _fetchItems(cotizacionId: string, actividadId: string) {
+  private async _fetchItems(requerimientoId: string) {
     const { data } = await this.sb
-      .from('cotizacion_items')
+      .from('items_requerimiento')
       .select(
-        'id, tarifario_id, codigo_item, descripcion, categoria, unidad_medida, cantidad, precio_unitario, precio_total, es_passthrough'
+        'id, tarifario_id, codigo_item, descripcion, categoria, unidad_medida, cantidad, precio_unitario, precio_total, tipo'
       )
-      .eq('cotizacion_id', cotizacionId)
+      .eq('requerimiento_id', requerimientoId)
+      .in('tipo', ['SERVICIO', 'PASIVO_TERCERO'])
       .order('categoria')
       .order('descripcion')
 
     return (data ?? []).map((i) => ({
       id:             i.id,
-      actividadId,
+      actividadId:    requerimientoId,
       tarifarioId:    i.tarifario_id ?? null,
       codigoItem:     i.codigo_item ?? '',
       descripcion:    i.descripcion,
@@ -262,7 +264,7 @@ export class SupabaseActivityRepository implements IActivityRepository {
       cantidad:       Number(i.cantidad),
       precioUnitario: Number(i.precio_unitario),
       precioTotal:    Number(i.precio_total),
-      esPassthrough:  i.es_passthrough,
+      esPassthrough:  i.tipo === 'PASIVO_TERCERO',
     }))
   }
 
@@ -296,6 +298,7 @@ export class SupabaseActivityRepository implements IActivityRepository {
 
   async agregarCosto(actividadId: string, costo: NuevoCosto): Promise<CostoReal> {
     const { data: { user } } = await this.sb.auth.getUser()
+    const pagadorNormalizado = normalizarPagador(costo.pagador)
     
     const { data, error } = await this.sb
       .from('ejecucion_costos')
@@ -304,7 +307,7 @@ export class SupabaseActivityRepository implements IActivityRepository {
         item_id:          costo.itemId ?? null,
         descripcion:      costo.descripcion || null,
         monto:            costo.monto,
-        pagador:          costo.pagador,
+        pagador:          pagadorNormalizado,
         soporte_url:      costo.soporteUrl ?? null,
         notas:            costo.notas ?? null,
         modo_registro:    costo.modoRegistro ?? 'por_item',

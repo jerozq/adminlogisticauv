@@ -70,17 +70,14 @@ class SupabaseReportingRepository implements IReportingRepository {
 
     const reqIds = reqs.map((r) => r.id as string)
 
-    // 2–6. Datos financieros en paralelo
-    const [cotRows, itemRows, costoRows, partRows, rembolRows] = await Promise.all([
-      // Cotizaciones (para obtener cotizacion_id)
+    // 2–4. Datos financieros en paralelo (sin cotizaciones/cotizacion_items/reembolsos_detalle)
+    const [itemsRes, costoRows, partRows] = await Promise.all([
+      // items_requerimiento agrupa cotizados y reembolsos por requerimiento_id
       this.sb
-        .from('cotizaciones')
-        .select('id, requerimiento_id, estado')
-        .in('requerimiento_id', reqIds),
-
-      // Items (para sumar precio_total por cotizacion_id)
-      // — se join después de conocer los cotizacion_ids
-      Promise.resolve({ data: null as null | { cotizacion_id: string; precio_total: number }[], error: null }),
+        .from('items_requerimiento')
+        .select('requerimiento_id, precio_total, tipo')
+        .in('requerimiento_id', reqIds)
+        .eq('estado', 'ACTIVO'),
 
       // Costos reales
       this.sb
@@ -93,61 +90,28 @@ class SupabaseReportingRepository implements IReportingRepository {
         .from('actividad_participaciones')
         .select('actividad_id, socio_id, nombre_socio, porcentaje, monto_aportado')
         .in('actividad_id', reqIds),
-
-      // Reembolsos detalle — se join después de conocer cotizacion_ids
-      Promise.resolve({ data: null as null | { cotizacion_id: string; valor_transporte: number; valor_otros: number }[], error: null }),
     ])
 
-    if (cotRows.error) throw new Error(`[ReportingRepo] cotizaciones: ${cotRows.error.message}`)
     if (costoRows.error) throw new Error(`[ReportingRepo] ejecucion_costos: ${costoRows.error.message}`)
-    if (partRows.error) throw new Error(`[ReportingRepo] participaciones: ${partRows.error.message}`)
+    if (partRows.error)  throw new Error(`[ReportingRepo] participaciones: ${partRows.error.message}`)
 
-    // Mapa req_id → cotizacion_id (preferir aprobada)
-    const cotByReq: Record<string, string> = {}
-    for (const c of cotRows.data ?? []) {
-      const rid = c.requerimiento_id as string
-      const cid = c.id as string
-      // Toma la primera; sobreescribe si encuentra aprobada
-      if (!cotByReq[rid] || (c.estado as string) === 'aprobada') {
-        cotByReq[rid] = cid
+    // Mapas de suma por req_id
+    const cotizadoPor:   Record<string, number> = {}
+    const reembolsosPor: Record<string, number> = {}
+
+    for (const item of itemsRes.data ?? []) {
+      const rid = item.requerimiento_id as string
+      if (item.tipo === 'REEMBOLSO') {
+        reembolsosPor[rid] = (reembolsosPor[rid] ?? 0) + Number(item.precio_total)
+      } else {
+        cotizadoPor[rid] = (cotizadoPor[rid] ?? 0) + Number(item.precio_total)
       }
-    }
-
-    const cotIds = [...new Set(Object.values(cotByReq))]
-
-    // Ahora cargamos items y reembolsos con los cotizacion_ids reales
-    const [itemRows2, rembolRows2] = cotIds.length > 0
-      ? await Promise.all([
-          this.sb
-            .from('cotizacion_items')
-            .select('cotizacion_id, precio_total')
-            .in('cotizacion_id', cotIds),
-          this.sb
-            .from('reembolsos_detalle')
-            .select('cotizacion_id, valor_transporte, valor_otros')
-            .in('cotizacion_id', cotIds)
-            .throwOnError(),
-        ])
-      : [{ data: [] as typeof itemRows.data, error: null }, { data: [] as typeof rembolRows.data, error: null }]
-
-    // Mapas de suma por ID
-    const cotizadoPorCot: Record<string, number> = {}
-    for (const it of itemRows2.data ?? []) {
-      const cid = it.cotizacion_id as string
-      cotizadoPorCot[cid] = (cotizadoPorCot[cid] ?? 0) + Number(it.precio_total)
     }
 
     const costoPorReq: Record<string, number> = {}
     for (const c of costoRows.data ?? []) {
       const rid = c.actividad_id as string
       costoPorReq[rid] = (costoPorReq[rid] ?? 0) + Number(c.monto)
-    }
-
-    const reembolsoPorCot: Record<string, number> = {}
-    for (const r of rembolRows2.data ?? []) {
-      const cid = r.cotizacion_id as string
-      reembolsoPorCot[cid] =
-        (reembolsoPorCot[cid] ?? 0) + Number(r.valor_transporte) + Number(r.valor_otros)
     }
 
     const partPorReq: Record<string, SocioParticipacionProps[]> = {}
@@ -166,12 +130,11 @@ class SupabaseReportingRepository implements IReportingRepository {
     const balances: BalanceFinancieroProps[] = []
 
     for (const req of reqs) {
-      const rid           = req.id as string
-      const cotId         = cotByReq[rid]
-      const totalCotizado = cotId ? (cotizadoPorCot[cotId] ?? 0) : 0
-      const totalCostosReales = costoPorReq[rid] ?? 0
-      const totalReembolsos   = cotId ? (reembolsoPorCot[cotId] ?? 0) : 0
-      const participaciones   = partPorReq[rid] ?? []
+      const rid               = req.id as string
+      const totalCotizado     = cotizadoPor[rid]   ?? 0
+      const totalCostosReales = costoPorReq[rid]   ?? 0
+      const totalReembolsos   = reembolsosPor[rid] ?? 0
+      const participaciones   = partPorReq[rid]    ?? []
 
       // fuenteFinanciacion: cuando no hay columna DB, se usa 'Fondo Propio'.
       // Cuando se agregue la columna, leerla aquí.

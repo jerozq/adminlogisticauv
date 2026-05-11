@@ -49,20 +49,12 @@ const log = getLogger('SupabaseFinancialAdapter')
 // Tipos de fila — resultado del select con embedded relations
 // ---------------------------------------------------------------
 
-interface CotizacionRow {
-  id:                 string
-  estado:             string
-  cotizacion_items:   Array<{ precio_total: number }> | null
-  reembolsos_detalle: Array<{ valor_transporte: number; valor_otros: number }> | null
-}
-
 interface ReqRow {
   id:                        string
   nombre_actividad:          string
   municipio:                 string | null
   fecha_inicio:              string | null
   estado:                    string
-  cotizaciones:              CotizacionRow[] | null
   costos_reales:             Array<{ monto: number }> | null
   actividad_participaciones: Array<{
     socio_id:      string
@@ -125,14 +117,7 @@ class SupabaseFinancialAdapter implements IReportingRepository {
       '[Auditoría] Consulta financiera iniciada',
     )
 
-    // ── Construir query con relaciones embebidas ─────────────
-    // PostgREST convierte esto en un único SQL con LEFT JOINs:
-    //   requerimientos
-    //     LEFT JOIN cotizaciones              ON cotizaciones.requerimiento_id = requerimientos.id
-    //       LEFT JOIN cotizacion_items        ON cotizacion_items.cotizacion_id = cotizaciones.id
-    //       LEFT JOIN reembolsos_detalle      ON reembolsos_detalle.cotizacion_id = cotizaciones.id
-    //     LEFT JOIN costos_reales             ON costos_reales.actividad_id = requerimientos.id
-    //     LEFT JOIN actividad_participaciones ON actividad_participaciones.actividad_id = requerimientos.id
+    // ── Construir query sin relaciones cotizaciones (tablas eliminadas) ─
     let q = this.sb
       .from('requerimientos')
       .select(`
@@ -141,12 +126,6 @@ class SupabaseFinancialAdapter implements IReportingRepository {
         municipio,
         fecha_inicio,
         estado,
-        cotizaciones(
-          id,
-          estado,
-          cotizacion_items(precio_total),
-          reembolsos_detalle(valor_transporte, valor_otros)
-        ),
         costos_reales(monto),
         actividad_participaciones(socio_id, nombre_socio, porcentaje, monto_aportado)
       `)
@@ -170,22 +149,37 @@ class SupabaseFinancialAdapter implements IReportingRepository {
 
     const rows = (data ?? []) as unknown as ReqRow[]
 
+    // Agregar items_requerimiento en una sola query adicional
+    const reqIds = rows.map(r => r.id)
+    const cotizadoPor:   Record<string, number> = {}
+    const reembolsosPor: Record<string, number> = {}
+
+    if (reqIds.length > 0) {
+      const { data: itemsData } = await this.sb
+        .from('items_requerimiento')
+        .select('requerimiento_id, precio_total, tipo')
+        .in('requerimiento_id', reqIds)
+        .eq('estado', 'ACTIVO')
+
+      for (const item of itemsData ?? []) {
+        const rid = item.requerimiento_id as string
+        if (item.tipo === 'REEMBOLSO') {
+          reembolsosPor[rid] = (reembolsosPor[rid] ?? 0) + Number(item.precio_total)
+        } else {
+          cotizadoPor[rid] = (cotizadoPor[rid] ?? 0) + Number(item.precio_total)
+        }
+      }
+    }
+
     // ── Mapear filas → BalanceFinancieroProps ────────────────
     const balances: BalanceFinancieroProps[] = []
 
     for (const req of rows) {
-      // Seleccionar cotización (preferir 'aprobada')
-      const cots = req.cotizaciones ?? []
-      const cot  = cots.find((c) => c.estado === 'aprobada') ?? cots[0] ?? null
-
-      const totalCotizado = (cot?.cotizacion_items ?? [])
-        .reduce((s, it) => s + Number(it.precio_total), 0)
+      const totalCotizado   = cotizadoPor[req.id]   ?? 0
+      const totalReembolsos = reembolsosPor[req.id] ?? 0
 
       const totalCostosReales = (req.costos_reales ?? [])
         .reduce((s, c) => s + Number(c.monto), 0)
-
-      const totalReembolsos = (cot?.reembolsos_detalle ?? [])
-        .reduce((s, r) => s + Number(r.valor_transporte) + Number(r.valor_otros), 0)
 
       const participaciones: SocioParticipacionProps[] = (req.actividad_participaciones ?? [])
         .map((p) => ({

@@ -2,7 +2,12 @@
 const nextConfig = {
   // output: 'export' eliminado — incompatible con middleware
   skipTrailingSlashRedirect: true,
-  skipMiddlewareUrlNormalize: true,
+  skipProxyUrlNormalize: true,
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
+  },
   // Incluir archivos estáticos no-JS en el bundle serverless de Vercel
   outputFileTracingIncludes: {
     '/api/generar-cotizacion':    ['./templates/**'],

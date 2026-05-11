@@ -152,25 +152,18 @@ export async function generarCronogramaIA(
     }
 
     // 3. Cargar ítems cotizados de la última cotización
-    const { data: cots } = await sb
-      .from('cotizaciones')
-      .select('id')
+    const { data: items } = await sb
+      .from('items_requerimiento')
+      .select('descripcion, categoria, cantidad, unidad_medida')
       .eq('requerimiento_id', actividadId)
-      .order('version', { ascending: false })
-      .limit(1)
+      .in('tipo', ['SERVICIO', 'PASIVO_TERCERO'])
+      .neq('estado', 'CANCELADO')
 
     let itemsText = 'Sin ítems cotizados'
-    if (cots && cots.length > 0) {
-      const { data: items } = await sb
-        .from('cotizacion_items')
-        .select('descripcion, categoria, cantidad, unidad_medida')
-        .eq('cotizacion_id', cots[0].id)
-
-      if (items && items.length > 0) {
-        itemsText = items
-          .map(i => `- ${i.descripcion} (${i.cantidad} ${i.unidad_medida ?? 'und'}) [${i.categoria ?? 'General'}]`)
-          .join('\n')
-      }
+    if (items && items.length > 0) {
+      itemsText = items
+        .map(i => `- ${i.descripcion} (${i.cantidad} ${i.unidad_medida ?? 'und'}) [${i.categoria ?? 'General'}]`)
+        .join('\n')
     }
 
     // 4. Calcular duración de la actividad

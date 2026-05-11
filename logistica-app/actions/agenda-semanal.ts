@@ -415,3 +415,59 @@ export async function subirArchivoEvidencia(formData: FormData): Promise<{ ok: b
     return { ok: false, error: error instanceof Error ? error.message : 'Error al subir archivo' };
   }
 }
+
+// ============================================================
+// subirYRegistrarEvidencia
+// Flujo transaccional: Storage upload → URL → INSERT en BD.
+// Si el registro en BD falla, el error se retorna explícitamente
+// para que la UI lo notifique al usuario (nunca silencioso).
+// ============================================================
+export async function subirYRegistrarEvidencia(
+  entregableId: string,
+  formData: FormData
+): Promise<{ ok: boolean; url?: string; error?: string }> {
+  try {
+    const file = formData.get('file') as File | null
+    if (!file) {
+      return { ok: false, error: 'Archivo faltante' }
+    }
+
+    const { getSupabase } = await import('@/lib/supabase')
+    const sb = getSupabase()
+
+    // 1. Subir al bucket
+    const fileName = `${entregableId}-${Date.now()}-${file.name}`
+    const { error: uploadError } = await sb.storage
+      .from('evidencias')
+      .upload(fileName, file, { upsert: true })
+
+    if (uploadError) {
+      return { ok: false, error: `Error al subir archivo: ${uploadError.message}` }
+    }
+
+    const { data: publicUrlData } = sb.storage.from('evidencias').getPublicUrl(fileName)
+    const url = publicUrlData.publicUrl
+
+    // 2. Registrar en BD — PASO CRÍTICO
+    // Si este INSERT/UPDATE falla, retornamos error explícito para que la
+    // UI lo notifique al usuario. Nunca se ignora silenciosamente.
+    const { error: dbError } = await sb
+      .from('bitacora_entregas')
+      .update({ evidencia_url: url })
+      .eq('id', entregableId)
+
+    if (dbError) {
+      return {
+        ok: false,
+        error: `Archivo subido pero no se pudo registrar en la base de datos: ${dbError.message}. URL: ${url}`,
+      }
+    }
+
+    return { ok: true, url }
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : 'Error inesperado al subir evidencia',
+    }
+  }
+}

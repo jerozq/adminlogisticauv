@@ -5,25 +5,20 @@ import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { CalendarDays, DollarSign, Receipt } from 'lucide-react'
 import { AgendaView } from './AgendaView'
 import { TabCronograma } from './TabCronograma'
-import { TabCostosReales } from './TabCostosReales'
 import { TablaReembolsos } from './TablaReembolsos'
 import type { HitoCronogramaIA } from '@/actions/cronograma-ia'
-import type { BitacoraEntregaRow, EjecucionCostoConItem, ItemCotizado } from '@/types/ejecucion'
+import type { BitacoraEntregaRow, ItemCotizado } from '@/types/ejecucion'
 import type { NuevaParticipacion } from '@/src/types/domain'
 import type { ReembolsoProps } from '@/src/core/domain/entities/Reembolso'
 
-type Tab = 'agenda' | 'costos' | 'reembolsos'
-const VALID_TABS: Tab[] = ['agenda', 'costos', 'reembolsos']
+type Tab = 'agenda' | 'reembolsos'
+const VALID_TABS: Tab[] = ['agenda', 'reembolsos']
 
 interface Props {
   actividadId: string
   fechaInicio: string | null
   horaInicio: string | null
   entregas: BitacoraEntregaRow[]
-  costos: EjecucionCostoConItem[]
-  itemsCotizados: ItemCotizado[]
-  ingresoTotal: number
-  participaciones?: NuevaParticipacion[]
   reembolsos?: ReembolsoProps[]
   cronogramaIACache?: HitoCronogramaIA[] | null
   isMockMode?: boolean
@@ -35,10 +30,6 @@ function ActivityTabsInner({
   fechaInicio,
   horaInicio,
   entregas,
-  costos,
-  itemsCotizados,
-  ingresoTotal,
-  participaciones,
   reembolsos = [],
   cronogramaIACache,
   isMockMode = false,
@@ -67,12 +58,6 @@ function ActivityTabsInner({
           label="Agenda IA"
         />
         <TabButton
-          active={tab === 'costos'}
-          onClick={() => setTab('costos')}
-          icon={<DollarSign strokeWidth={1.5} className="size-4" />}
-          label="Costos"
-        />
-        <TabButton
           active={tab === 'reembolsos'}
           onClick={() => setTab('reembolsos')}
           icon={<Receipt strokeWidth={1.5} className="size-4" />}
@@ -90,15 +75,6 @@ function ActivityTabsInner({
           initialEntregas={entregas}
           cronogramaIACache={cronogramaIACache ?? null}
           isMockMode={isMockMode}
-        />
-      )}
-      {tab === 'costos' && (
-        <TabCostosReales
-          actividadId={actividadId}
-          initialCostos={costos}
-          itemsCotizados={itemsCotizados}
-          ingresoTotal={ingresoTotal}
-          participaciones={participaciones}
         />
       )}
       {tab === 'reembolsos' && (

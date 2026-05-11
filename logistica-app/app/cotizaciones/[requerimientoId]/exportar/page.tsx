@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, FileText } from 'lucide-react'
 import { cargarDatosExportacion } from '@/actions/exportar-cotizacion'
+import { cargarDocumentosProyecto } from '@/actions/documentos-proyecto'
 import { CotizacionExportEditor } from '@/components/cotizaciones/CotizacionExportEditor'
 
 // Ruta: /cotizaciones/[requerimientoId]/exportar
@@ -18,6 +19,8 @@ export default async function ExportarCotizacionPage({
   } catch {
     notFound()
   }
+
+  const documentosIniciales = await cargarDocumentosProyecto(requerimientoId)
 
   return (
     <div className="min-h-screen [background:var(--background)]">
@@ -52,18 +55,21 @@ export default async function ExportarCotizacionPage({
       {/* Contenido */}
       <div className="max-w-3xl mx-auto px-4 py-6">
         {!datos.cotizacion ? (
-          <NoCotizacion requerimientoId={requerimientoId} />
+          <NoCotizacion />
         ) : datos.items.length === 0 ? (
           <SinItems />
         ) : (
-          <CotizacionExportEditor datos={datos} />
+          <CotizacionExportEditor
+            datos={datos}
+            documentosIniciales={documentosIniciales}
+          />
         )}
       </div>
     </div>
   )
 }
 
-function NoCotizacion({ requerimientoId }: { requerimientoId: string }) {
+function NoCotizacion() {
   return (
     <div className="flex flex-col items-center py-20 [color:var(--text-muted)]">
       <FileText strokeWidth={1.5} className="size-12 mb-4 opacity-30" />

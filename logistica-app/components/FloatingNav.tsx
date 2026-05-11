@@ -3,27 +3,29 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Activity, Landmark, ReceiptText, BookOpen, Home, FileUp, ChevronDown, X, LogOut, User,
+import { Activity, Landmark, ReceiptText, BookOpen, Home, FileUp, ChevronDown, X, LogOut, User, Vault,
 } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { signOut } from '@/actions/auth'
 
 // ── Mapa de rutas → nombre del módulo ────────────────────────────────────────
 const MODULE_MAP: { prefix: string; label: string; icon: React.ElementType }[] = [
-  { prefix: '/ejecucion',        label: 'Ejecución',      icon: Activity     },
+  { prefix: '/ejecucion',        label: 'Ejecucion',     icon: Activity     },
   { prefix: '/cotizaciones',     label: 'Cotizaciones',   icon: FileUp       },
-  { prefix: '/dashboard/finanzas', label: 'Finanzas',     icon: Landmark     },
+  { prefix: '/liquidaciones',    label: 'Liquidaciones',  icon: Landmark     },
   { prefix: '/tarifario',        label: 'Tarifario',      icon: BookOpen     },
   { prefix: '/reembolsos',       label: 'Reembolsos',     icon: ReceiptText  },
+  { prefix: '/tesoreria',        label: 'Tesorería',      icon: Vault        },
 ]
 
 const NAV_LINKS = [
   { href: '/',                    label: 'Inicio',       icon: Home         },
-  { href: '/ejecucion',           label: 'Ejecución',    icon: Activity     },
+  { href: '/ejecucion',           label: 'Ejecucion',    icon: Activity     },
   { href: '/cotizaciones',        label: 'Cotizaciones', icon: FileUp       },
-  { href: '/dashboard/finanzas',  label: 'Finanzas',     icon: Landmark     },
+  { href: '/liquidaciones',       label: 'Liquidaciones',icon: Landmark     },
   { href: '/tarifario',           label: 'Tarifario',    icon: BookOpen     },
   { href: '/reembolsos',          label: 'Reembolsos',   icon: ReceiptText  },
+  { href: '/tesoreria',           label: 'Tesorería',    icon: Vault        },
 ]
 
 // ── Hook: detecta scroll hacia abajo para reducir opacidad ───────────────────
