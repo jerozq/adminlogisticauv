@@ -19,11 +19,54 @@ venv/
 
 # ── Node (raíz) ──────────────────────────────────────────────────
 node_modules/
+**/node_modules/
+.npm/
+.pnpm-store/
+
+# ── Build/cache (no necesarios en git) ──────────────────────────
+**/.next/
+**/out/
+**/build/
+**/dist/
+**/coverage/
+*.tsbuildinfo
 
 # ── Documentos temporales de Office ──────────────────────────────
+.doc
 .docx
+.xls
 .xlsx
-.md
+.xlsm
+.xlsb
+.csv
+.pdf
+.ppt
+.pptx
+
+# Excepciones de documentación y plantillas críticas
+!README.md
+!README_*.md
+!**/README.md
+!**/README_*.md
+!**/AGENTS.md
+!**/CLAUDE.md
+!implementation_plan.md
+!PLANTILLA COTIZACION.docx
+!PLANTILLA CUENTA DE COBRO.docx
+!logistica-app/templates/PLANTILLA COTIZACION.docx
+!logistica-app/templates/PLANTILLA CUENTA DE COBRO.docx
+
+# ── Carpetas de documentos/exportaciones ─────────────────────────
+docs/
+doc/
+exports/
+exportaciones/
+
+# ── Manifests de paquetes (SI se suben) ──────────────────────────
+!package.json
+!package-lock.json
+!pnpm-lock.yaml
+!yarn.lock
 
 # ── Sistema operativo ────────────────────────────────────────────
 .DS_Store
