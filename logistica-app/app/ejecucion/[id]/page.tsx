@@ -141,7 +141,7 @@ export default async function ActividadDetailPage({
         actions={
           <>
             <Link
-              href={`/cotizaciones/${id}/exportar`}
+              href={`/cotizaciones/${id}/editar`}
               className="btn-secondary flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl transition-colors"
               title="Exportar cotización Word"
             >

@@ -160,6 +160,7 @@ interface GenerarCotizacionBody {
   totals: TotalsExport
   cotizacion_fecha?: string | null
   nombreArchivo?: string
+  overrides?: Record<string, string>
 }
 
 // ============================================================
@@ -174,7 +175,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Body inválido' }, { status: 400 })
   }
 
-  const { requerimiento, items, totals, cotizacion_fecha, nombreArchivo } = body
+  const { requerimiento, items, totals, cotizacion_fecha, nombreArchivo, overrides } = body
 
   const templatePath = path.join(process.cwd(), 'templates', 'PLANTILLA COTIZACION.docx')
 
@@ -224,7 +225,7 @@ export async function POST(req: NextRequest) {
         ? totals.total_inhumaciones / totals.cantidad_inhumaciones
         : 0
 
-    const docData = {
+    const docDataBase = {
       // Encabezado
       created_at:            fmtDateDoc(cotizacion_fecha ?? new Date().toISOString()),
       fecha_inicio:          fmtDateDoc(requerimiento.fecha_inicio),
@@ -254,6 +255,17 @@ export async function POST(req: NextRequest) {
 
       // Gran total: incluye todo para el cliente
       gran_total: fmt(totals.gran_total),
+    }
+
+    const safeOverrides = Object.fromEntries(
+      Object.entries(overrides ?? {}).filter(([key, value]) => {
+        return typeof key === 'string' && key.trim().length > 0 && typeof value === 'string'
+      }),
+    )
+
+    const docData = {
+      ...docDataBase,
+      ...safeOverrides,
     }
 
     try {

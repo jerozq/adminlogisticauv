@@ -1,14 +1,16 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { EditorContent, useEditor } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
-import { AlertTriangle, CheckCircle2, Download, FileText, Loader2, Receipt, Save } from 'lucide-react'
-import { guardarDocumentoProyecto, type TipoDocumentoProyecto } from '@/actions/documentos-proyecto'
+import { useMemo, useState } from 'react'
+import { AlertTriangle, CheckCircle2, FileText, Loader2, Receipt, Save } from 'lucide-react'
+import {
+  guardarDocumentoProyecto,
+  type DocumentoCampos,
+  type TipoDocumentoProyecto,
+} from '@/actions/documentos-proyecto'
 import { GlassModal } from '@/components/ui/GlassModal'
 
 export interface DocumentoProyectoStateClient {
-  html: string
+  campos: DocumentoCampos
   updatedAt: string | null
   persistido: boolean
 }
@@ -22,6 +24,10 @@ interface Props {
   proyectoId: string
   identificadorProyecto: string
   documentosIniciales: DocumentosProyectoStateClient
+  triggerLabel?: string
+  triggerClassName?: string
+  triggerTitle?: string
+  showFooterDownload?: boolean
 }
 
 const TABS: Array<{ id: TipoDocumentoProyecto; label: string; icon: React.ReactNode }> = [
@@ -29,65 +35,57 @@ const TABS: Array<{ id: TipoDocumentoProyecto; label: string; icon: React.ReactN
   { id: 'CUENTA_COBRO', label: 'Cuenta de Cobro', icon: <Receipt className="size-4" /> },
 ]
 
-function extraerNombreArchivo(headers: Headers, fallback: string): string {
-  const contentDisposition = headers.get('Content-Disposition') ?? ''
-  const fnMatch = contentDisposition.match(/filename[*]?=(?:UTF-8'')?["']?([^"';\n]+)/)
-  return fnMatch ? decodeURIComponent(fnMatch[1]) : fallback
+const CAMPOS_POR_TIPO: Record<
+  TipoDocumentoProyecto,
+  Array<{ key: string; label: string; placeholder: string }>
+> = {
+  COTIZACION: [
+    { key: 'created_at', label: 'Fecha cotizacion', placeholder: 'Ej: 11 de mayo de 2026' },
+    { key: 'numero_requerimiento', label: 'Numero requerimiento', placeholder: 'Ej: 712PE' },
+    { key: 'municipio', label: 'Municipio', placeholder: 'Ej: Buenaventura' },
+    { key: 'departamento', label: 'Departamento', placeholder: 'Ej: Valle del Cauca' },
+  ],
+  CUENTA_COBRO: [
+    { key: 'fecha', label: 'Fecha cuenta de cobro', placeholder: 'Ej: 11 de mayo de 2026' },
+    { key: 'numero_requerimiento', label: 'Numero requerimiento', placeholder: 'Ej: 712PE' },
+    { key: 'nombre_actividad', label: 'Nombre actividad', placeholder: 'Ej: Entrega digna...' },
+    { key: 'municipio', label: 'Municipio', placeholder: 'Ej: Buenaventura' },
+    { key: 'departamento', label: 'Departamento', placeholder: 'Ej: Valle del Cauca' },
+    { key: 'responsable', label: 'Responsable', placeholder: 'Nombre responsable' },
+    { key: 'concepto', label: 'Concepto', placeholder: 'Texto del concepto en plantilla' },
+    { key: 'valor_numeros', label: 'Valor en numeros', placeholder: 'Ej: 1.250.000' },
+    { key: 'valor_letras', label: 'Valor en letras', placeholder: 'Ej: un millon doscientos cincuenta mil pesos' },
+  ],
 }
 
-function nombreArchivo(tipo: TipoDocumentoProyecto, identificador: string): string {
-  const suffix = tipo === 'COTIZACION' ? 'Cotizacion' : 'CuentaCobro'
-  return `${suffix}_${identificador || 'Proyecto'}.docx`
-}
-
-function RichEditor({
-  value,
-  onChange,
-}: {
-  value: string
-  onChange: (value: string) => void
-}) {
-  const editor = useEditor({
-    extensions: [StarterKit],
-    content: value,
-    editorProps: {
-      attributes: {
-        class:
-          'min-h-[360px] max-h-[50vh] overflow-y-auto rounded-2xl border border-white/15 bg-white/5 px-5 py-4 text-sm text-slate-100 focus:outline-none',
-      },
-    },
-    onUpdate: ({ editor }) => {
-      onChange(editor.getHTML())
-    },
-  })
-
-  useEffect(() => {
-    if (!editor) return
-    const current = editor.getHTML()
-    if (current !== value) {
-      editor.commands.setContent(value, { emitUpdate: false })
-    }
-  }, [editor, value])
-
-  return <EditorContent editor={editor} />
+function limpiarCampos(campos: DocumentoCampos): DocumentoCampos {
+  return Object.entries(campos).reduce<DocumentoCampos>((acc, [key, value]) => {
+    const trimmed = value.trim()
+    if (trimmed) acc[key] = trimmed
+    return acc
+  }, {})
 }
 
 export function DocumentosProyectoModal({
   proyectoId,
   identificadorProyecto,
   documentosIniciales,
+  triggerLabel = 'Editar Documentos',
+  triggerClassName = 'w-full flex items-center justify-center gap-2 py-3 text-sm font-semibold text-slate-300 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/10 transition-colors',
+  triggerTitle,
+  showFooterDownload = false,
 }: Props) {
   const [open, setOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<TipoDocumentoProyecto>('COTIZACION')
 
-  const [docs, setDocs] = useState<Record<TipoDocumentoProyecto, string>>({
-    COTIZACION: documentosIniciales.COTIZACION.html,
-    CUENTA_COBRO: documentosIniciales.CUENTA_COBRO.html,
+  const [docs, setDocs] = useState<Record<TipoDocumentoProyecto, DocumentoCampos>>({
+    COTIZACION: documentosIniciales.COTIZACION.campos,
+    CUENTA_COBRO: documentosIniciales.CUENTA_COBRO.campos,
   })
 
-  const [savedDocs, setSavedDocs] = useState<Record<TipoDocumentoProyecto, string>>({
-    COTIZACION: documentosIniciales.COTIZACION.html,
-    CUENTA_COBRO: documentosIniciales.CUENTA_COBRO.html,
+  const [savedDocs, setSavedDocs] = useState<Record<TipoDocumentoProyecto, DocumentoCampos>>({
+    COTIZACION: documentosIniciales.COTIZACION.campos,
+    CUENTA_COBRO: documentosIniciales.CUENTA_COBRO.campos,
   })
 
   const [updatedAtByTab, setUpdatedAtByTab] = useState<Record<TipoDocumentoProyecto, string | null>>({
@@ -96,16 +94,15 @@ export function DocumentosProyectoModal({
   })
 
   const [saving, setSaving] = useState(false)
-  const [downloading, setDownloading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [status, setStatus] = useState<'idle' | 'autosaving' | 'saved'>('idle')
+  const [status, setStatus] = useState<'idle' | 'saved'>('idle')
 
-  const htmlActivo = docs[activeTab]
-  const hayCambios = docs[activeTab] !== savedDocs[activeTab]
+  const hayCambios =
+    JSON.stringify(limpiarCampos(docs[activeTab])) !== JSON.stringify(limpiarCampos(savedDocs[activeTab]))
 
   const fechaActualizacionTexto = useMemo(() => {
     const updatedAt = updatedAtByTab[activeTab]
-    if (!updatedAt) return 'Sin guardar aún'
+    if (!updatedAt) return 'Sin guardar aun'
     return new Date(updatedAt).toLocaleString('es-CO', {
       day: '2-digit',
       month: '2-digit',
@@ -115,15 +112,14 @@ export function DocumentosProyectoModal({
     })
   }, [activeTab, updatedAtByTab])
 
-  const guardarTab = useCallback(async (tab: TipoDocumentoProyecto, opts?: { autosave?: boolean }) => {
+  async function guardarTab(tab: TipoDocumentoProyecto) {
     setError(null)
     setSaving(true)
-    setStatus(opts?.autosave ? 'autosaving' : 'idle')
 
     const result = await guardarDocumentoProyecto({
       proyectoId,
       tipoDocumento: tab,
-      contenidoHtml: docs[tab],
+      campos: limpiarCampos(docs[tab]),
     })
 
     if (!result.ok) {
@@ -135,7 +131,7 @@ export function DocumentosProyectoModal({
 
     setSavedDocs((prev) => ({
       ...prev,
-      [tab]: docs[tab],
+      [tab]: limpiarCampos(docs[tab]),
     }))
 
     setUpdatedAtByTab((prev) => ({
@@ -149,68 +145,20 @@ export function DocumentosProyectoModal({
     window.setTimeout(() => {
       setStatus('idle')
     }, 1300)
-  }, [docs, proyectoId])
-
-  useEffect(() => {
-    if (!open) return
-    if (!hayCambios) return
-
-    const timer = window.setTimeout(() => {
-      void guardarTab(activeTab, { autosave: true })
-    }, 2000)
-
-    return () => window.clearTimeout(timer)
-  }, [activeTab, guardarTab, hayCambios, open, htmlActivo])
-
-  async function descargarTabActiva() {
-    setDownloading(true)
-    setError(null)
-
-    try {
-      const filename = nombreArchivo(activeTab, identificadorProyecto)
-      const res = await fetch('/api/documentos/exportar-docx', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          html: docs[activeTab],
-          nombreArchivo: filename,
-        }),
-      })
-
-      if (!res.ok) {
-        const json = await res.json().catch(() => ({}))
-        throw new Error(json.error || `Error ${res.status}`)
-      }
-
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = extraerNombreArchivo(res.headers, filename)
-      a.click()
-      URL.revokeObjectURL(url)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'No fue posible descargar el documento.')
-    } finally {
-      setDownloading(false)
-    }
   }
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="w-full flex items-center justify-center gap-2 py-3 text-sm font-semibold text-slate-300 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/10 transition-colors"
-      >
+      <button onClick={() => setOpen(true)} className={triggerClassName} title={triggerTitle}>
         <FileText className="size-4" />
-        Editar Documentos
+        {triggerLabel}
       </button>
 
       <GlassModal
         open={open}
         onClose={() => setOpen(false)}
-        title="Editor de Documentos"
-        subtitle="Cotizacion y Cuenta de Cobro con autoguardado"
+        title="Configurar Documentos Oficiales"
+        subtitle={`Proyecto ${identificadorProyecto} · Plantillas Word oficiales`}
         maxWidth="max-w-2xl"
         portal
         footer={
@@ -223,21 +171,18 @@ export function DocumentosProyectoModal({
                 className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border border-white/15 bg-white/10 text-slate-200 hover:bg-white/20 disabled:opacity-50"
               >
                 {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-                Guardar
-              </button>
-              <button
-                onClick={() => void descargarTabActiva()}
-                disabled={downloading}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50"
-              >
-                {downloading ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
-                Descargar Word
+                Guardar cambios
               </button>
             </div>
           </div>
         }
       >
         <div className="space-y-4">
+          <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 p-3 text-xs text-blue-200">
+            Esta configuracion aplica sobre las plantillas oficiales .docx.
+            {showFooterDownload ? ' Las descargas se generan desde Word.' : ''}
+          </div>
+
           <div className="flex flex-wrap gap-2">
             {TABS.map((tab) => (
               <button
@@ -255,27 +200,37 @@ export function DocumentosProyectoModal({
             ))}
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-2">
-            <RichEditor
-              value={docs[activeTab]}
-              onChange={(value) => {
-                setDocs((prev) => ({ ...prev, [activeTab]: value }))
-                setStatus('idle')
-              }}
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {CAMPOS_POR_TIPO[activeTab].map((field) => (
+              <label key={field.key} className="space-y-1.5">
+                <span className="text-xs text-slate-300">{field.label}</span>
+                <input
+                  type="text"
+                  value={docs[activeTab][field.key] ?? ''}
+                  placeholder={field.placeholder}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    setDocs((prev) => ({
+                      ...prev,
+                      [activeTab]: {
+                        ...prev[activeTab],
+                        [field.key]: value,
+                      },
+                    }))
+                    setStatus('idle')
+                  }}
+                  className="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-slate-100 outline-none focus:border-blue-400"
+                />
+              </label>
+            ))}
           </div>
 
           <div className="flex items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-2 text-slate-400">
-              {status === 'autosaving' ? (
-                <>
-                  <Loader2 className="size-3.5 animate-spin" />
-                  Autoguardando...
-                </>
-              ) : status === 'saved' ? (
+              {status === 'saved' ? (
                 <>
                   <CheckCircle2 className="size-3.5 text-emerald-400" />
-                  Guardado
+                  Configuracion guardada
                 </>
               ) : hayCambios ? (
                 <>

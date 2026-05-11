@@ -1,13 +1,12 @@
 'use server'
 
-import fs from 'node:fs/promises'
-import path from 'node:path'
 import { getSupabase } from '@/lib/supabase'
 
 export type TipoDocumentoProyecto = 'COTIZACION' | 'CUENTA_COBRO'
+export type DocumentoCampos = Record<string, string>
 
 export interface DocumentoProyectoState {
-  html: string
+  campos: DocumentoCampos
   updatedAt: string | null
   persistido: boolean
 }
@@ -19,46 +18,51 @@ export interface DocumentosProyectoState {
 
 const TIPOS_DOCUMENTO: TipoDocumentoProyecto[] = ['COTIZACION', 'CUENTA_COBRO']
 
-const PLANTILLA_POR_TIPO: Record<TipoDocumentoProyecto, string> = {
-  COTIZACION: 'DOCUMENTO_BASE_COTIZACION.html',
-  CUENTA_COBRO: 'DOCUMENTO_BASE_CUENTA_COBRO.html',
-}
-
-async function leerPlantillaBase(tipo: TipoDocumentoProyecto): Promise<string> {
-  const plantillaPath = path.join(process.cwd(), 'templates', PLANTILLA_POR_TIPO[tipo])
+function parsearCampos(raw: string | null | undefined): DocumentoCampos {
+  if (!raw) return {}
 
   try {
-    return await fs.readFile(plantillaPath, 'utf8')
+    const parsed = JSON.parse(raw) as unknown
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
+
+    const entries = Object.entries(parsed as Record<string, unknown>)
+    return entries.reduce<DocumentoCampos>((acc, [key, value]) => {
+      if (typeof key !== 'string' || !key.trim()) return acc
+      if (typeof value !== 'string') return acc
+      acc[key] = value
+      return acc
+    }, {})
   } catch {
-    return `<!doctype html><html><head><meta charset="utf-8"/></head><body><p>Plantilla ${tipo}</p></body></html>`
+    return {}
   }
+}
+
+function serializarCampos(campos: DocumentoCampos): string {
+  return JSON.stringify(campos)
 }
 
 function resolverNombreTipo(tipo: TipoDocumentoProyecto): string {
   return tipo === 'COTIZACION' ? 'Cotizacion' : 'CuentaCobro'
 }
 
-export async function cargarDocumentosProyecto(proyectoId: string): Promise<DocumentosProyectoState> {
-  const sb = getSupabase()
-
-  const plantillas = await Promise.all(TIPOS_DOCUMENTO.map((tipo) => leerPlantillaBase(tipo)))
-  const basePorTipo = {
-    COTIZACION: plantillas[0],
-    CUENTA_COBRO: plantillas[1],
-  }
-
-  const fallback: DocumentosProyectoState = {
+function estadoFallback(): DocumentosProyectoState {
+  return {
     COTIZACION: {
-      html: basePorTipo.COTIZACION,
+      campos: {},
       updatedAt: null,
       persistido: false,
     },
     CUENTA_COBRO: {
-      html: basePorTipo.CUENTA_COBRO,
+      campos: {},
       updatedAt: null,
       persistido: false,
     },
   }
+}
+
+export async function cargarDocumentosProyecto(proyectoId: string): Promise<DocumentosProyectoState> {
+  const sb = getSupabase()
+  const fallback = estadoFallback()
 
   const { data, error } = await sb
     .from('documentos_proyecto')
@@ -74,7 +78,7 @@ export async function cargarDocumentosProyecto(proyectoId: string): Promise<Docu
   for (const row of data) {
     if (row.tipo_documento === 'COTIZACION') {
       resultado.COTIZACION = {
-        html: row.contenido_html || basePorTipo.COTIZACION,
+        campos: parsearCampos(row.contenido_html),
         updatedAt: row.updated_at,
         persistido: true,
       }
@@ -82,7 +86,7 @@ export async function cargarDocumentosProyecto(proyectoId: string): Promise<Docu
 
     if (row.tipo_documento === 'CUENTA_COBRO') {
       resultado.CUENTA_COBRO = {
-        html: row.contenido_html || basePorTipo.CUENTA_COBRO,
+        campos: parsearCampos(row.contenido_html),
         updatedAt: row.updated_at,
         persistido: true,
       }
@@ -95,9 +99,9 @@ export async function cargarDocumentosProyecto(proyectoId: string): Promise<Docu
 export async function guardarDocumentoProyecto(input: {
   proyectoId: string
   tipoDocumento: TipoDocumentoProyecto
-  contenidoHtml: string
+  campos: DocumentoCampos
 }): Promise<{ ok: true; updatedAt: string } | { ok: false; error: string }> {
-  const { proyectoId, tipoDocumento, contenidoHtml } = input
+  const { proyectoId, tipoDocumento, campos } = input
 
   if (!proyectoId) {
     return { ok: false, error: 'Proyecto inválido.' }
@@ -115,7 +119,7 @@ export async function guardarDocumentoProyecto(input: {
       {
         proyecto_id: proyectoId,
         tipo_documento: tipoDocumento,
-        contenido_html: contenidoHtml,
+        contenido_html: serializarCampos(campos),
       },
       { onConflict: 'proyecto_id,tipo_documento' },
     )
@@ -125,9 +129,37 @@ export async function guardarDocumentoProyecto(input: {
   if (error || !data?.updated_at) {
     return {
       ok: false,
-      error: error?.message || `No se pudo guardar el documento ${resolverNombreTipo(tipoDocumento)}.`,
+      error: error?.message || `No se pudo guardar la configuración de ${resolverNombreTipo(tipoDocumento)}.`,
     }
   }
 
   return { ok: true, updatedAt: data.updated_at }
+}
+
+export async function obtenerDocumentoProyectoActual(input: {
+  proyectoId: string
+  tipoDocumento: TipoDocumentoProyecto
+}): Promise<
+  | { ok: true; campos: DocumentoCampos; updatedAt: string | null; persistido: boolean }
+  | { ok: false; error: string }
+> {
+  const { proyectoId, tipoDocumento } = input
+
+  if (!proyectoId) {
+    return { ok: false, error: 'Proyecto inválido.' }
+  }
+
+  if (!TIPOS_DOCUMENTO.includes(tipoDocumento)) {
+    return { ok: false, error: 'Tipo de documento inválido.' }
+  }
+
+  const documentos = await cargarDocumentosProyecto(proyectoId)
+  const documento = documentos[tipoDocumento]
+
+  return {
+    ok: true,
+    campos: documento.campos,
+    updatedAt: documento.updatedAt,
+    persistido: documento.persistido,
+  }
 }

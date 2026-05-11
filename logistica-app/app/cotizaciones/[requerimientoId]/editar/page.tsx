@@ -1,21 +1,18 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Edit3, History, Eye } from 'lucide-react'
+import { ArrowLeft, Edit3, History } from 'lucide-react'
 import { cargarCotizacion, listarHistorialCotizaciones } from '@/actions/cotizaciones'
 import { CotizacionEditor } from '@/components/cotizaciones/CotizacionEditor'
-import { PdfPreviewer } from '@/components/cotizaciones/PdfPreviewer'
+import { DocumentosHeaderActions } from '@/components/cotizaciones/DocumentosHeaderActions'
 
 export const dynamic = 'force-dynamic'
 
 export default async function EditarCotizacionPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ requerimientoId: string }>
-  searchParams: Promise<{ vista?: string; version?: string }>
 }) {
   const { requerimientoId } = await params
-  const { vista = 'editar', version } = await searchParams
 
   // Cargar desde capa de aplicación (acciones)
   const historial = await listarHistorialCotizaciones(requerimientoId)
@@ -25,13 +22,6 @@ export default async function EditarCotizacionPage({
   if (!datos.ok) {
     notFound()
   }
-
-  // The latest version is the highest version number
-  const ultimaVersion = historial[0]?.version || 1
-  const isLatest = !version || Number(version) === ultimaVersion
-  
-  // Si piden una versión específica, la buscamos. Pero el editor siempre carga la última. 
-  // (Para simplificar, el editor solo puede editar la última, pero el PDF sí podría ver cualquier versión si le pasamos el ID, por ahora solo veamos la última en el editor)
 
   return (
     <div className="min-h-screen bg-[#0a0b0f] flex flex-col text-slate-200">
@@ -51,7 +41,7 @@ export default async function EditarCotizacionPage({
               <div className="flex items-center gap-2">
                 <Edit3 strokeWidth={1.5} className="size-4 text-blue-500 shrink-0" />
                 <h1 className="font-bold text-slate-100 text-sm truncate">
-                  {vista === 'pdf' ? 'Previsualizar Cotización' : 'Editar Cotización'}
+                  Editar Cotización
                 </h1>
               </div>
               <p className="text-xs text-slate-400 truncate">
@@ -63,29 +53,18 @@ export default async function EditarCotizacionPage({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <Link
-              href={`/cotizaciones/${requerimientoId}/editar?vista=${vista === 'pdf' ? 'editar' : 'pdf'}`}
-              className="flex items-center gap-2 rounded-xl bg-white/5 border border-white/10 px-4 py-2 text-xs font-bold text-slate-300 hover:bg-white/10 transition-colors"
-            >
-              {vista === 'pdf' ? (
-                <>
-                  <Edit3 className="size-4" />
-                  Volver al Editor
-                </>
-              ) : (
-                <>
-                  <Eye className="size-4" />
-                  Previsualizar PDF
-                </>
-              )}
-            </Link>
-            <Link
-              href={`/cotizaciones/${requerimientoId}/exportar`}
-              className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-500 transition-colors shadow-md shadow-blue-900/30"
-            >
-              Descargar Word
-            </Link>
+          <div className="shrink-0">
+            <DocumentosHeaderActions
+              proyectoId={requerimientoId}
+              identificadorProyecto={datos.encabezado.numeroRequerimiento || requerimientoId}
+              encabezado={datos.encabezado}
+              items={datos.items.map((item) => ({
+                descripcion: item.descripcion,
+                cantidad: item.cantidad,
+                precioUnitario: item.precioUnitario,
+              }))}
+              historialCotizaciones={historial}
+            />
           </div>
         </div>
       </div>
@@ -95,21 +74,15 @@ export default async function EditarCotizacionPage({
         
         {/* Main Area */}
         <div className="flex-1 min-w-0">
-          {vista === 'pdf' ? (
-            <div className="glass-panel rounded-3xl h-[800px] overflow-hidden flex flex-col">
-               <PdfPreviewer requerimientoId={requerimientoId} />
-            </div>
-          ) : (
-            <CotizacionEditor
-              requerimientoId={requerimientoId}
-              cotizacionId={datos.cotizacion.id}
-              initialEncabezado={datos.encabezado}
-              initialItems={datos.items}
-              version={datos.cotizacion.version}
-              estado={datos.cotizacion.estado}
-              requerimientoEstado={datos.requerimientoEstado}
-            />
-          )}
+          <CotizacionEditor
+            requerimientoId={requerimientoId}
+            cotizacionId={datos.cotizacion.id}
+            initialEncabezado={datos.encabezado}
+            initialItems={datos.items}
+            version={datos.cotizacion.version}
+            estado={datos.cotizacion.estado}
+            requerimientoEstado={datos.requerimientoEstado}
+          />
         </div>
 
         {/* Sidebar (Historial) */}

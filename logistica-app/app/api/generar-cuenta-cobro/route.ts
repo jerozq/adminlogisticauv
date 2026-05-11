@@ -128,6 +128,7 @@ interface GenerarCuentaCobroBody {
   gran_total: number
   cotizacion_fecha?: string | null
   nombreArchivo?: string
+  overrides?: Record<string, string>
 }
 
 // ─── POST /api/generar-cuenta-cobro ──────────────────────────────────────────
@@ -139,7 +140,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Body inválido' }, { status: 400 })
   }
 
-  const { requerimiento_id, requerimiento, items, gran_total, cotizacion_fecha, nombreArchivo } = body
+  const { requerimiento_id, requerimiento, items, gran_total, cotizacion_fecha, nombreArchivo, overrides } = body
 
   // ── 1. Consecutivo automático ──────────────────────────────────────────────
   let numero_cuenta: number
@@ -234,7 +235,7 @@ export async function POST(req: NextRequest) {
 
     const fechaCotizacion = fmtDateDoc(cotizacion_fecha ?? new Date().toISOString())
 
-    const docData = {
+    const docDataBase = {
       // Cuenta de cobro
       numero_cuenta:   String(numero_cuenta),
       fecha:           fechaCotizacion,
@@ -269,6 +270,17 @@ export async function POST(req: NextRequest) {
       // Descripción como texto plano
       descripcion_servicios,
       concepto: `Prestación de servicios logísticos – ${requerimiento.nombre_actividad}${requerimiento.municipio ? ' – ' + requerimiento.municipio : ''}`,
+    }
+
+    const safeOverrides = Object.fromEntries(
+      Object.entries(overrides ?? {}).filter(([key, value]) => {
+        return typeof key === 'string' && key.trim().length > 0 && typeof value === 'string'
+      }),
+    )
+
+    const docData = {
+      ...docDataBase,
+      ...safeOverrides,
     }
 
     try {
