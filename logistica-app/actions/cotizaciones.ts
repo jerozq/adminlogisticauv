@@ -1,7 +1,6 @@
 'use server'
 
 import ExcelJS from 'exceljs'
-import { PDFParse } from 'pdf-parse'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { generateObject } from 'ai'
 import { z } from 'zod'
@@ -943,8 +942,9 @@ async function parsearRequerimientoPDF(
   fileName: string
 ): Promise<{ ok: true; data: ParsedRequerimiento; usedAI: boolean } | { ok: false; error: string }> {
   let pdfText = ''
-  let parser: PDFParse | null = null
+  let parser: { getText: () => Promise<{ text?: string }>; destroy: () => Promise<void> } | null = null
   try {
+    const { PDFParse } = await import('pdf-parse')
     parser = new PDFParse({ data: buffer })
     const result = await parser.getText()
     pdfText = result.text ?? ''
