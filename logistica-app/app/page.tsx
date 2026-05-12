@@ -7,6 +7,7 @@ import {
   ClipboardList,
   Clock3,
   CreditCard,
+  FileUp,
   Landmark,
   Radar,
   ReceiptText,
@@ -260,7 +261,13 @@ export default async function Home(props: {
           <h2 className="text-xl font-extrabold tracking-tight [color:var(--text-primary)]">Módulos del aplicativo</h2>
           <p className="text-sm [color:var(--text-secondary)]">Acceso completo a operación, finanzas y control documental.</p>
         </div>
-          <span className="text-xs font-semibold uppercase tracking-[0.16em] [color:var(--text-muted)]">{moduleCards.length} tarjetas</span>
+          <Link
+            href="/cotizaciones/nueva"
+            className="group inline-flex items-center gap-2 rounded-xl px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/15 hover:border-white/25 transition-all duration-200 text-sm font-semibold [color:var(--text-primary)] shrink-0"
+          >
+            <FileUp className="size-4" strokeWidth={1.7} />
+            Nueva cotización
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
