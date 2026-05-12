@@ -18,6 +18,7 @@ import {
   Activity,
 } from 'lucide-react'
 import { createClient } from '@/utils/supabase/server'
+import { HomeLiveDateTime } from '@/components/HomeLiveDateTime'
 import { LoginToastClient } from '@/components/LoginToastClient'
 import { getDashboardStats } from '@/actions/ejecucion'
 
@@ -67,19 +68,6 @@ export default async function Home(props: {
   const userName = getUserDisplayName(user)
 
   const stats = await getDashboardStats()
-
-  const hora = new Date().toLocaleTimeString('es-CO', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-    timeZone: 'America/Bogota',
-  })
-  const fecha = new Date().toLocaleDateString('es-CO', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    timeZone: 'America/Bogota',
-  })
 
   const moduleCards: Tile[] = [
     {
@@ -228,16 +216,7 @@ export default async function Home(props: {
               </p>
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-3 min-w-[250px]">
-              <div className="rounded-2xl bg-black/20 border border-white/10 px-4 py-3 text-right">
-                <p className="text-[11px] uppercase tracking-wider [color:var(--text-muted)]">Hora Bogotá</p>
-                <p className="text-xl font-bold font-mono [color:var(--text-primary)] leading-tight">{hora}</p>
-              </div>
-              <div className="rounded-2xl bg-black/20 border border-white/10 px-4 py-3 text-right">
-                <p className="text-[11px] uppercase tracking-wider [color:var(--text-muted)]">Fecha</p>
-                <p className="text-sm capitalize font-semibold [color:var(--text-primary)] leading-tight">{fecha}</p>
-              </div>
-            </div>
+            <HomeLiveDateTime />
           </div>
 
           <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3">
