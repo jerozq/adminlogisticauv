@@ -146,7 +146,7 @@ export default async function ActividadDetailPage({
               title="Exportar cotización Word"
             >
               <FileText strokeWidth={1.5} className="size-3.5" />
-              Word
+              Editar
             </Link>
             <CambiarEstadoButton actividadId={id} estadoActual={actividad.estado} />
           </>
