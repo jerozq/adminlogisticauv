@@ -28,8 +28,22 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
   const requestKind = getRequestKind(request)
   const isNavigation = requestKind === 'navigation'
 
+  // ────────────────────────────────────────────────────────────────────
+  // Inyectar / propagar x-correlation-id
+  // ────────────────────────────────────────────────────────────────────
+  const incomingCorrelationId = request.headers.get('x-correlation-id')
+  const correlationId =
+    incomingCorrelationId && incomingCorrelationId.trim().length > 0
+      ? incomingCorrelationId.trim()
+      : crypto.randomUUID()
+
+  // Propagar en headers de request
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-correlation-id', correlationId)
+
   if (isNavigation) {
     log('Protegiendo ruta:', pathname)
+    log('Correlation ID:', correlationId)
   }
 
   try {
@@ -42,7 +56,7 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     }
 
     // Cliente por-request con API getAll/setAll (requerida en @supabase/ssr ^0.5+)
-    let response = NextResponse.next({ request })
+    let response = NextResponse.next({ request: { headers: requestHeaders } })
 
     const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
@@ -50,8 +64,8 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          response = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value }) => requestHeaders.set(name, value))
+          response = NextResponse.next({ request: { headers: requestHeaders } })
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
           )
@@ -80,6 +94,9 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
       response.headers.set('x-proxy-request-kind', requestKind)
     }
 
+    // Propagar correlation ID en response
+    response.headers.set('x-correlation-id', correlationId)
+
     return response
   } catch (err) {
     // Captura de último recurso — NUNCA propagar excepción en Edge
@@ -90,7 +107,9 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 
 // ============ MATCHER ============
 // Allowlist explícita: el proxy solo se invoca en estas rutas.
-// La raíz '/' y '/login' quedan fuera intencionalmente.
+// Incluye:
+//   - Rutas de aplicación protegidas
+//   - Rutas de API que requieren autenticación
 export const config = {
   matcher: [
     '/dashboard/:path*',
@@ -101,5 +120,13 @@ export const config = {
     '/ejecucion/:path*',
     '/reembolsos/:path*',
     '/tarifario/:path*',
+    '/liquidaciones/:path*',
+    '/tesoreria/:path*',
+    '/api/informes/:path*',
+    '/api/cotizaciones/:path*',
+    '/api/ejecucion/:path*',
+    '/api/reembolsos/:path*',
+    '/api/tarifario/:path*',
+    '/api/tesoreria/:path*',
   ],
 }

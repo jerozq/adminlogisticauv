@@ -439,14 +439,17 @@ export class FinancialExportAdapter implements IFinancialExporter {
     // ── Audit log: inicio de exportación ──────────────────────
     log.info(
       {
-        userId:              actor,
-        nombreUsuario:       config.nombreUsuario ?? 'desconocido',
-        operation:           'exportarResumenDashboard',
-        filtros:             config.filtrosAplicados,
-        cantidadActividades: datos.balancesDetalle.length,
-        generadoEn:          config.generadoEn,
-        accesoFinanciero:    true,
-        timestamp:           new Date().toISOString(),
+        correlationId: 'unknown',
+        userId:        actor,
+        operation:     'exportarResumenDashboard',
+        metadata: {
+          nombreUsuario:       config.nombreUsuario ?? 'desconocido',
+          filtros:             config.filtrosAplicados,
+          cantidadActividades: datos.balancesDetalle.length,
+          generadoEn:          config.generadoEn,
+          accesoFinanciero:    true,
+          timestamp:           new Date().toISOString(),
+        },
       },
       '[Auditoría] Exportación financiera iniciada',
     )
@@ -473,15 +476,18 @@ export class FinancialExportAdapter implements IFinancialExporter {
     // ── Audit log: exportación completada ─────────────────────
     log.info(
       {
-        userId:           actor,
-        nombreUsuario:    config.nombreUsuario ?? 'desconocido',
-        operation:        'exportarResumenDashboard',
-        filename,
-        tamañoBytes:      buffer.byteLength,
-        duracionMs,
-        hojas:            ['Resumen', 'Actividades', 'Por Mes', 'Por Socio', 'Por Fuente'],
-        accesoFinanciero: true,
-        timestamp:        new Date().toISOString(),
+        correlationId: 'unknown',
+        userId:        actor,
+        operation:     'exportarResumenDashboard',
+        metadata: {
+          nombreUsuario:    config.nombreUsuario ?? 'desconocido',
+          filename,
+          tamañoBytes:      buffer.byteLength,
+          duracionMs,
+          hojas:            ['Resumen', 'Actividades', 'Por Mes', 'Por Socio', 'Por Fuente'],
+          accesoFinanciero: true,
+          timestamp:        new Date().toISOString(),
+        },
       },
       '[Auditoría] Exportación financiera completada',
     )

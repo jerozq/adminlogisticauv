@@ -52,3 +52,32 @@ export async function uploadEvidencia(
     }
   })
 }
+
+/**
+ * Sube un archivo al bucket 'informes' de Supabase Storage.
+ * Retorna la URL pública del archivo subido.
+ *
+ * @param file   - Archivo seleccionado (PDF, imagen, etc.)
+ * @param folder - Subcarpeta: 'firmados' | 'cedulas' | 'asistencia' | 'pdfs'
+ */
+export async function uploadInforme(
+  file: File,
+  folder: 'firmados' | 'cedulas' | 'asistencia' | 'pdfs',
+): Promise<string> {
+  const sb = getSupabase()
+  const ext = file.name.split('.').pop() ?? 'pdf'
+  const uniqueName = `${Date.now()}-${crypto.randomUUID()}.${ext}`
+  const path = `${folder}/${uniqueName}`
+
+  const { data, error } = await sb.storage
+    .from('informes')
+    .upload(path, file, { upsert: false, contentType: file.type })
+
+  if (error) throw new Error(`Error subiendo archivo: ${error.message}`)
+
+  const {
+    data: { publicUrl },
+  } = sb.storage.from('informes').getPublicUrl(data.path)
+
+  return publicUrl
+}

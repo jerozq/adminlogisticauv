@@ -2,6 +2,9 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { getLogger } from '@/src/infrastructure/observability/logger'
+import { getCorrelationId } from '@/src/infrastructure/observability/correlation'
+import { InsufficientFundsError, ConcurrencyError } from '@/src/core/domain/entities'
 
 // ============================================================
 // CONSTANTES
@@ -410,10 +413,33 @@ export async function registrarAbonoConRetencion(params: {
   descripcion?: string
   soporteUrl?: string
 }): Promise<{ ok: boolean; retencion: number; totalCotizado: number }> {
-  if (params.montoPagado <= 0) throw new Error('El monto pagado debe ser mayor a cero')
+  const correlationId = await getCorrelationId()
+  const log = getLogger('registrarAbonoConRetencion')
+
+  if (params.montoPagado <= 0) {
+    const err = new Error('El monto pagado debe ser mayor a cero')
+    const sb = await createClient()
+    const { data: { user } } = await sb.auth.getUser()
+    log.error({
+      correlationId,
+      userId: user?.id ?? 'anonymous',
+      operation: 'registrarAbonoConRetencion',
+      errorCode: 'VALIDATION_ERROR',
+      metadata: { params },
+    }, err, 'Validación: monto inválido')
+    throw err
+  }
 
   const sb = await createClient()
   const { data: { user } } = await sb.auth.getUser()
+  const userId = user?.id ?? 'anonymous'
+
+  log.info({
+    correlationId,
+    userId,
+    operation: 'registrarAbonoConRetencion',
+    metadata: { cuentaProyectoId: params.cuentaProyectoId, montoPagado: params.montoPagado },
+  }, 'Iniciando registro de abono con retención')
 
   // Calcular total cotizado operativo (ítems SERVICIO activos)
   const { data: items, error: itemsError } = await sb
@@ -423,7 +449,16 @@ export async function registrarAbonoConRetencion(params: {
     .eq('tipo', 'SERVICIO')
     .eq('estado', 'ACTIVO')
 
-  if (itemsError) throw new Error(`Error al calcular cotizado: ${itemsError.message}`)
+  if (itemsError) {
+    log.error({
+      correlationId,
+      userId,
+      operation: 'registrarAbonoConRetencion',
+      errorCode: 'DB_ERROR',
+      metadata: { stage: 'items_query', error: itemsError.message },
+    }, itemsError, 'Error al consultar items cotizados')
+    throw new Error(`Error al calcular cotizado: ${itemsError.message}`)
+  }
 
   const totalCotizado = (items ?? []).reduce(
     (sum: number, it: any) => sum + Number(it.precio_total ?? 0),
@@ -458,7 +493,7 @@ export async function registrarAbonoConRetencion(params: {
     tipo:           'PAGO_UNIDAD',
     descripcion:    descripcionMovimiento,
     soporte_url:    params.soporteUrl ?? null,
-    registrado_por: user?.id ?? null,
+    registrado_por: userId,
     notas: {
       tipo_abono: 'OPERATIVO',
       monto_banco: params.montoPagado,
@@ -467,7 +502,28 @@ export async function registrarAbonoConRetencion(params: {
       abonos_previos_operativo: abonosPreviosOp,
     },
   })
-  if (error) throw new Error(`Error al registrar abono: ${error.message}`)
+  if (error) {
+    log.error({
+      correlationId,
+      userId,
+      operation: 'registrarAbonoConRetencion',
+      errorCode: 'DB_ERROR',
+      metadata: { error: error.message, stage: 'insert_movimiento' },
+    }, error, 'Error al registrar movimiento de abono')
+    throw new Error(`Error al registrar abono: ${error.message}`)
+  }
+
+  log.info({
+    correlationId,
+    userId,
+    operation: 'registrarAbonoConRetencion',
+    metadata: {
+      cuentaProyectoId: params.cuentaProyectoId,
+      montoPagado: params.montoPagado,
+      retencion,
+      totalCotizado,
+    },
+  }, 'Abono registrado exitosamente')
 
   revalidatePath('/tesoreria')
   revalidatePath('/liquidaciones')

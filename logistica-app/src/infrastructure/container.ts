@@ -10,11 +10,13 @@ import { getInMemoryReembolsoRepository } from '@/src/infrastructure/adapters/In
 import { getSupabaseReportingRepository } from '@/src/infrastructure/adapters/SupabaseReportingRepository'
 import { createSupabaseFinancialAdapter } from '@/src/infrastructure/adapters/SupabaseFinancialAdapter'
 import { getFinancialExporter } from '@/src/infrastructure/adapters/FinancialExportAdapter'
+import { CloudConvertAdapter } from '@/src/infrastructure/adapters/CloudConvertAdapter'
 import type { IActivityRepository } from '@/src/core/domain/ports/IActivityRepository'
 import type { IDocumentGenerator } from '@/src/core/domain/ports/IDocumentGenerator'
 import type { IPdfGenerator } from '@/src/core/domain/ports/IPdfGenerator'
 import type { IReportingRepository } from '@/src/core/domain/ports/IReportingRepository'
 import type { IFinancialExporter } from '@/src/core/domain/ports/IFinancialExporter'
+import type { IDocumentConverterService } from '@/src/core/domain/ports/IDocumentConverterService'
 
 // ============================================================
 // Container — Inyección de Dependencias (DI) simple
@@ -41,6 +43,7 @@ import type { IFinancialExporter } from '@/src/core/domain/ports/IFinancialExpor
 
 let _wordAdapter: WordTemplateAdapter | null = null
 let _pdfAdapter: ExcelToPdfReembolsoAdapter | null = null
+let _cloudConvertAdapter: CloudConvertAdapter | null = null
 
 function getWordAdapter(): IDocumentGenerator {
   if (!_wordAdapter) _wordAdapter = new WordTemplateAdapter()
@@ -50,6 +53,33 @@ function getWordAdapter(): IDocumentGenerator {
 function getPdfAdapter(): IPdfGenerator {
   if (!_pdfAdapter) _pdfAdapter = new ExcelToPdfReembolsoAdapter()
   return _pdfAdapter
+}
+
+/**
+ * Devuelve el adaptador de conversión DOCX→PDF usando CloudConvert.
+ *
+ * Requiere la variable de entorno CLOUDCONVERT_API_KEY.
+ * Si no está configurada, lanza un error en tiempo de ejecución.
+ *
+ * @example
+ * ```ts
+ * // En un Route Handler:
+ * const converter = getDocumentConverterService()
+ * const { pdfBuffer } = await converter.convertDocxToPdf({ docxBuffer, fileName })
+ * ```
+ */
+export function getDocumentConverterService(): IDocumentConverterService {
+  if (!_cloudConvertAdapter) {
+    const apiKey = process.env.CLOUDCONVERT_API_KEY
+    if (!apiKey) {
+      throw new Error(
+        '[DI Container] CLOUDCONVERT_API_KEY no está configurada. ' +
+          'Añádela a .env.local y a las variables de entorno de Vercel.',
+      )
+    }
+    _cloudConvertAdapter = new CloudConvertAdapter(apiKey)
+  }
+  return _cloudConvertAdapter
 }
 
 function getRepo(): IActivityRepository {

@@ -150,16 +150,21 @@ export class ExcelToPdfReembolsoAdapter implements IPdfGenerator {
 
     log.info(
       {
-        actividadId:   actividad.id,
-        requerimiento: actividad.numeroRequerimiento,
-        reembolsoId:   reembolso.id,
-        tipo:          reembolso.tipo,
-        beneficiario:  reembolso.personaNombre,
-        documento:     reembolso.documento,
-        monto:         reembolso.valor,
-        valorEnLetras: reembolso.valorEnLetras(),
-        rutaOrigen:    reembolso.rutaOrigen,
-        rutaDestino:   reembolso.rutaDestino,
+        correlationId: 'unknown',
+        userId: 'anonymous',
+        operation: 'generarReembolsoXlsx',
+        metadata: {
+          actividadId:   actividad.id,
+          requerimiento: actividad.numeroRequerimiento,
+          reembolsoId:   reembolso.id,
+          tipo:          reembolso.tipo,
+          beneficiario:  reembolso.personaNombre,
+          documento:     reembolso.documento,
+          monto:         reembolso.valor,
+          valorEnLetras: reembolso.valorEnLetras(),
+          rutaOrigen:    reembolso.rutaOrigen,
+          rutaDestino:   reembolso.rutaDestino,
+        },
       },
       'Documento XLSX de reembolso generado exitosamente'
     )

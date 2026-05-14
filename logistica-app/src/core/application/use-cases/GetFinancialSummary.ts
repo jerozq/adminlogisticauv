@@ -77,10 +77,13 @@ export class GetFinancialSummary {
   async execute(
     filters: GetFinancialSummaryFilters = {},
     userId?: string,
+    correlationId?: string,
   ): Promise<GetFinancialSummaryOutput> {
     return withSpan(tracer, 'GetFinancialSummary.execute', async (rootSpan) => {
+      const correlId = correlationId ?? 'unknown'
       rootSpan.setAttributes({
         'enduser.id':        userId ?? 'anonymous',
+        'trace.correlationId': correlId,
         'reporte.desde':     filters.desde             ?? '',
         'reporte.hasta':     filters.hasta             ?? '',
         'reporte.fuente':    filters.fuenteFinanciacion ?? 'todas',
@@ -245,11 +248,15 @@ export class GetFinancialSummary {
 
       log.info(
         {
-          userId,
-          filtros:             filters,
-          cantidadActividades: balancesProps.length,
-          totalCotizado:       resultado.totalCotizado,
-          utilidadNeta:        resultado.utilidadNeta,
+          correlationId: correlId,
+          userId: userId ?? 'anonymous',
+          operation: 'getFinancialSummary',
+          metadata: {
+            filtros:             filters,
+            cantidadActividades: balancesProps.length,
+            totalCotizado:       resultado.totalCotizado,
+            utilidadNeta:        resultado.utilidadNeta,
+          },
         },
         'Reporte financiero generado',
       )

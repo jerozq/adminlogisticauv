@@ -113,7 +113,12 @@ class SupabaseFinancialAdapter implements IReportingRepository {
     const actor     = this.userId ?? 'system'
 
     log.info(
-      { userId: actor, filtros: filtros ?? {}, operation },
+      {
+        correlationId: 'unknown',
+        userId:        actor,
+        operation,
+        metadata: { filtros: filtros ?? {} },
+      },
       '[Auditoría] Consulta financiera iniciada',
     )
 
@@ -141,7 +146,16 @@ class SupabaseFinancialAdapter implements IReportingRepository {
 
     if (error) {
       log.error(
-        { userId: actor, operation, error: error.message, filtros: filtros ?? {} },
+        {
+          correlationId: 'unknown',
+          userId: actor,
+          operation,
+          errorCode: 'DB_ERROR',
+          metadata: {
+            error: error.message,
+            filtros: filtros ?? {},
+          },
+        },
         '[Auditoría] Error en consulta financiera',
       )
       throw new Error(`[SupabaseFinancialAdapter] ${error.message}`)
@@ -223,15 +237,17 @@ class SupabaseFinancialAdapter implements IReportingRepository {
     // ── Audit log de seguridad ──────────────────────────────
     log.info(
       {
-        userId:              actor,
-        filtros:             filtros ?? {},
+        correlationId: 'unknown',
+        userId:        actor,
         operation,
-        cantidadActividades: balances.length,
-        duracionMs,
-        // Campos de auditoría de acceso financiero
-        accesoFinanciero:    true,
-        entidad:             'BalanceFinanciero',
-        timestamp:           new Date().toISOString(),
+        metadata: {
+          filtros:             filtros ?? {},
+          cantidadActividades: balances.length,
+          duracionMs,
+          accesoFinanciero:    true,
+          entidad:             'BalanceFinanciero',
+          timestamp:           new Date().toISOString(),
+        },
       },
       '[Auditoría] Consulta financiera completada',
     )

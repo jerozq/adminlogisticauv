@@ -39,9 +39,10 @@ const log = getLogger('api.finanzas.exportar')
 // ============================================================
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  // ── Extraer identidad del usuario ─────────────────────────
-  const userId       = req.headers.get('x-user-id') ?? 'anonymous'
-  const generadoEn   = new Date().toISOString()
+  // ── Extraer identidad del usuario y correlación ──────────────
+  const userId         = req.headers.get('x-user-id') ?? 'anonymous'
+  const correlationId  = req.headers.get('x-correlation-id') ?? crypto.randomUUID()
+  const generadoEn     = new Date().toISOString()
 
   let filters: GetFinancialSummaryFilters = {}
   let nombreUsuario: string | undefined
@@ -56,19 +57,24 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   log.info(
     {
+      correlationId,
       userId,
-      nombreUsuario:    nombreUsuario ?? 'desconocido',
-      filtros:          filters,
       operation:        'exportarFinanciero',
-      accesoFinanciero: true,
-      timestamp:        generadoEn,
+      route:            '/api/dashboard/finanzas/exportar',
+      method:           'POST',
+      metadata: {
+        nombreUsuario:    nombreUsuario ?? 'desconocido',
+        filtros:          filters,
+        accesoFinanciero: true,
+        timestamp:        generadoEn,
+      },
     },
     '[Auditoría] Solicitud de exportación financiera recibida',
   )
 
   try {
     // ── Ejecutar caso de uso con el adaptador optimizado ──────
-    const output = await makeGetFinancialSummaryWithAudit(userId).execute(filters, userId)
+    const output = await makeGetFinancialSummaryWithAudit(userId).execute(filters, userId, correlationId)
 
     // ── Construir payload para el exporter ────────────────────
     const datos: DatosExportacionFinanciero = {
@@ -112,11 +118,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     log.error(
       {
+        correlationId,
         userId,
-        filtros:          filters,
         operation:        'exportarFinanciero',
-        accesoFinanciero: true,
-        error:            message,
+        errorCode:        'UNEXPECTED_ERROR',
+        route:            '/api/dashboard/finanzas/exportar',
+        method:           'POST',
+        metadata: {
+          filtros:          filters,
+          accesoFinanciero: true,
+          error:            message,
+        },
       },
       '[Auditoría] Fallo en exportación financiera',
     )

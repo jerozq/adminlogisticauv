@@ -2,6 +2,9 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { getLogger } from '@/src/infrastructure/observability/logger'
+import { getCorrelationId } from '@/src/infrastructure/observability/correlation'
+import { InsufficientFundsError, ConcurrencyError } from '@/src/core/domain/entities'
 
 export interface LiquidacionResumen {
   id: string
@@ -457,7 +460,19 @@ export async function registrarAbonoUnidad(
   _retencionIgnorada: number,  // ? se ignora, se auto-calcula
   tipo_abono: 'OPERATIVO' | 'PASIVO_TERCERO' = 'OPERATIVO',
 ) {
+  const correlationId = await getCorrelationId()
+  const log = getLogger('registrarAbonoUnidad')
+
   const sb = await createClient()
+  const { data: { user } } = await sb.auth.getUser()
+  const userId = user?.id ?? 'anonymous'
+
+  log.info({
+    correlationId,
+    userId,
+    operation: 'registrarAbonoUnidad',
+    metadata: { actividadId, montoBanco, tipo_abono },
+  }, 'Iniciando registro de abono unitario')
 
   // Cargar requerimiento
   const { data: req } = await sb
@@ -488,7 +503,17 @@ export async function registrarAbonoUnidad(
     cuenta = nuevaCuenta
   }
 
-  if (!cuenta) throw new Error('No se pudo obtener/crear la cuenta virtual del proyecto')
+  if (!cuenta) {
+    const err = new Error('No se pudo obtener/crear la cuenta virtual del proyecto')
+    log.error({
+      correlationId,
+      userId,
+      operation: 'registrarAbonoUnidad',
+      errorCode: 'DB_ERROR',
+      metadata: { stage: 'cuenta_creation' },
+    }, err)
+    throw err
+  }
 
   // -- Auto-cálculo de retencion para OPERATIVO --
   let retencionCalculada = 0
@@ -535,6 +560,7 @@ export async function registrarAbonoUnidad(
     descripcion: tipo_abono === 'OPERATIVO'
       ? `Abono OPERATIVO | Banco: ${montoBanco} | Retencion: ${retencionCalculada}`
       : `Abono TERCEROS | Banco: ${montoBanco}`,
+    registrado_por: userId,
     notas: {
       tipo_abono,
       monto_banco: montoBanco,
@@ -543,7 +569,23 @@ export async function registrarAbonoUnidad(
       abonos_previos_operativo: abonosPreviosOp,
     },
   })
-  if (movErr) throw new Error(`Error al registrar movimiento: ${movErr.message}`)
+  if (movErr) {
+    log.error({
+      correlationId,
+      userId,
+      operation: 'registrarAbonoUnidad',
+      errorCode: 'DB_ERROR',
+      metadata: { error: movErr.message, stage: 'insert_movimiento' },
+    }, movErr, 'Error al registrar movimiento de abono')
+    throw new Error(`Error al registrar movimiento: ${movErr.message}`)
+  }
+
+  log.info({
+    correlationId,
+    userId,
+    operation: 'registrarAbonoUnidad',
+    metadata: { actividadId, montoBanco, retencionCalculada, cotizadoOperativo },
+  }, 'Abono unitario registrado exitosamente')
 
   revalidatePath(`/liquidaciones/${actividadId}`)
   revalidatePath('/liquidaciones')
@@ -620,7 +662,20 @@ export async function repararAbonosHuerfanos(actividadId: string): Promise<{ ok:
 }
 
 export async function registrarCostoReal(input: GuardarCostoLiquidacionInput): Promise<{ ok: true; costoId: string }> {
+  const correlationId = await getCorrelationId()
+  const log = getLogger('registrarCostoReal')
+
   const sb = await createClient()
+  const { data: { user } } = await sb.auth.getUser()
+  const userId = user?.id ?? 'anonymous'
+
+  log.info({
+    correlationId,
+    userId,
+    operation: 'registrarCostoReal',
+    metadata: { actividadId: input.actividadId, modo: input.modo },
+  }, 'Iniciando registro de costo')
+
   const { monto, precioUnitario } = _normalizarMontoCosto(input)
 
   const observacionesBase = input.observaciones?.trim() || null
@@ -633,7 +688,16 @@ export async function registrarCostoReal(input: GuardarCostoLiquidacionInput): P
       .eq('id', input.costoId)
       .single()
 
-    if (existenteError) throw new Error(`Error al leer el costo: ${existenteError.message}`)
+    if (existenteError) {
+      log.error({
+        correlationId,
+        userId,
+        operation: 'registrarCostoReal',
+        errorCode: 'DB_ERROR',
+        metadata: { error: existenteError.message, stage: 'read_existente' },
+      }, existenteError, 'Error al leer costo existente')
+      throw new Error(`Error al leer el costo: ${existenteError.message}`)
+    }
 
     const pagador = await _resolverPagadorCosto(sb, input, existente as CostoLiquidacionDetalle)
 
@@ -674,7 +738,16 @@ export async function registrarCostoReal(input: GuardarCostoLiquidacionInput): P
       })
       .eq('id', input.costoId)
 
-    if (updateError) throw new Error(`Error al actualizar el costo: ${updateError.message}`)
+    if (updateError) {
+      log.error({
+        correlationId,
+        userId,
+        operation: 'registrarCostoReal',
+        errorCode: 'DB_ERROR',
+        metadata: { error: updateError.message, stage: 'update_costo' },
+      }, updateError, 'Error al actualizar costo')
+      throw new Error(`Error al actualizar el costo: ${updateError.message}`)
+    }
 
     const costoConId: CostoLiquidacionDetalle = {
       ...costoActualizado,
@@ -683,6 +756,13 @@ export async function registrarCostoReal(input: GuardarCostoLiquidacionInput): P
     }
 
     await _sincronizarMovimientoCosto(sb, costoConId, input.cuentaOrigenId ?? null)
+
+    log.info({
+      correlationId,
+      userId,
+      operation: 'registrarCostoReal',
+      metadata: { costoId: input.costoId, monto, estado: estadoPago },
+    }, 'Costo actualizado exitosamente')
 
     revalidatePath(`/liquidaciones/${input.actividadId}`)
     revalidatePath('/liquidaciones')
@@ -711,10 +791,26 @@ export async function registrarCostoReal(input: GuardarCostoLiquidacionInput): P
     .select('*')
     .single()
 
-  if (error) throw new Error(`Error al registrar el costo: ${error.message}`)
+  if (error) {
+    log.error({
+      correlationId,
+      userId,
+      operation: 'registrarCostoReal',
+      errorCode: 'DB_ERROR',
+      metadata: { error: error.message, stage: 'insert_costo' },
+    }, error, 'Error al registrar nuevo costo')
+    throw new Error(`Error al registrar el costo: ${error.message}`)
+  }
 
   const costoCreado: CostoLiquidacionDetalle = insertado as CostoLiquidacionDetalle
   await _sincronizarMovimientoCosto(sb, costoCreado, input.cuentaOrigenId ?? null)
+
+  log.info({
+    correlationId,
+    userId,
+    operation: 'registrarCostoReal',
+    metadata: { costoId: insertado.id, monto, estado: estadoPago },
+  }, 'Nuevo costo registrado exitosamente')
 
   revalidatePath(`/liquidaciones/${input.actividadId}`)
   revalidatePath('/liquidaciones')
@@ -728,7 +824,19 @@ export async function cambiarEstadoPagoCosto(
   estadoPago: EstadoPagoCosto,
   cuentaOrigenId?: string | null,
 ): Promise<{ ok: true }> {
+  const correlationId = await getCorrelationId()
+  const log = getLogger('cambiarEstadoPagoCosto')
+
   const sb = await createClient()
+  const { data: { user } } = await sb.auth.getUser()
+  const userId = user?.id ?? 'anonymous'
+
+  log.info({
+    correlationId,
+    userId,
+    operation: 'cambiarEstadoPagoCosto',
+    metadata: { costoId, estadoPago },
+  }, `Iniciando cambio de estado del costo a ${estadoPago}`)
 
   const { data: costo, error } = await sb
     .from('ejecucion_costos')
@@ -736,7 +844,16 @@ export async function cambiarEstadoPagoCosto(
     .eq('id', costoId)
     .single()
 
-  if (error) throw new Error(`Error al leer el costo: ${error.message}`)
+  if (error) {
+    log.error({
+      correlationId,
+      userId,
+      operation: 'cambiarEstadoPagoCosto',
+      errorCode: 'DB_ERROR',
+      metadata: { error: error.message, stage: 'read_costo' },
+    }, error, 'Error al leer el costo')
+    throw new Error(`Error al leer el costo: ${error.message}`)
+  }
 
   const costoBase = costo as CostoLiquidacionDetalle
   const cuentaFinalId = cuentaOrigenId ?? costoBase.cuenta_origen_id ?? (await _obtenerOCrearCuentaProyecto(sb, actividadId)).id
@@ -750,20 +867,46 @@ export async function cambiarEstadoPagoCosto(
       .single()
 
     if (fetchError || !cuenta) {
-      throw new Error(`SALDO_INSUFICIENTE|Cuenta no encontrada`)
+      log.error({
+        correlationId,
+        userId,
+        operation: 'cambiarEstadoPagoCosto',
+        errorCode: 'DB_ERROR',
+        metadata: { error: fetchError?.message, stage: 'fetch_saldo' },
+      }, fetchError, 'Error al consultar saldo de cuenta')
+      throw new InsufficientFundsError({
+        message: 'Cuenta no encontrada para validar saldo',
+        accountId: cuentaFinalId,
+        required: 0,
+        available: 0,
+        operationId: costoId,
+      })
     }
 
     const saldoActual = Number(cuenta.saldo)
     const montoRequerido = Number(costoBase.monto || 0)
 
     if (saldoActual < montoRequerido) {
-      const error = new Error(`SALDO_INSUFICIENTE|${JSON.stringify({
-        saldoActual,
-        montoRequerido,
-        deficit: montoRequerido - saldoActual,
-        cuentaId: cuentaFinalId,
-      })}`)
-      throw error
+      log.warn({
+        correlationId,
+        userId,
+        operation: 'cambiarEstadoPagoCosto',
+        errorCode: 'INSUFFICIENT_FUNDS',
+        metadata: {
+          saldoActual,
+          montoRequerido,
+          deficit: montoRequerido - saldoActual,
+          cuentaId: cuentaFinalId,
+          costoId,
+        },
+      }, 'Fondos insuficientes para marcar costo como pagado')
+      throw new InsufficientFundsError({
+        message: `Fondos insuficientes: se requieren $${montoRequerido.toLocaleString('es-CO')} pero hay $${saldoActual.toLocaleString('es-CO')}`,
+        accountId: cuentaFinalId,
+        required: montoRequerido,
+        available: saldoActual,
+        operationId: costoId,
+      })
     }
   }
 
@@ -781,9 +924,25 @@ export async function cambiarEstadoPagoCosto(
     })
     .eq('id', costoId)
 
-  if (updateError) throw new Error(`Error al cambiar estado del costo: ${updateError.message}`)
+  if (updateError) {
+    log.error({
+      correlationId,
+      userId,
+      operation: 'cambiarEstadoPagoCosto',
+      errorCode: 'DB_ERROR',
+      metadata: { error: updateError.message, stage: 'update_costo' },
+    }, updateError, 'Error al cambiar estado del costo')
+    throw new Error(`Error al cambiar estado del costo: ${updateError.message}`)
+  }
 
   await _sincronizarMovimientoCosto(sb, costoActualizado, cuentaFinalId)
+
+  log.info({
+    correlationId,
+    userId,
+    operation: 'cambiarEstadoPagoCosto',
+    metadata: { costoId, nuevoEstado: estadoPago },
+  }, 'Estado del costo actualizado exitosamente')
 
   revalidatePath(`/liquidaciones/${actividadId}`)
   revalidatePath('/liquidaciones')

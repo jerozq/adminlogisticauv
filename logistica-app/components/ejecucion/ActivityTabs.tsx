@@ -2,17 +2,17 @@
 
 import { Suspense } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
-import { CalendarDays, DollarSign, Receipt } from 'lucide-react'
+import { CalendarDays, Receipt, FileCheck2 } from 'lucide-react'
 import { AgendaView } from './AgendaView'
-import { TabCronograma } from './TabCronograma'
 import { TablaReembolsos } from './TablaReembolsos'
+import { TabInforme } from './TabInforme'
 import type { HitoCronogramaIA } from '@/actions/cronograma-ia'
-import type { BitacoraEntregaRow, ItemCotizado } from '@/types/ejecucion'
-import type { NuevaParticipacion } from '@/src/types/domain'
+import type { BitacoraEntregaRow } from '@/types/ejecucion'
 import type { ReembolsoProps } from '@/src/core/domain/entities/Reembolso'
+import type { InformeActividad, ReembolsoInforme, EvidenciaInforme } from '@/actions/informes'
 
-type Tab = 'agenda' | 'reembolsos'
-const VALID_TABS: Tab[] = ['agenda', 'reembolsos']
+type Tab = 'agenda' | 'reembolsos' | 'informe'
+const VALID_TABS: Tab[] = ['agenda', 'reembolsos', 'informe']
 
 interface Props {
   actividadId: string
@@ -22,6 +22,10 @@ interface Props {
   reembolsos?: ReembolsoProps[]
   cronogramaIACache?: HitoCronogramaIA[] | null
   isMockMode?: boolean
+  // Datos del módulo de Informes
+  informeActividad?: InformeActividad | null
+  informeReembolsos?: ReembolsoInforme[]
+  informeEvidencias?: EvidenciaInforme[]
 }
 
 // Inner component needs Suspense because it calls useSearchParams()
@@ -33,6 +37,9 @@ function ActivityTabsInner({
   reembolsos = [],
   cronogramaIACache,
   isMockMode = false,
+  informeActividad = null,
+  informeReembolsos = [],
+  informeEvidencias = [],
 }: Props) {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -46,6 +53,14 @@ function ActivityTabsInner({
     params.set('tab', next)
     router.push(`${pathname}?${params.toString()}`)
   }
+
+  // Calcular si el informe tiene docs pendientes para el badge
+  const informePendiente = informeActividad
+    ? !informeActividad.recibo_satisfaccion_firmado_url ||
+      !informeActividad.lista_asistencia_firmada_url ||
+      !informeActividad.informe_pdf2_url ||
+      !informeActividad.informe_pdf3_url
+    : false
 
   return (
     <div>
@@ -63,6 +78,14 @@ function ActivityTabsInner({
           icon={<Receipt strokeWidth={1.5} className="size-4" />}
           label="Formatos"
           badge={reembolsos.length > 0 ? String(reembolsos.length) : undefined}
+        />
+        <TabButton
+          active={tab === 'informe'}
+          onClick={() => setTab('informe')}
+          icon={<FileCheck2 strokeWidth={1.5} className="size-4" />}
+          label="Informe"
+          badge={informePendiente ? '!' : undefined}
+          badgeColor={informePendiente ? 'amber' : undefined}
         />
       </div>
 
@@ -83,6 +106,20 @@ function ActivityTabsInner({
           initialReembolsos={reembolsos}
         />
       )}
+      {tab === 'informe' && informeActividad && (
+        <TabInforme
+          actividadId={actividadId}
+          actividad={informeActividad}
+          reembolsos={informeReembolsos}
+          evidencias={informeEvidencias}
+        />
+      )}
+      {tab === 'informe' && !informeActividad && (
+        <div className="glass-panel rounded-2xl p-8 text-center">
+          <FileCheck2 strokeWidth={1} className="size-8 [color:var(--text-muted)] mx-auto mb-2" />
+          <p className="text-sm [color:var(--text-muted)]">No se pudieron cargar los datos del informe.</p>
+        </div>
+      )}
     </div>
   )
 }
@@ -101,12 +138,14 @@ function TabButton({
   icon,
   label,
   badge,
+  badgeColor,
 }: {
   active: boolean
   onClick: () => void
   icon: React.ReactNode
   label: string
   badge?: string
+  badgeColor?: 'amber' | undefined
 }) {
   return (
     <button
@@ -122,7 +161,11 @@ function TabButton({
       <span className="hidden sm:inline">{label}</span>
       {badge && (
         <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${
-          active ? 'pill-prep' : '[background:var(--surface-border)] [color:var(--text-muted)]'
+          badgeColor === 'amber'
+            ? 'pill-run'
+            : active
+            ? 'pill-prep'
+            : '[background:var(--surface-border)] [color:var(--text-muted)]'
         }`}>
           {badge}
         </span>

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
 export function HomeLiveDateTime() {
-  const [now, setNow] = useState(() => new Date())
+  const [now, setNow] = useState<Date | null>(null)
 
   const timeFormatter = useMemo(
     () =>
@@ -29,12 +29,29 @@ export function HomeLiveDateTime() {
   )
 
   useEffect(() => {
+    setNow(new Date())
     const timer = window.setInterval(() => {
       setNow(new Date())
     }, 1000)
 
     return () => window.clearInterval(timer)
   }, [])
+
+  // Skeleton idéntico al layout final para evitar layout shift
+  if (!now) {
+    return (
+      <div className="grid sm:grid-cols-2 gap-3 min-w-[250px]">
+        <div className="rounded-2xl bg-black/20 border border-white/10 px-4 py-3 text-right">
+          <p className="text-[11px] uppercase tracking-wider [color:var(--text-muted)]">Hora Bogotá</p>
+          <div className="h-7 w-28 rounded animate-pulse [background:var(--surface-border)] ml-auto mt-1" />
+        </div>
+        <div className="rounded-2xl bg-black/20 border border-white/10 px-4 py-3 text-right">
+          <p className="text-[11px] uppercase tracking-wider [color:var(--text-muted)]">Fecha</p>
+          <div className="h-5 w-32 rounded animate-pulse [background:var(--surface-border)] ml-auto mt-1" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="grid sm:grid-cols-2 gap-3 min-w-[250px]" aria-live="polite">

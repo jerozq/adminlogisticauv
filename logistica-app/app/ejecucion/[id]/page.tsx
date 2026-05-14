@@ -4,6 +4,7 @@ import { FileText } from 'lucide-react'
 import { getSupabase } from '@/lib/supabase'
 import { getActivityRepository, makeGetReembolsosFromActivity } from '@/src/infrastructure/container'
 import { listarEntregas } from '@/actions/ejecucion'
+import { obtenerInformeActividad } from '@/actions/informes'
 import { ActivityTabs } from '@/components/ejecucion/ActivityTabs'
 import { CambiarEstadoButton } from '@/components/ejecucion/CambiarEstadoButton'
 import { MetaCardEjecucion } from '@/components/ejecucion/MetaCardEjecucion'
@@ -63,6 +64,7 @@ export default async function ActividadDetailPage({
     rawResult,
     entregas,
     reembolsosResult,
+    informeData,
   ] = await Promise.all([
     getActivityRepository().obtenerPorId(id),
     unstable_cache(
@@ -79,6 +81,11 @@ export default async function ActividadDetailPage({
       reembolsos: [],
       totalAutoGenerados: 0,
       totalManuales: 0,
+    })),
+    obtenerInformeActividad(id).catch(() => ({
+      actividad: null,
+      reembolsos: [],
+      evidencias: [],
     })),
   ])
 
@@ -180,6 +187,9 @@ export default async function ActividadDetailPage({
           reembolsos={reembolsosProps}
           cronogramaIACache={cronogramaIACache}
           isMockMode={process.env.USE_MOCK_AI === 'true'}
+          informeActividad={informeData.actividad}
+          informeReembolsos={informeData.reembolsos}
+          informeEvidencias={informeData.evidencias}
         />
       </div>
 

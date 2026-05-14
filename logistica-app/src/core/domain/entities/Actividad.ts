@@ -247,11 +247,13 @@ export class Actividad {
       (b) => b.nombreBeneficiario.trim().length > 0
     )
 
-    for (const ben of beneficiarios) {
+    for (let i = 0; i < beneficiarios.length; i++) {
+      const ben = beneficiarios[i]
+
       if (ben.valorTransporte > 0) {
         result.push(
           new Reembolso({
-            id:            `${this.id}-TRANSPORTE-${ben.documentoIdentidad}`,
+            id:            `${this.id}-TRANSPORTE-${i}-${ben.documentoIdentidad}`,
             actividadId:   this.id,
             tipo:          'TRANSPORTE',
             personaNombre: ben.nombreBeneficiario,
@@ -268,7 +270,7 @@ export class Actividad {
       if (tieneItemsInhumacion && ben.valorOtros > 0) {
         result.push(
           new Reembolso({
-            id:            `${this.id}-INHUMACION-${ben.documentoIdentidad}`,
+            id:            `${this.id}-INHUMACION-${i}-${ben.documentoIdentidad}`,
             actividadId:   this.id,
             tipo:          'INHUMACION',
             personaNombre: ben.nombreBeneficiario,
