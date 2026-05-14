@@ -1,0 +1,460 @@
+{
+  "nodes": [
+    {
+      "id": "f_files_modified_summary",
+      "label": "FILES_MODIFIED_SUMMARY.md",
+      "file_type": "document",
+      "path": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\FILES_MODIFIED_SUMMARY.md"
+    },
+    {
+      "id": "f_impl_summary_pdf3",
+      "label": "IMPLEMENTATION_SUMMARY_PDF3.md",
+      "file_type": "document",
+      "path": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\IMPLEMENTATION_SUMMARY_PDF3.md"
+    },
+    {
+      "id": "f_pdf3_testing",
+      "label": "PDF3_TESTING_GUIDE.md",
+      "file_type": "document",
+      "path": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\PDF3_TESTING_GUIDE.md"
+    },
+    {
+      "id": "f_pdf3_checklist",
+      "label": "PDF3_VALIDATION_CHECKLIST.md",
+      "file_type": "document",
+      "path": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\PDF3_VALIDATION_CHECKLIST.md"
+    },
+    {
+      "id": "f_root_readme",
+      "label": "README.md (root)",
+      "file_type": "document",
+      "path": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\README.md"
+    },
+    {
+      "id": "f_manual_edit",
+      "label": "README_EDICION_MANUAL.md",
+      "file_type": "document",
+      "path": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\README_EDICION_MANUAL.md"
+    },
+    {
+      "id": "f_refactor_chat",
+      "label": "Refactoring Dashboard Financial Visibility.md",
+      "file_type": "rationale",
+      "path": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\Refactoring Dashboard Financial Visibility.md"
+    },
+    {
+      "id": "f_agents",
+      "label": "logistica-app/AGENTS.md",
+      "file_type": "rationale",
+      "path": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\AGENTS.md"
+    },
+    {
+      "id": "f_claude",
+      "label": "logistica-app/CLAUDE.md",
+      "file_type": "rationale",
+      "path": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\CLAUDE.md"
+    },
+    {
+      "id": "f_evidencias_docs",
+      "label": "logistica-app/EVIDENCIAS_PDF_DOCS.md",
+      "file_type": "document",
+      "path": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\EVIDENCIAS_PDF_DOCS.md"
+    },
+    {
+      "id": "f_logistica_readme",
+      "label": "logistica-app/README.md",
+      "file_type": "document",
+      "path": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\README.md"
+    },
+    {
+      "id": "f_agenda_example",
+      "label": "AGENDA_SEMANAL_EXAMPLE.md",
+      "file_type": "document",
+      "path": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\ejecucion\\AGENDA_SEMANAL_EXAMPLE.md"
+    },
+    {
+      "id": "f_formato_asistencia",
+      "label": "FORMATO ASISTENCIA_385bb74a.md",
+      "file_type": "document",
+      "path": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\graphify-out\\converted\\FORMATO ASISTENCIA_385bb74a.md"
+    },
+    {
+      "id": "f_recibo_satisfaccion",
+      "label": "FORMATO RECIBO SATISFACION_fd6ebf49.md",
+      "file_type": "document",
+      "path": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\graphify-out\\converted\\FORMATO RECIBO SATISFACION_fd6ebf49.md"
+    },
+    {
+      "id": "f_plantilla_cotizacion",
+      "label": "PLANTILLA COTIZACION_b0146c11.md",
+      "file_type": "document",
+      "path": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\graphify-out\\converted\\PLANTILLA COTIZACION_b0146c11.md"
+    },
+    {
+      "id": "f_cuenta_cobro",
+      "label": "PLANTILLA CUENTA DE COBRO_3d2b82de.md",
+      "file_type": "document",
+      "path": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\graphify-out\\converted\\PLANTILLA CUENTA DE COBRO_3d2b82de.md"
+    },
+    {
+      "id": "img_file",
+      "label": "public/file.svg",
+      "file_type": "image",
+      "path": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\public\\file.svg"
+    },
+    {
+      "id": "img_globe",
+      "label": "public/globe.svg",
+      "file_type": "image",
+      "path": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\public\\globe.svg"
+    },
+    {
+      "id": "img_next",
+      "label": "public/next.svg",
+      "file_type": "image",
+      "path": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\public\\next.svg"
+    },
+    {
+      "id": "img_vercel",
+      "label": "public/vercel.svg",
+      "file_type": "image",
+      "path": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\public\\vercel.svg"
+    },
+    {
+      "id": "img_window",
+      "label": "public/window.svg",
+      "file_type": "image",
+      "path": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\public\\window.svg"
+    },
+    {
+      "id": "c_pdf3",
+      "label": "PDF 3: Reporte de Evidencias Fotograficas",
+      "file_type": "rationale"
+    },
+    {
+      "id": "c_grid",
+      "label": "Grilla adaptativa de evidencias",
+      "file_type": "rationale"
+    },
+    {
+      "id": "c_grouping",
+      "label": "Agrupacion por item (descripcion)",
+      "file_type": "rationale"
+    },
+    {
+      "id": "c_storage",
+      "label": "Supabase Storage bucket evidencias",
+      "file_type": "rationale"
+    },
+    {
+      "id": "c_financial_visibility",
+      "label": "Visibilidad financiera (abonado/costos)",
+      "file_type": "rationale"
+    },
+    {
+      "id": "code_evidencias_pdf",
+      "label": "components/informes/pdf/EvidenciasPDF.tsx",
+      "file_type": "code"
+    },
+    {
+      "id": "code_generar_btn",
+      "label": "GenerarEvidenciasPDFButton",
+      "file_type": "code"
+    },
+    {
+      "id": "code_agenda",
+      "label": "AgendaSemanal",
+      "file_type": "code"
+    }
+  ],
+  "edges": [
+    {
+      "source": "f_files_modified_summary",
+      "target": "code_evidencias_pdf",
+      "relation": "modifies_component",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "source_file": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\FILES_MODIFIED_SUMMARY.md",
+      "source_location": "L7",
+      "weight": 1
+    },
+    {
+      "source": "f_files_modified_summary",
+      "target": "f_evidencias_docs",
+      "relation": "references_documentation",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "source_file": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\FILES_MODIFIED_SUMMARY.md",
+      "source_location": "L65",
+      "weight": 1
+    },
+    {
+      "source": "f_files_modified_summary",
+      "target": "c_grouping",
+      "relation": "introduces_functionality",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "source_file": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\FILES_MODIFIED_SUMMARY.md",
+      "source_location": "L18",
+      "weight": 1
+    },
+    {
+      "source": "f_files_modified_summary",
+      "target": "c_pdf3",
+      "relation": "summarizes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "source_file": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\FILES_MODIFIED_SUMMARY.md",
+      "source_location": "L1",
+      "weight": 1
+    },
+    {
+      "source": "f_impl_summary_pdf3",
+      "target": "code_evidencias_pdf",
+      "relation": "refactors_component",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "source_file": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\IMPLEMENTATION_SUMMARY_PDF3.md",
+      "source_location": "L13",
+      "weight": 1
+    },
+    {
+      "source": "f_impl_summary_pdf3",
+      "target": "c_grid",
+      "relation": "describes_feature",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "source_file": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\IMPLEMENTATION_SUMMARY_PDF3.md",
+      "source_location": "L17",
+      "weight": 1
+    },
+    {
+      "source": "f_impl_summary_pdf3",
+      "target": "c_grouping",
+      "relation": "describes_feature",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "source_file": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\IMPLEMENTATION_SUMMARY_PDF3.md",
+      "source_location": "L35",
+      "weight": 1
+    },
+    {
+      "source": "f_pdf3_checklist",
+      "target": "f_evidencias_docs",
+      "relation": "validates_documentation_exists",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "source_file": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\PDF3_VALIDATION_CHECKLIST.md",
+      "source_location": "L101",
+      "weight": 1
+    },
+    {
+      "source": "f_pdf3_checklist",
+      "target": "f_impl_summary_pdf3",
+      "relation": "validates_summary_exists",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "source_file": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\PDF3_VALIDATION_CHECKLIST.md",
+      "source_location": "L110",
+      "weight": 1
+    },
+    {
+      "source": "f_pdf3_checklist",
+      "target": "code_generar_btn",
+      "relation": "checks_compatibility",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "source_file": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\PDF3_VALIDATION_CHECKLIST.md",
+      "source_location": "L91",
+      "weight": 1
+    },
+    {
+      "source": "f_pdf3_testing",
+      "target": "code_generar_btn",
+      "relation": "tests_user_action",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "source_file": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\PDF3_TESTING_GUIDE.md",
+      "source_location": "L21-L26",
+      "weight": 1
+    },
+    {
+      "source": "f_evidencias_docs",
+      "target": "c_pdf3",
+      "relation": "defines_document_purpose",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "source_file": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\EVIDENCIAS_PDF_DOCS.md",
+      "source_location": "L5",
+      "weight": 1
+    },
+    {
+      "source": "f_evidencias_docs",
+      "target": "c_grid",
+      "relation": "specifies_layout_rule",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "source_file": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\EVIDENCIAS_PDF_DOCS.md",
+      "source_location": "L22",
+      "weight": 1
+    },
+    {
+      "source": "f_evidencias_docs",
+      "target": "code_generar_btn",
+      "relation": "locates_ui_integration",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "source_file": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\EVIDENCIAS_PDF_DOCS.md",
+      "source_location": "L77",
+      "weight": 1
+    },
+    {
+      "source": "f_manual_edit",
+      "target": "c_storage",
+      "relation": "documents_storage_usage",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "source_file": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\README_EDICION_MANUAL.md",
+      "source_location": "L92",
+      "weight": 1
+    },
+    {
+      "source": "f_manual_edit",
+      "target": "code_agenda",
+      "relation": "documents_component_changes",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "source_file": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\README_EDICION_MANUAL.md",
+      "source_location": "L34",
+      "weight": 1
+    },
+    {
+      "source": "f_agenda_example",
+      "target": "code_agenda",
+      "relation": "shows_integration_example",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "source_file": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\ejecucion\\AGENDA_SEMANAL_EXAMPLE.md",
+      "source_location": "L20,L61",
+      "weight": 1
+    },
+    {
+      "source": "f_refactor_chat",
+      "target": "c_financial_visibility",
+      "relation": "captures_bug_context",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "source_file": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\Refactoring Dashboard Financial Visibility.md",
+      "source_location": "L7,L91,L123",
+      "weight": 1
+    },
+    {
+      "source": "f_claude",
+      "target": "f_agents",
+      "relation": "references_agent_policy",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1,
+      "source_file": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\CLAUDE.md",
+      "source_location": "L1",
+      "weight": 1
+    },
+    {
+      "source": "f_formato_asistencia",
+      "target": "c_pdf3",
+      "relation": "operational_template_related_to_field_evidence",
+      "confidence": "INFERRED",
+      "confidence_score": 0.63,
+      "source_file": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\graphify-out\\converted\\FORMATO ASISTENCIA_385bb74a.md",
+      "source_location": "L1,L4",
+      "weight": 0.63
+    },
+    {
+      "source": "f_recibo_satisfaccion",
+      "target": "c_storage",
+      "relation": "compliance_receipt_artifact",
+      "confidence": "INFERRED",
+      "confidence_score": 0.58,
+      "source_file": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\graphify-out\\converted\\FORMATO RECIBO SATISFACION_fd6ebf49.md",
+      "source_location": "L17-L45",
+      "weight": 0.58
+    },
+    {
+      "source": "f_plantilla_cotizacion",
+      "target": "f_cuenta_cobro",
+      "relation": "commercial_document_set",
+      "confidence": "INFERRED",
+      "confidence_score": 0.72,
+      "source_file": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\graphify-out\\converted\\PLANTILLA COTIZACION_b0146c11.md",
+      "source_location": "L1",
+      "weight": 0.72
+    },
+    {
+      "source": "img_next",
+      "target": "f_logistica_readme",
+      "relation": "starter_asset_of_nextjs_app",
+      "confidence": "INFERRED",
+      "confidence_score": 0.55,
+      "source_file": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\public\\next.svg",
+      "source_location": "file_metadata",
+      "weight": 0.55
+    },
+    {
+      "source": "img_vercel",
+      "target": "f_logistica_readme",
+      "relation": "deployment_brand_asset",
+      "confidence": "INFERRED",
+      "confidence_score": 0.54,
+      "source_file": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\public\\vercel.svg",
+      "source_location": "file_metadata",
+      "weight": 0.54
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "h_pdf3_delivery_bundle",
+      "nodes": [
+        "f_files_modified_summary",
+        "f_impl_summary_pdf3",
+        "f_pdf3_testing",
+        "f_pdf3_checklist",
+        "f_evidencias_docs",
+        "c_pdf3",
+        "code_evidencias_pdf",
+        "code_generar_btn"
+      ],
+      "relation": "pdf3_feature_delivery_knowledge_cluster",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\FILES_MODIFIED_SUMMARY.md",
+      "source_location": "L1-L124"
+    },
+    {
+      "id": "h_agenda_evidence_workflow",
+      "nodes": [
+        "f_manual_edit",
+        "f_agenda_example",
+        "code_agenda",
+        "c_storage",
+        "c_pdf3"
+      ],
+      "relation": "execution_tab_evidence_workflow",
+      "confidence": "INFERRED",
+      "source_file": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\README_EDICION_MANUAL.md",
+      "source_location": "L12-L93"
+    },
+    {
+      "id": "h_ops_document_templates",
+      "nodes": [
+        "f_formato_asistencia",
+        "f_recibo_satisfaccion",
+        "f_plantilla_cotizacion",
+        "f_cuenta_cobro"
+      ],
+      "relation": "converted_operational_templates_cluster",
+      "confidence": "EXTRACTED",
+      "source_file": "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\graphify-out\\converted\\PLANTILLA CUENTA DE COBRO_3d2b82de.md",
+      "source_location": "L1-L3"
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

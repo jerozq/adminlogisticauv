@@ -42,3 +42,6 @@ next-env.d.ts
 
 #css
 *.css.d.ts
+
+# AI Knowledge Graph
+graphify-out/

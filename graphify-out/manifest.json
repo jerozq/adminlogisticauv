@@ -1,0 +1,826 @@
+{
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\eslint.config.mjs": {
+    "mtime": 1776570392.4569056,
+    "hash": "dfa1f5f6a7037bf39dc510f30b180002"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\instrumentation.disabled.ts": {
+    "mtime": 1777060621.7413054,
+    "hash": "6b77e33c6535cfcd0a2012aff872c657"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\instrumentation.ts": {
+    "mtime": 1777313724.5759737,
+    "hash": "a103006613bff45561f9aacf8be7ac61"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\next-env.d.ts": {
+    "mtime": 1778771666.7775564,
+    "hash": "2a74d3909800ca5467fa83b0ab4a4890"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\next.config.js": {
+    "mtime": 1778531391.4399095,
+    "hash": "e4c6193615b306d9549d88c27370691f"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\postcss.config.mjs": {
+    "mtime": 1776570392.472201,
+    "hash": "239f3ebf717465dc636818a1a619398d"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\proxy.ts": {
+    "mtime": 1778774419.3489375,
+    "hash": "8db0d94a2fc404c4a221def873dc0a87"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\supabase_migration_costos_v2.sql": {
+    "mtime": 1778531391.6877408,
+    "hash": "3e4cef1d3fab11f3d9396903641e27d3"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\vitest.config.ts": {
+    "mtime": 1777156763.1586957,
+    "hash": "e4ef2f8df9856c7c603e6f0677bdcdb3"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\actions\\agenda-semanal.ts": {
+    "mtime": 1778531391.4118981,
+    "hash": "d56527c7888494e0b0599e4fdcf8339f"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\actions\\auth.ts": {
+    "mtime": 1777247158.1972036,
+    "hash": "380867804ef70b994e952ebf8e700f22"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\actions\\cotizaciones.ts": {
+    "mtime": 1778552542.5016146,
+    "hash": "3cfb4ef1906a0a1d1f07ea77a13d89dc"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\actions\\cronograma-ia.ts": {
+    "mtime": 1778531391.4149003,
+    "hash": "d236ce7bf308c73ef373e3de4d2c66a7"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\actions\\documentos-proyecto.ts": {
+    "mtime": 1778537633.2739947,
+    "hash": "3b77891118b86a5be59a1f7fe29e8140"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\actions\\ejecucion.ts": {
+    "mtime": 1778531391.4168975,
+    "hash": "9fef17352226e28eb9765b31852d0286"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\actions\\evidencias.ts": {
+    "mtime": 1777299930.971977,
+    "hash": "536054780809a462a99c4b22458ed936"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\actions\\informes.ts": {
+    "mtime": 1778774419.3159795,
+    "hash": "70b1c573f73f12b1f05b02ded255f1d5"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\actions\\liquidaciones.ts": {
+    "mtime": 1778774419.3479362,
+    "hash": "b53efd333d2d623b6a40fb13ad823ea1"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\actions\\reembolsos.ts": {
+    "mtime": 1778531391.4198878,
+    "hash": "a8c2af6262725ec99b8074c0567cd29b"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\actions\\tarifario.ts": {
+    "mtime": 1777269625.2818978,
+    "hash": "c62a753056033cf59235a852c3e534a6"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\actions\\tesoreria.ts": {
+    "mtime": 1778774419.3419366,
+    "hash": "ec77f032fa7830147c86a7e7ed66c8c1"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\app\\layout.tsx": {
+    "mtime": 1777767981.4451504,
+    "hash": "83a6ac0b64cec05897f1c655a8fafb60"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\app\\page.tsx": {
+    "mtime": 1778555725.1080635,
+    "hash": "3616f6b0530563c29b33d8209126d60d"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\app\\api\\chat\\route.ts": {
+    "mtime": 1778531391.420885,
+    "hash": "bc99b726f9d5e0081c4ed763ad397746"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\app\\api\\cotizaciones\\version\\[versionId]\\route.ts": {
+    "mtime": 1778537633.278996,
+    "hash": "d1a0bedbdbd5648d5a916c22ea3a8dc7"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\app\\api\\dashboard\\finanzas\\exportar\\route.ts": {
+    "mtime": 1778774419.3489375,
+    "hash": "5fb6328ba45c3ca047e21c84ee6c96ce"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\app\\api\\generar-cotizacion\\route.ts": {
+    "mtime": 1778537633.274995,
+    "hash": "25a4d449c37eefc7f656dc0d3a71d801"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\app\\api\\generar-cuenta-cobro\\route.ts": {
+    "mtime": 1778537633.274995,
+    "hash": "4656f9128a40122007a075490ac68760"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\app\\api\\health\\route.ts": {
+    "mtime": 1777269851.073596,
+    "hash": "0e5bd728bcd5c75db4a1fbcbc55d8598"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\app\\api\\informes\\generar-formato\\route.ts": {
+    "mtime": 1778774419.330361,
+    "hash": "30a7ab8cb39c52dbb720934eb3d95111"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\app\\api\\reembolsos\\exportar\\route.ts": {
+    "mtime": 1777419183.4003062,
+    "hash": "d8fe76fc1d49be83ec2c36f2ad6b81a1"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\app\\api\\reembolsos\\pdf\\route.ts": {
+    "mtime": 1777419183.4173617,
+    "hash": "4eccf7158b1f6d28a2e8e534d1d19954"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\app\\cotizaciones\\page.tsx": {
+    "mtime": 1777269291.918722,
+    "hash": "ab251186244f953d1d16b055dc23f41d"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\app\\cotizaciones\\nueva\\page.tsx": {
+    "mtime": 1778531391.423885,
+    "hash": "bf2bdc0e6752682d299d43a8d8aae4ea"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\app\\cotizaciones\\[requerimientoId]\\editar\\page.tsx": {
+    "mtime": 1778537633.3789985,
+    "hash": "2f739baa2cf7c716b74b54b6424f3bf4"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\app\\dashboard\\health\\page.tsx": {
+    "mtime": 1777767982.6417058,
+    "hash": "c74205d086f9af6854ebfde6a8d6a216"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\app\\ejecucion\\page.tsx": {
+    "mtime": 1777300349.7459815,
+    "hash": "6eaaa59db38c2c809ae3f4ed2d6a43c0"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\app\\ejecucion\\[id]\\page.tsx": {
+    "mtime": 1778774419.3209808,
+    "hash": "896731099e8d150ac093e98d451eb3b8"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\app\\ejecucion\\[id]\\reembolsos\\page.tsx": {
+    "mtime": 1777295751.9458153,
+    "hash": "dc0f66b050e95c5b82739552a42ee5ec"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\app\\liquidaciones\\page.tsx": {
+    "mtime": 1778531391.663986,
+    "hash": "89c72d02f60178218fafe4fae7a2925d"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\app\\liquidaciones\\[id]\\page.tsx": {
+    "mtime": 1778531391.662987,
+    "hash": "e612e338988b42d54eef3e4d303485a1"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\app\\login\\page.tsx": {
+    "mtime": 1777259356.1516135,
+    "hash": "d450dbbc7e022a32fa5bb6b2630d77cb"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\app\\reembolsos\\page.tsx": {
+    "mtime": 1777239388.1324985,
+    "hash": "ab423356c20203078be80e4e183187e1"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\app\\tarifario\\page.tsx": {
+    "mtime": 1777241774.5921626,
+    "hash": "e7f7012e622b80527c34a4daf26624a4"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\app\\tesoreria\\page.tsx": {
+    "mtime": 1778531391.666986,
+    "hash": "3b1dec954b69e667af3c628bd8672477"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\AppShell.tsx": {
+    "mtime": 1777246521.7316608,
+    "hash": "7b968cd26a7f118e2902df487023dabb"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\AssistantAI.tsx": {
+    "mtime": 1777767982.5380404,
+    "hash": "1efb765cce052f8d959a9b851c611534"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\FloatingNav.tsx": {
+    "mtime": 1778531391.427505,
+    "hash": "8ff3c78bed082f0a11b693f70f3a1281"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\HomeLiveDateTime.tsx": {
+    "mtime": 1778774419.3249812,
+    "hash": "d75af48f1bb0ebf9aae504245f31b5f4"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\LoginToastClient.tsx": {
+    "mtime": 1777247172.6441524,
+    "hash": "6df8f74d098085af7ee3077764b9613f"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\PageHeader.tsx": {
+    "mtime": 1777767982.6046414,
+    "hash": "cd189ba9da89723e35e2ff0b6fa41462"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\theme-provider.tsx": {
+    "mtime": 1777767981.078571,
+    "hash": "810578c28324acd4c16dee8b9ea4c8ab"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\ThemeToggle.tsx": {
+    "mtime": 1777767981.141267,
+    "hash": "9b93dc12208ff9e02fbc373ac788f895"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\cotizaciones\\CotizacionEditor.tsx": {
+    "mtime": 1778531391.428512,
+    "hash": "b24a34655e9a43438ca36d5a607f6714"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\cotizaciones\\CotizacionPreview.tsx": {
+    "mtime": 1777767982.1461344,
+    "hash": "c3964ad5bcad0f7ca29b809f6e3edb67"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\cotizaciones\\DocumentosHeaderActions.tsx": {
+    "mtime": 1778537633.2739947,
+    "hash": "c9793d42391d67ecf537bb3384bc4eee"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\cotizaciones\\DocumentosProyectoModal.tsx": {
+    "mtime": 1778537633.3039992,
+    "hash": "76ef2c47b3ccd079f21296022630e420"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\cotizaciones\\FileUploader.tsx": {
+    "mtime": 1778531391.4315116,
+    "hash": "3245db293b9630a23137270f07b78101"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\cotizaciones\\RequerimientoHeader.tsx": {
+    "mtime": 1778531391.4335115,
+    "hash": "ab3df1aeeaf437823d2e5a78e64f870e"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\ejecucion\\ActivityTabs.tsx": {
+    "mtime": 1778774419.3190005,
+    "hash": "21545a4bb69a3b15c9dd6135968d45ba"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\ejecucion\\AgendaSemanal.tsx": {
+    "mtime": 1778531391.4369109,
+    "hash": "a9e68137494a302f823996e47f55415a"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\ejecucion\\AgendaView.tsx": {
+    "mtime": 1777767982.5380404,
+    "hash": "d2a80e4ec3989f61d15702b02597eb02"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\ejecucion\\CalendarioMaestro.tsx": {
+    "mtime": 1777767982.5380404,
+    "hash": "9a001a5d1b39530adc5fd5e533660546"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\ejecucion\\CambiarEstadoButton.tsx": {
+    "mtime": 1777239384.2827268,
+    "hash": "dba0fdb230fb9499ebaf6483ee332f59"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\ejecucion\\EjecucionBoardShell.tsx": {
+    "mtime": 1777241749.732572,
+    "hash": "6cd74912c3748f9f8c82bc7f122a2907"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\ejecucion\\KanbanBoard.tsx": {
+    "mtime": 1777298398.9804378,
+    "hash": "0b7163e5d060115612bd63ecebf30ad8"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\ejecucion\\MetaCardEjecucion.tsx": {
+    "mtime": 1778531391.670985,
+    "hash": "6225034fa50244865891d74a0b3f47c2"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\ejecucion\\ModalMotivo.tsx": {
+    "mtime": 1777767982.5380404,
+    "hash": "4d214361418137f4a1ccd1c1fbf502a0"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\ejecucion\\TabCronograma.tsx": {
+    "mtime": 1777264316.973787,
+    "hash": "2b824f244e418202a45cd201266c1960"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\ejecucion\\TabInforme.tsx": {
+    "mtime": 1778774419.3169801,
+    "hash": "ffc5863139a4b029b8d1a0c825d59cca"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\ejecucion\\TablaReembolsos.tsx": {
+    "mtime": 1778531391.4389124,
+    "hash": "f1d4a97dee307a4fd501d42a8d7c0f02"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\ejecucion\\UploadDocumento.tsx": {
+    "mtime": 1778774419.3169801,
+    "hash": "0d00899bc17905c6cf5f30612f04592e"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\informes\\DescargarPDFButton.tsx": {
+    "mtime": 1778774419.3249812,
+    "hash": "8e036ab001dcddb0e9487f1280d98e5a"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\informes\\GenerarEvidenciasPDFButton.tsx": {
+    "mtime": 1778774419.3249812,
+    "hash": "513ffe9b07d1828e9b300d9a714496c2"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\informes\\pdf\\EvidenciasPDF.tsx": {
+    "mtime": 1778774419.3249812,
+    "hash": "9a855b9976400141a6b0b822d52332e0"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\informes\\pdf\\ListaAsistenciaPDF.tsx": {
+    "mtime": 1778774419.3219807,
+    "hash": "177d8dc52aadbf7566b3eebe47b7eb16"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\informes\\pdf\\ReciboSatisfaccionPDF.tsx": {
+    "mtime": 1778774419.3219807,
+    "hash": "caddc5f8e2edf5697e2775d07ba70ae1"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\liquidaciones\\FondosInsuficientesModal.tsx": {
+    "mtime": 1778531391.672988,
+    "hash": "b405bd7b72d638cece0ac031a25d46e8"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\liquidaciones\\GaleriaComprobantes.tsx": {
+    "mtime": 1778531391.6739857,
+    "hash": "e62430d4755be14115c1a23b74a2f6d1"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\liquidaciones\\LiquidacionDashboard.tsx": {
+    "mtime": 1778531641.1650648,
+    "hash": "a977d060d1f49189904c1f8428ad92d4"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\reembolsos\\DownloadPdfButton.tsx": {
+    "mtime": 1777419516.1735094,
+    "hash": "4ecd95b5e73c12214e72228bfa874a85"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\reembolsos\\GaleriaEvidencias.tsx": {
+    "mtime": 1777767982.6417058,
+    "hash": "7c40eb8499c8b105101d650b5bfc8044"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\tarifario\\TarifarioEditor.tsx": {
+    "mtime": 1777767982.6046414,
+    "hash": "3098f0bfd3788291053dd0b20bd7f3ec"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\tesoreria\\TesoreriaDashboard.tsx": {
+    "mtime": 1778531641.1650648,
+    "hash": "a7c9977071e1487e48ab55ccc5ee8548"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\ui\\GlassModal.tsx": {
+    "mtime": 1777270235.502815,
+    "hash": "5bd315f9bd3f219d200e37cf2f55b2bf"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\ui\\ImageModal.tsx": {
+    "mtime": 1777166674.8257792,
+    "hash": "727485c34686a06cd8327edba1291d3d"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\lib\\informe-utils.ts": {
+    "mtime": 1778774419.3259804,
+    "hash": "36d9e170f566a17c202fe9cc6a273ee9"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\lib\\supabase-browser.ts": {
+    "mtime": 1778774419.3169801,
+    "hash": "e4f024303eacfcb6cffb8a9d1f21ce65"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\lib\\supabase.ts": {
+    "mtime": 1776577205.3655944,
+    "hash": "f840c21e67f15c91d642f5380eab3708"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\lib\\tesoreria-constants.ts": {
+    "mtime": 1778531391.6813564,
+    "hash": "04f9221f806f1094749c22e406c586eb"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\lib\\transiciones.ts": {
+    "mtime": 1776987569.8879395,
+    "hash": "d292b7dc3022e8654a6aea18771d2ed5"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\application\\use-cases\\ChangeActivityStatus.ts": {
+    "mtime": 1777061502.4348903,
+    "hash": "46c04640f5453dfd64c3710df406676e"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\application\\use-cases\\GetFinancialSummary.ts": {
+    "mtime": 1778774419.3489375,
+    "hash": "687b3a487f1eb647b7e3cdfc36c5d460"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\application\\use-cases\\GetReembolsosFromActivity.ts": {
+    "mtime": 1777152439.4831512,
+    "hash": "3c6e5a645b3b068ca4f681c494efac54"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\application\\use-cases\\index.ts": {
+    "mtime": 1777154549.9965558,
+    "hash": "e03bf6366181821d69a94efe322e7761"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\application\\use-cases\\PrepareReembolsoDocument.ts": {
+    "mtime": 1777152439.4831512,
+    "hash": "dd15783c36dcb6953c5c13e0063b3437"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\application\\use-cases\\RedefinirParticipacion.ts": {
+    "mtime": 1777063148.4308379,
+    "hash": "69a8624118d49ad42a0e91f7e0616a4b"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\domain\\index.ts": {
+    "mtime": 1777154549.9965558,
+    "hash": "1628881158450607391c5e7728f0f6d1"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\domain\\calculators\\vencimientos.ts": {
+    "mtime": 1777163416.7683892,
+    "hash": "8cec1779bffd34122cc7ed495d51a0f4"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\domain\\entities\\Actividad.ts": {
+    "mtime": 1778774419.330361,
+    "hash": "e8b672f52b45beefdcd02d88c45a4e7c"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\domain\\entities\\BalanceFinanciero.ts": {
+    "mtime": 1777154549.9965558,
+    "hash": "756eea9acb819903264690e9fad30bf5"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\domain\\entities\\ConcurrencyError.ts": {
+    "mtime": 1778774419.3419366,
+    "hash": "0113f298eebcfb637a1ac9c869a0ca24"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\domain\\entities\\DocumentConversionError.ts": {
+    "mtime": 1778774419.330361,
+    "hash": "7bb2564818b318987eb53f752c4db513"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\domain\\entities\\DomainError.ts": {
+    "mtime": 1778774419.331361,
+    "hash": "6106d96f39422bf0291c00d25c2f29f4"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\domain\\entities\\index.ts": {
+    "mtime": 1778774419.3489375,
+    "hash": "36faa563f8273ba7d91145b924b5796b"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\domain\\entities\\InsufficientFundsError.ts": {
+    "mtime": 1778774419.331361,
+    "hash": "38cc97e715c025c2f61b025a97a2c6d8"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\domain\\entities\\Reembolso.ts": {
+    "mtime": 1777152439.4831512,
+    "hash": "8e0d1291bfb3bd5807659673378d58a4"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\domain\\ports\\IActivityRepository.ts": {
+    "mtime": 1777295752.0618465,
+    "hash": "cbec700e0445e5312ebf00f37f96d08f"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\domain\\ports\\IDocumentConverterService.ts": {
+    "mtime": 1778774419.330361,
+    "hash": "5bc76d5e0a0066e2b8635ac7a41e6b63"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\domain\\ports\\IDocumentGenerator.ts": {
+    "mtime": 1777060188.5176988,
+    "hash": "cfe8fa91d7c8619bc7e731219b7bb82a"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\domain\\ports\\IExcelParser.ts": {
+    "mtime": 1777060201.057396,
+    "hash": "61f3af9d9e8f8667ed73548e6435530a"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\domain\\ports\\IFinancialExporter.ts": {
+    "mtime": 1777154549.9965558,
+    "hash": "07ec71d64dc9fca28606ca8e4e72a4a7"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\domain\\ports\\IPdfGenerator.ts": {
+    "mtime": 1777419183.3989987,
+    "hash": "f6940ab87f30a95ac403e8de3841a8f5"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\domain\\ports\\IReembolsoRepository.ts": {
+    "mtime": 1777152439.4831512,
+    "hash": "648e77b14a6859bca489677ac8f5e5b1"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\domain\\ports\\IReportingRepository.ts": {
+    "mtime": 1777154549.9965558,
+    "hash": "cde368137abcfcfbab9015417ef66f7b"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\domain\\ports\\ITarifarioRepository.ts": {
+    "mtime": 1777269611.4340787,
+    "hash": "ab4359a66d0c292bd40e0104c526770d"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\domain\\value-objects\\SocioParticipacion.ts": {
+    "mtime": 1777062850.1883788,
+    "hash": "33e159ac459a651f0fcd443e9859837a"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\domain\\__tests__\\Actividad.test.ts": {
+    "mtime": 1777269856.700782,
+    "hash": "fa4bd7045de8ca130f001cbf4ee20551"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\domain\\__tests__\\BalanceFinanciero.test.ts": {
+    "mtime": 1777156763.1586957,
+    "hash": "d379de26b1fa867802a6990dc7cfb8ef"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\core\\domain\\__tests__\\Reembolso.test.ts": {
+    "mtime": 1777156763.1586957,
+    "hash": "3726ab1dadc8147918ea10a3c350826f"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\infrastructure\\container.ts": {
+    "mtime": 1778774419.331361,
+    "hash": "8c5093fa3571c4f38108b04031878c0c"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\infrastructure\\adapters\\CloudConvertAdapter.ts": {
+    "mtime": 1778774419.331361,
+    "hash": "3a40da61fa360b8cfbe32cf21b347a3f"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\infrastructure\\adapters\\ExcelToPdfReembolsoAdapter.ts": {
+    "mtime": 1778774419.3489375,
+    "hash": "3fe69e34a3bed722b0846273d711c43d"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\infrastructure\\adapters\\FinancialExportAdapter.ts": {
+    "mtime": 1778774419.3489375,
+    "hash": "e9a8195f95a531a722b89438b2622160"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\infrastructure\\adapters\\HealthCheckAdapter.ts": {
+    "mtime": 1777269545.093609,
+    "hash": "c5dc3bdaa57a558d31dca1a076b157cc"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\infrastructure\\adapters\\index.ts": {
+    "mtime": 1777152439.4831512,
+    "hash": "a34d7061e72659b8bc69b9af9022fa3f"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\infrastructure\\adapters\\InMemoryReembolsoRepository.ts": {
+    "mtime": 1777152439.4831512,
+    "hash": "2596b989b2134320a6889bdd1f2bb697"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\infrastructure\\adapters\\SupabaseActivityRepository.ts": {
+    "mtime": 1778531391.455867,
+    "hash": "3cadb0b807cc3084826000f871263fd4"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\infrastructure\\adapters\\SupabaseFinancialAdapter.ts": {
+    "mtime": 1778774419.3489375,
+    "hash": "accce90853b8e716072eeb8149e0ae1a"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\infrastructure\\adapters\\SupabaseReportingRepository.ts": {
+    "mtime": 1778531391.4600568,
+    "hash": "437446a45eaccf926e35d3697710b5d9"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\infrastructure\\adapters\\SupabaseTarifarioRepository.ts": {
+    "mtime": 1777269613.449954,
+    "hash": "e07faec45422868a126db0f976750d46"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\infrastructure\\adapters\\WordTemplateAdapter.ts": {
+    "mtime": 1777061125.12722,
+    "hash": "2d10dee5f027dcc56e9830d5ab3dd220"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\infrastructure\\adapters\\__tests__\\ExcelToPdfReembolsoAdapter.test.ts": {
+    "mtime": 1777156763.1586957,
+    "hash": "8497fdce66ac143f176d1e91c69ff0e9"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\infrastructure\\observability\\correlation.ts": {
+    "mtime": 1778774419.3419366,
+    "hash": "153f37d148eb7ac103971ea09b53c64f"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\infrastructure\\observability\\logger.ts": {
+    "mtime": 1778774419.3419366,
+    "hash": "b68ca6c7962d1d7dca1dbe40b2c6dfa6"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\infrastructure\\observability\\tracer.ts": {
+    "mtime": 1777156763.1586957,
+    "hash": "d64f7209a2d7c38e740e1ec20ce54e03"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\types\\domain.ts": {
+    "mtime": 1777337141.0696812,
+    "hash": "a806fe75ee3e06c1fa088416b5b0fe28"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\utils\\numeroALetras.ts": {
+    "mtime": 1777337785.2401135,
+    "hash": "1d2ace7de382bc4f2b4a07e20ca18491"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\__tests__\\reembolsos-separacion.test.ts": {
+    "mtime": 1777168236.886277,
+    "hash": "14221a7f53781f4084a8b191506c9055"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\__tests__\\setup.ts": {
+    "mtime": 1777156763.1586957,
+    "hash": "0a3847abaa554e4f08ac909f6d477f3f"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\__tests__\\vencimientos.test.ts": {
+    "mtime": 1777163442.8946805,
+    "hash": "3eb59dbdd98785b992fb24d455bed033"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\src\\__tests__\\mocks\\supabase.ts": {
+    "mtime": 1777156763.164389,
+    "hash": "b4ee5f2452b80a6cc2f68c5396a36c2f"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\supabase\\migrations\\20260511101000_documentos_proyecto.sql": {
+    "mtime": 1778531391.6857395,
+    "hash": "6bf6f9beba2a2a7ca6d76eedc8eab0dd"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\types\\cotizacion.ts": {
+    "mtime": 1777161534.7433934,
+    "hash": "8fabd0316b6343fad796683047a3d659"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\types\\ejecucion.ts": {
+    "mtime": 1777268731.8551455,
+    "hash": "49576c8d1db5c554131c47802c42c8e0"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\types\\tarifario.ts": {
+    "mtime": 1777170041.206733,
+    "hash": "99374abfef9d3b193a6a4da11aebb8b0"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\utils\\supabase\\client.ts": {
+    "mtime": 1777246735.7599108,
+    "hash": "4cb5739c1e33353d8f9d66c1737df2d1"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\utils\\supabase\\middleware.ts": {
+    "mtime": 1777308837.432963,
+    "hash": "98c73159e3ccc73a4a1d85063b922af3"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\utils\\supabase\\server.ts": {
+    "mtime": 1777246733.7371633,
+    "hash": "b54db6f37093474763ba05f5f2e29b7d"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260418233000_insert_tarifario_2026.sql": {
+    "mtime": 1776573597.550437,
+    "hash": "62c94d96d43afa294e325bf61082ed4a"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260418235000_reclass_tarifario_2026.sql": {
+    "mtime": 1776573809.305693,
+    "hash": "5c9b31ba661aa4c1aa877daa0909fc07"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260419035048_crear_tarifario.sql": {
+    "mtime": 1776572692.1954587,
+    "hash": "fb075e13a4f35c4ce9116d118c7c4273"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260419051000_update_codigo_item_por_categoria.sql": {
+    "mtime": 1776573995.9679122,
+    "hash": "13bc63347c471253c7add9b139d63926"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260419060000_crear_modulo_cotizaciones.sql": {
+    "mtime": 1776576713.6748922,
+    "hash": "ff66d96c1550040d3e147c12042531cb"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260419070000_modulo_ejecucion.sql": {
+    "mtime": 1776650661.7893581,
+    "hash": "870dfd0442eca7024e89e9688a7eb968"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260423000000_agregar_estados_aplazado_cancelado.sql": {
+    "mtime": 1776985466.6386726,
+    "hash": "1926d566ebbfe06c4ccad847921ef199"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260423020000_historial_estados_y_transiciones.sql": {
+    "mtime": 1776987302.9116206,
+    "hash": "432cbca7817c16fd1ba2defb96d9d258"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260424000000_actividad_participaciones.sql": {
+    "mtime": 1777062969.5892563,
+    "hash": "0d03fe5543cd4dead890f8c8a73dc0ca"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260425190000_ajustes_items_cotizacion.sql": {
+    "mtime": 1777161515.0889053,
+    "hash": "a472cdc0ac2c82f3d2ca2564a4461600"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260425210000_modulo_financiero_avanzado.sql": {
+    "mtime": 1777168840.2419982,
+    "hash": "befe027af4854e5500e1ba591eba831e"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260425220000_modulo_tarifario.sql": {
+    "mtime": 1777169556.6058998,
+    "hash": "666550087df9b3d8511f4a9d1d08c246"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260426000000_cronograma_ia_cache.sql": {
+    "mtime": 1777233865.1989055,
+    "hash": "02a094894e6d786c48cc4035057473c1"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260426001000_cronograma_ia_cache_actividades.sql": {
+    "mtime": 1777233865.2086654,
+    "hash": "278444d44d25857ddc6be2f441e12d36"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260427000000_bitacora_entregas.sql": {
+    "mtime": 1776717465.0031006,
+    "hash": "fe543cadd201e1bb1c8627af01c4cea7"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260427100000_agregar_actualizado_por.sql": {
+    "mtime": 1777333276.0835936,
+    "hash": "946a9944344e12e7f3782f2d94939246"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260427110000_pagador_dinamico.sql": {
+    "mtime": 1777337141.0109146,
+    "hash": "f5556ae6b3f2d266cd21fb1bc222e1c0"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260427200000_numero_cuenta_cobro.sql": {
+    "mtime": 1777337785.2401135,
+    "hash": "872ba46aef444f950743c1a44f50ed8e"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260427210000_refactor_financiero.sql": {
+    "mtime": 1778531391.6922235,
+    "hash": "544b3aef81620d2e20d6c911b8719133"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260427220000_asistencia_reembolsos.sql": {
+    "mtime": 1778531391.6932197,
+    "hash": "c881d2d4bb7b1a1506512738b0065ffa"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260428000000_rls_tablas_principales.sql": {
+    "mtime": 1778531391.6942198,
+    "hash": "2f98f258c1088c72714508d74eb02740"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260507000000_tipo_abono_separacion.sql": {
+    "mtime": 1778531391.6952188,
+    "hash": "d427267af145272fc2e6b9104b96432c"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260507110000_tesoreria_banca_virtual.sql": {
+    "mtime": 1778531391.696219,
+    "hash": "3d9f21518d65fb9639c4b92e19e4f52e"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260507120000_tesoreria_usuarios_reales.sql": {
+    "mtime": 1778531391.6972387,
+    "hash": "e0355234157dae064f83420fdd8a1eec"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260507180000_marcar_inhumacion_excluir_finanzas.sql": {
+    "mtime": 1778531391.6982222,
+    "hash": "1155e842f790d2d8397c75acff0d2fe3"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260507190000_revertir_inhumacion_excluir_finanzas.sql": {
+    "mtime": 1778531391.6992257,
+    "hash": "775bfbb4c4cb6daca27f372f94596751"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260507200000_fase1_reset_financiero_banca_virtual.sql": {
+    "mtime": 1778531391.700223,
+    "hash": "65fef9fe7d17d5e1767b858e58cf918b"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260507210000_reparar_ejecucion_costos_y_columnas_requerimiento.sql": {
+    "mtime": 1778531391.7012186,
+    "hash": "02b28260e7eceb1ea633d8593a2a70b3"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260508000000_ampliar_ejecucion_costos_columnas.sql": {
+    "mtime": 1778531391.7032192,
+    "hash": "6eaf3f529081c9094d0c1778fad83617"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260508010000_rls_items_requerimiento_anon.sql": {
+    "mtime": 1778531391.7042203,
+    "hash": "f820df06d470a970e331d981f8b07611"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260508020000_rls_tablas_faltantes.sql": {
+    "mtime": 1778531391.7062213,
+    "hash": "b18fb810931d4f8ea4e111210c2ed620"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260509000000_agregar_notas_movimientos_bancarios.sql": {
+    "mtime": 1778531391.7072434,
+    "hash": "2ae902e4de2a7259e59d45fc128efcba"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260509010000_costos_estado_pago_y_movimientos.sql": {
+    "mtime": 1778531391.708222,
+    "hash": "14fc2a8c0b446200ede7fb0e313637fb"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260511000000_devoluciones_checklist.sql": {
+    "mtime": 1778531391.7092226,
+    "hash": "33c95348ea5901e6cf56950e11b0ad98"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\migrations\\20260513000000_modulo_informes.sql": {
+    "mtime": 1778704979.9870658,
+    "hash": "74241a0e56e902ee64277d626ecd7118"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\supabase\\seeds\\tarifario_2026_insert.sql": {
+    "mtime": 1776573809.304609,
+    "hash": "5c9b31ba661aa4c1aa877daa0909fc07"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\FILES_MODIFIED_SUMMARY.md": {
+    "mtime": 1778774419.3489375,
+    "hash": "825015598c4b309297d3f01bf0a46b0c"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\IMPLEMENTATION_SUMMARY_PDF3.md": {
+    "mtime": 1778774419.3489375,
+    "hash": "74cefb6e87c8ddb9c77282669d513e5c"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\PDF3_TESTING_GUIDE.md": {
+    "mtime": 1778774419.3489375,
+    "hash": "e3cb754771b3424c14d8faf23c4fe25b"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\PDF3_VALIDATION_CHECKLIST.md": {
+    "mtime": 1778774419.3489375,
+    "hash": "bbd819cb6779898b66002b0e11a563dc"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\README.md": {
+    "mtime": 1776569120.816944,
+    "hash": "b02dbdd2763645aca2bf4bef83ee04f0"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\README_EDICION_MANUAL.md": {
+    "mtime": 1777233865.2086654,
+    "hash": "563b23c550cb3a9d171529aa1fc1b5ec"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\Refactoring Dashboard Financial Visibility.md": {
+    "mtime": 1778531391.646986,
+    "hash": "309b9a13fe09431fe0f5811b0e3a0033"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\AGENTS.md": {
+    "mtime": 1776570448.0000403,
+    "hash": "9e09241799026ac05be315a2f0b50055"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\CLAUDE.md": {
+    "mtime": 1776570448.0010402,
+    "hash": "5c27369b226fcf2be8a6cfe52224e767"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\EVIDENCIAS_PDF_DOCS.md": {
+    "mtime": 1778774419.3489375,
+    "hash": "9f5fbfca419ffe3d3993fbcc42e31abf"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\README.md": {
+    "mtime": 1776570392.442003,
+    "hash": "f15aaa42d5d299d091b1171097ea56ad"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\components\\ejecucion\\AGENDA_SEMANAL_EXAMPLE.md": {
+    "mtime": 1777233865.2086654,
+    "hash": "e9942cc52543efd2842251fea9f83ac9"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\graphify-out\\converted\\FORMATO ASISTENCIA_385bb74a.md": {
+    "mtime": 1778785003.1817663,
+    "hash": "96d08bfcc1050a906dd81803bbc90ef1"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\graphify-out\\converted\\FORMATO RECIBO SATISFACION_fd6ebf49.md": {
+    "mtime": 1778785003.4551036,
+    "hash": "44cb7193af41ac211a714ee492702a25"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\graphify-out\\converted\\PLANTILLA COTIZACION_b0146c11.md": {
+    "mtime": 1778785003.4952586,
+    "hash": "18dfcf525b104517228377ad3f552899"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\graphify-out\\converted\\PLANTILLA CUENTA DE COBRO_3d2b82de.md": {
+    "mtime": 1778785003.5403614,
+    "hash": "3961dd500046878fdf9100ae390cb6c3"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\public\\file.svg": {
+    "mtime": 1776570392.4791985,
+    "hash": "d09f95206c3fa0bb9bd9fefabfd0ea71"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\public\\globe.svg": {
+    "mtime": 1776570392.4891963,
+    "hash": "2aaafa6a49b6563925fe440891e32717"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\public\\next.svg": {
+    "mtime": 1776570392.4986608,
+    "hash": "8e061864f388b47f33a1c3780831193e"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\public\\vercel.svg": {
+    "mtime": 1776570392.5046258,
+    "hash": "c0af2f507b369b085b35ef4bbe3bcf1e"
+  },
+  "C:\\Users\\Jeronimo Zapata\\Documents\\GitHub\\adminlogisticauv\\logistica-app\\public\\window.svg": {
+    "mtime": 1776570392.508624,
+    "hash": "a2760511c65806022ad20adf74370ff3"
+  }
+}
