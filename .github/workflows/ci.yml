@@ -38,8 +38,11 @@ jobs:
           cache: "pnpm"
           cache-dependency-path: logistica-app/pnpm-lock.yaml
 
-      - name: Habilitar Corepack (pnpm)
-        run: corepack enable
+      - name: Instalar pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+          run_install: false
 
       # ── 3. Instalar dependencias ───────────────────────────────
       - name: Instalar dependencias
