@@ -297,7 +297,7 @@ export async function listarLiquidaciones(): Promise<LiquidacionResumen[]> {
 
   // Buscar todos los movimientos de entrada (abonos) a las cuentas virtuales
   // Solo contar movimientos EJECUTADO (o sin estado para backward compat)
-  let abonosPorCuenta: Record<string, number> = {}
+  const abonosPorCuenta: Record<string, number> = {}
   if (cuentaIds.length > 0) {
     const { data: movimientos } = await sb
       .from('movimientos_bancarios')

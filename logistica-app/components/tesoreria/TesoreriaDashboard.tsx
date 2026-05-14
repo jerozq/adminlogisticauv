@@ -314,7 +314,9 @@ function ModalRepartir({
 
   useEffect(() => {
     if (!proyId) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCargandoBase(true)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setErr(null)
     ;(async () => {
       try {

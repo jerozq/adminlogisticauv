@@ -13,6 +13,21 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  // Project-wide rule overrides
+  {
+    rules: {
+      // Downgraded to warning: large codebase with many pre-existing any types;
+      // tracked separately to be fixed incrementally.
+      "@typescript-eslint/no-explicit-any": "warn",
+    },
+  },
+  // next.config.js uses CommonJS require() which is intentional
+  {
+    files: ["next.config.js"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

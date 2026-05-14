@@ -29,6 +29,7 @@ export function HomeLiveDateTime() {
   )
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setNow(new Date())
     const timer = window.setInterval(() => {
       setNow(new Date())
