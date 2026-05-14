@@ -30,19 +30,20 @@ jobs:
       - name: Checkout del repositorio
         uses: actions/checkout@v4
 
-      # ── 2. Node.js ─────────────────────────────────────────────
+      # ── 2. pnpm (debe ir ANTES de setup-node para que el cache funcione) ──
+      - name: Instalar pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+          run_install: false
+
+      # ── 3. Node.js ─────────────────────────────────────────────
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "pnpm"
           cache-dependency-path: logistica-app/pnpm-lock.yaml
-
-      - name: Instalar pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.9
-          run_install: false
 
       # ── 3. Instalar dependencias ───────────────────────────────
       - name: Instalar dependencias
