@@ -53,14 +53,23 @@ const log = getLogger('ExcelToPdfReembolsoAdapter')
 //   3. Candidatos locales (cwd y raíz del monorepo)
 // ---------------------------------------------------------------
 const TEMPLATE_FILENAME = 'UTF-8FORMATO REEMBOLSO DE TRANSPORTE V4 ultimo 12 mayo.xlsx'
+const TEMPLATE_CANONICAL = 'FORMATO-REEMBOLSO.xlsx'
 
 function resolveTemplatePath(): string {
   const envPath = process.env.REEMBOLSO_TEMPLATE_PATH?.trim()
 
   const candidates = [
+    // 1. Variable de entorno (absoluta o relativa al cwd)
     envPath && path.isAbsolute(envPath) ? envPath : null,
     envPath ? path.resolve(process.cwd(), envPath) : null,
+    // 2. Carpeta templates/ con nombre canónico (recomendado en Vercel)
+    path.resolve(process.cwd(), 'templates', TEMPLATE_CANONICAL),
+    // 3. Carpeta templates/ con nombre original
+    path.resolve(process.cwd(), 'templates', TEMPLATE_FILENAME),
+    // 4. Raíz del proyecto (fallback local)
+    path.resolve(process.cwd(), TEMPLATE_CANONICAL),
     path.resolve(process.cwd(), TEMPLATE_FILENAME),
+    path.resolve(process.cwd(), '..', TEMPLATE_CANONICAL),
     path.resolve(process.cwd(), '..', TEMPLATE_FILENAME),
   ].filter((p): p is string => Boolean(p))
 
@@ -69,8 +78,9 @@ function resolveTemplatePath(): string {
   }
 
   throw new Error(
-    `Plantilla de reembolso no encontrada. Rutas revisadas: ${candidates.join(' | ')}. ` +
-    'Configura REEMBOLSO_TEMPLATE_PATH o ubica la plantilla en la raíz del proyecto.'
+    `Plantilla de reembolso no encontrada. Rutas revisadas:\n  ${candidates.join('\n  ')}\n` +
+    'Opciones: (A) copia la plantilla .xlsx a logistica-app/templates/FORMATO-REEMBOLSO.xlsx, ' +
+    'o (B) configura la variable de entorno REEMBOLSO_TEMPLATE_PATH con la ruta completa.'
   )
 }
 

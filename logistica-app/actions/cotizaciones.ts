@@ -431,14 +431,16 @@ function parseAlojamientoTransporte(sheet: ExcelJS.Worksheet): ReembolsoDetalleD
   // ── Detectar columnas dinámicamente desde la fila de encabezado ──
   // El formato UARIV cambia entre versiones: en 2025 los costos están en C16-C18,
   // en versiones más recientes están en C19-C21 y la ruta se mueve a C18.
-  let colRuta = 15, colCostoIda = 16, colCostoRegreso = 17, colCostoTotal = 18
+  let colCelular = 7, colRuta = 15, colCostoIda = 16, colCostoRegreso = 17, colCostoTotal = 18
 
   const hr = sheet.getRow(headerRow)
   const maxHeaderCol = Math.max(hr.cellCount || 0, 25)
   for (let c = 1; c <= maxHeaderCol; c++) {
     const v = cellStr(hr.getCell(c).value).toUpperCase()
     if (!v) continue
-    if (v.includes('LUGAR DE SALIDA') || v.includes('ITINERARIO TERRESTRE')) {
+    if (v.includes('CELULAR') || v.includes('TELÉFONO') || v.includes('TELEFONO')) {
+      colCelular = c
+    } else if (v.includes('LUGAR DE SALIDA') || v.includes('ITINERARIO TERRESTRE')) {
       colRuta = c
     } else if (v.includes('COSTO IDA') || (v.includes('GASTO TRANSPORTE') && !v.includes('BOGOTA'))) {
       colCostoIda = c
@@ -471,6 +473,7 @@ function parseAlojamientoTransporte(sheet: ExcelJS.Worksheet): ReembolsoDetalleD
 
     const tipoDoc = cell(sheet, r, 5)
     const numDoc  = cell(sheet, r, 6)
+    const celular = cell(sheet, r, colCelular)
     const ruta    = cell(sheet, r, colRuta)
     const costoIda     = cellNum(cell(sheet, r, colCostoIda))
     const costoRegreso = cellNum(cell(sheet, r, colCostoRegreso))
@@ -489,6 +492,7 @@ function parseAlojamientoTransporte(sheet: ExcelJS.Worksheet): ReembolsoDetalleD
       id: crypto.randomUUID(),
       nombreBeneficiario: nombre,
       documentoIdentidad: tipoDoc ? `${tipoDoc} ${numDoc}`.trim() : numDoc,
+      celularBeneficiario: celular || null,
       municipioOrigen: ruta,
       municipioDestino: '',
       valorTransporte: esInhumacion ? 0 : valorTotal,
@@ -1322,6 +1326,7 @@ export async function guardarCotizacion(
         fuente:                 'excel',
         beneficiario_nombre:    r.nombreBeneficiario || null,
         beneficiario_documento: r.documentoIdentidad || null,
+        beneficiario_celular:   r.celularBeneficiario || null,
         municipio_origen:       r.municipioOrigen || null,
         notas:                  r.municipioDestino ? `Destino: ${r.municipioDestino}` : null,
       }))

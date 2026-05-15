@@ -143,6 +143,7 @@ export interface ItemRequerimientoParsed {
 export interface ReembolsoBeneficiario {
   nombreBeneficiario: string
   documentoIdentidad: string
+  celular: string | null
   municipioOrigen: string
   municipioDestino: string
   valorTransporte: number

@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import {
   FileDown,
@@ -91,8 +92,8 @@ function ModalCrearFormato({ actividadId, onSave, onCancel }: CreateModalProps) 
   function handleTipoChange(t: TipoReembolso) {
     setTipo(t)
     if (t === 'INHUMACION' && form.valor === 0) {
-      setForm((prev) => ({ ...prev, valor: 531000 }))
-    } else if (t === 'TRANSPORTE' && form.valor === 531000) {
+      setForm((prev) => ({ ...prev, valor: 510000 }))
+    } else if (t === 'TRANSPORTE' && form.valor === 510000) {
       setForm((prev) => ({ ...prev, valor: 0 }))
     }
   }
@@ -244,14 +245,14 @@ function ModalCrearFormato({ actividadId, onSave, onCancel }: CreateModalProps) 
               <span className="text-xs font-medium [color:var(--text-secondary)] mb-1 block">Valor (COP)</span>
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-500/10 border border-purple-500/25 text-sm">
                 <Lock strokeWidth={1.5} className="size-3.5 text-purple-400 shrink-0" />
-                <span className="font-mono font-semibold text-purple-200">{fmtCOP(form.valor || 531000)}</span>
+                <span className="font-mono font-semibold text-purple-200">{fmtCOP(form.valor || 510000)}</span>
                 <button
                   type="button"
-                  onClick={() => set('valor', form.valor || 531000)}
+                  onClick={() => set('valor', form.valor || 510000)}
                   className="ml-auto text-[10px] text-purple-400/70 hover:text-purple-300 transition-colors underline underline-offset-2"
                   tabIndex={-1}
                 >
-                  Restablecer $531.000
+                  Restablecer $510.000
                 </button>
               </div>
               <p className="text-[10px] text-purple-400/60 mt-1 leading-relaxed">
@@ -261,7 +262,7 @@ function ModalCrearFormato({ actividadId, onSave, onCancel }: CreateModalProps) 
                 type="number"
                 min={1}
                 step={1000}
-                value={form.valor || 531000}
+                value={form.valor || 510000}
                 onChange={(e) => set('valor', Number(e.target.value))}
                 className="sr-only"
                 aria-hidden
@@ -327,7 +328,7 @@ interface EditModalProps {
   onCancel: () => void
 }
 
-const VALOR_NORMATIVO_INHUMACION = 531000
+const VALOR_NORMATIVO_INHUMACION = 510000
 
 function ModalEditarReembolso({ reembolso, onSave, onCancel }: EditModalProps) {
   const [form, setForm] = useState<ReembolsoProps>({ ...reembolso })
@@ -340,6 +341,30 @@ function ModalEditarReembolso({ reembolso, onSave, onCancel }: EditModalProps) {
 
   function set<K extends keyof ReembolsoProps>(key: K, value: ReembolsoProps[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
+  }
+
+  function handleTipoChange(nextTipo: TipoReembolso) {
+    setForm((prev) => {
+      if (prev.tipo === nextTipo) return prev
+
+      if (nextTipo === 'INHUMACION') {
+        return {
+          ...prev,
+          tipo: nextTipo,
+          valor: VALOR_NORMATIVO_INHUMACION,
+        }
+      }
+
+      return {
+        ...prev,
+        tipo: nextTipo,
+        valor: prev.valor === VALOR_NORMATIVO_INHUMACION ? 0 : prev.valor,
+      }
+    })
+
+    if (nextTipo === 'INHUMACION') {
+      setValorDesbloqueado(false)
+    }
   }
 
   function handleSave() {
@@ -379,6 +404,33 @@ function ModalEditarReembolso({ reembolso, onSave, onCancel }: EditModalProps) {
 
         {/* Form */}
         <div className="px-5 py-4 space-y-3 max-h-[70vh] overflow-y-auto">
+          <div>
+            <span className="text-xs font-medium [color:var(--text-secondary)] mb-2 block">Tipo de formato</span>
+            <div className="flex gap-2">
+              {(['TRANSPORTE', 'INHUMACION'] as TipoReembolso[]).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => handleTipoChange(t)}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold border transition-all ${
+                    form.tipo === t
+                      ? t === 'TRANSPORTE'
+                        ? 'bg-blue-500/20 border-blue-500/40 text-blue-300'
+                        : 'bg-purple-500/20 border-purple-500/40 text-purple-300'
+                      : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-white/70'
+                  }`}
+                >
+                  {t === 'TRANSPORTE' ? (
+                    <Bus strokeWidth={1.5} className="size-3.5" />
+                  ) : (
+                    <Flower2 strokeWidth={1.5} className="size-3.5" />
+                  )}
+                  {t === 'TRANSPORTE' ? 'Transporte' : 'Inhumación'}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <Field label="Nombre completo">
             <input
               type="text"
@@ -456,7 +508,7 @@ function ModalEditarReembolso({ reembolso, onSave, onCancel }: EditModalProps) {
                     onClick={() => set('valor', VALOR_NORMATIVO_INHUMACION)}
                     className="ml-auto text-[10px] text-purple-400/70 hover:text-purple-300 transition-colors underline underline-offset-2"
                   >
-                    Restablecer $531.000
+                    Restablecer $510.000
                   </button>
                 )}
               </div>
@@ -483,7 +535,7 @@ function ModalEditarReembolso({ reembolso, onSave, onCancel }: EditModalProps) {
                       setValorDesbloqueado(false)
                     }}
                     className="shrink-0 px-2 py-2 text-[10px] rounded-lg bg-purple-500/10 border border-purple-500/25 text-purple-300 hover:bg-purple-500/20 transition-all whitespace-nowrap"
-                    title="Restablecer valor normativo $531.000"
+                    title="Restablecer valor normativo $510.000"
                   >
                     <Lock strokeWidth={1.5} className="size-3.5" />
                   </button>
@@ -964,6 +1016,7 @@ function EmptyStateConGenerar({
       if (result.generados > 0) {
         onGenerados(result.reembolsos)
         setMsg({ texto: `${result.generados} formato${result.generados !== 1 ? 's' : ''} generado${result.generados !== 1 ? 's' : ''} correctamente.`, tipo: 'ok' })
+        router.refresh()
       } else {
         // No data in DB — show upload fallback
         setShowUpload(true)
@@ -986,6 +1039,7 @@ function EmptyStateConGenerar({
       } else if (result.generados > 0) {
         onGenerados(result.reembolsos)
         setMsg({ texto: `${result.generados} formato${result.generados !== 1 ? 's' : ''} importado${result.generados !== 1 ? 's' : ''} correctamente.`, tipo: 'ok' })
+        router.refresh()
       } else {
         setMsg({ texto: 'No se encontraron beneficiarios con valores de transporte en el Excel.', tipo: 'warn' })
       }
@@ -1070,6 +1124,7 @@ function EmptyStateConGenerar({
 // ---------------------------------------------------------------
 
 export function TablaReembolsos({ actividadId, initialReembolsos }: Props) {
+  const router = useRouter()
   const [reembolsos, setReembolsos] = useState<ReembolsoProps[]>(initialReembolsos)
   const [editing, setEditing] = useState<ReembolsoProps | null>(null)
   const [showCrear, setShowCrear] = useState(false)
@@ -1091,6 +1146,7 @@ export function TablaReembolsos({ actividadId, initialReembolsos }: Props) {
     setReembolsos((prev) => [...prev, created])
     setShowCrear(false)
     showToast('Formato creado correctamente.', 'success')
+    router.refresh()
   }
 
   // ── Eliminación ──────────────────────────────────────────────
@@ -1100,6 +1156,7 @@ export function TablaReembolsos({ actividadId, initialReembolsos }: Props) {
     try {
       await eliminarReembolso(id, actividadId)
       showToast('Formato eliminado.', 'success')
+      router.refresh()
     } catch {
       showToast('No se pudo eliminar. Recarga la página.', 'error')
     }
@@ -1112,6 +1169,7 @@ export function TablaReembolsos({ actividadId, initialReembolsos }: Props) {
     )
     setEditing(null)
     showToast('Formato guardado correctamente.', 'success')
+    router.refresh()
   }
 
   // ── Exportar documento individual ────────────────────────────

@@ -20,7 +20,7 @@ import {
   subirDocumentoBeneficiario,
   subirDocumentoActividad,
 } from '@/actions/informes'
-import { calcularEstadoInforme } from '@/lib/informe-utils'
+import { calcularEstadoInforme, obtenerTipoVisualReembolso } from '@/lib/informe-utils'
 import type { InformeActividad, ReembolsoInforme, EvidenciaInforme } from '@/actions/informes'
 
 // ============================================================
@@ -294,10 +294,9 @@ export function TabInforme({ actividadId, actividad, reembolsos, evidencias }: P
         ) : (
           <div className="space-y-2">
             {reembolsos.map((r) => {
-              const esTransporte = r.descripcion?.toLowerCase().includes('transport')
-              const esInhumacion = r.tipo === 'PASIVO_TERCERO' || r.descripcion?.toLowerCase().includes('inhumaci')
+              const tipoVisual = obtenerTipoVisualReembolso(r.tipo, r.descripcion)
               // Habilitar cédula solo para rubros de Transporte e Inhumación
-              const habilitarCedula = esTransporte || esInhumacion || r.tipo === 'REEMBOLSO' || r.tipo === 'PASIVO_TERCERO'
+              const habilitarCedula = tipoVisual === 'transporte' || tipoVisual === 'inhumacion' || r.tipo === 'REEMBOLSO' || r.tipo === 'PASIVO_TERCERO'
 
               const firmadoOk = !!r.reembolso_firmado_url
               const cedulaOk = !!r.cedula_url
@@ -318,7 +317,7 @@ export function TabInforme({ actividadId, actividad, reembolsos, evidencias }: P
                   <div className="flex items-start gap-2 mb-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        {r.tipo === 'PASIVO_TERCERO' || esInhumacion ? (
+                        {tipoVisual === 'inhumacion' ? (
                           <Flower2 strokeWidth={1.5} className="size-3.5 text-purple-400 shrink-0" />
                         ) : (
                           <Bus strokeWidth={1.5} className="size-3.5 text-blue-400 shrink-0" />

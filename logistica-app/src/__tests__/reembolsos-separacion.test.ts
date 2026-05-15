@@ -45,6 +45,7 @@ describe('Actividad.extraerReembolsos() — Separación de Conceptos', () => {
       {
         nombreBeneficiario: 'María López',
         documentoIdentidad: '1001',
+        celular: null,
         municipioOrigen: 'Cali',
         municipioDestino: 'Bogotá',
         valorTransporte: 150_000,
@@ -82,6 +83,7 @@ describe('Actividad.extraerReembolsos() — Separación de Conceptos', () => {
       {
         nombreBeneficiario: 'Juan Pérez',
         documentoIdentidad: '2002',
+        celular: null,
         municipioOrigen: 'Medellín',
         municipioDestino: 'Cali',
         valorTransporte: 200_000,
@@ -140,6 +142,7 @@ describe('Actividad.extraerReembolsos() — Separación de Conceptos', () => {
       {
         nombreBeneficiario: 'Ana García',
         documentoIdentidad: '3003',
+        celular: null,
         municipioOrigen: 'Pasto',
         municipioDestino: 'Cali',
         valorTransporte: 100_000,
@@ -150,6 +153,7 @@ describe('Actividad.extraerReembolsos() — Separación de Conceptos', () => {
       {
         nombreBeneficiario: 'Pedro Ruiz',
         documentoIdentidad: '4004',
+        celular: null,
         municipioOrigen: 'Popayán',
         municipioDestino: 'Bogotá',
         valorTransporte: 250_000,
@@ -210,6 +214,7 @@ describe('Actividad.extraerReembolsos() — Separación de Conceptos', () => {
       {
         nombreBeneficiario: 'Carlos',
         documentoIdentidad: '5005',
+        celular: null,
         municipioOrigen: 'A',
         municipioDestino: 'B',
         valorTransporte: 100_000,
@@ -239,5 +244,114 @@ describe('Actividad.extraerReembolsos() — Separación de Conceptos', () => {
     // Solo transporte, NO inhumación (no hay ítems de esa categoría)
     expect(result).toHaveLength(1)
     expect(result[0].tipo).toBe('TRANSPORTE')
+  })
+})
+
+describe('Actividad.extraerReembolsos() — Propagación de celular', () => {
+  it('propaga celular al Reembolso cuando está presente', () => {
+    const beneficiarios: ReembolsoBeneficiario[] = [
+      {
+        nombreBeneficiario: 'Laura Mora',
+        documentoIdentidad: '6006',
+        celular: '3001234567',
+        municipioOrigen: 'Cali',
+        municipioDestino: 'Bogotá',
+        valorTransporte: 180_000,
+        valorAlojamiento: 0,
+        valorAlimentacion: 0,
+        valorOtros: 0,
+      },
+    ]
+
+    const actividad = new Actividad({
+      id: 'act-cel-1',
+      numeroRequerimiento: 'TEST-CEL-001',
+      nombreActividad: 'Test Celular',
+      municipio: 'Cali',
+      fechaInicio: '2026-05-10',
+      fechaFin: '2026-05-10',
+      horaInicio: '08:00',
+      estado: 'en_ejecucion',
+      items: baseItems,
+      costos: [],
+      entregas: [],
+      reembolsosRequerimiento: beneficiarios,
+    })
+
+    const result = actividad.extraerReembolsos()
+    expect(result).toHaveLength(1)
+    expect(result[0].celular).toBe('3001234567')
+  })
+
+  it('celular es null cuando no está disponible', () => {
+    const beneficiarios: ReembolsoBeneficiario[] = [
+      {
+        nombreBeneficiario: 'Sin Celular',
+        documentoIdentidad: '7007',
+        celular: null,
+        municipioOrigen: 'Medellín',
+        municipioDestino: 'Cali',
+        valorTransporte: 120_000,
+        valorAlojamiento: 0,
+        valorAlimentacion: 0,
+        valorOtros: 0,
+      },
+    ]
+
+    const actividad = new Actividad({
+      id: 'act-cel-2',
+      numeroRequerimiento: 'TEST-CEL-002',
+      nombreActividad: 'Test Sin Celular',
+      municipio: 'Medellín',
+      fechaInicio: '2026-05-10',
+      fechaFin: '2026-05-10',
+      horaInicio: '09:00',
+      estado: 'en_ejecucion',
+      items: baseItems,
+      costos: [],
+      entregas: [],
+      reembolsosRequerimiento: beneficiarios,
+    })
+
+    const result = actividad.extraerReembolsos()
+    expect(result).toHaveLength(1)
+    expect(result[0].celular).toBeNull()
+  })
+
+  it('propaga celular a AMBAS filas cuando persona tiene TRANSPORTE + INHUMACIÓN', () => {
+    const beneficiarios: ReembolsoBeneficiario[] = [
+      {
+        nombreBeneficiario: 'Doble Concepto',
+        documentoIdentidad: '8008',
+        celular: '3119876543',
+        municipioOrigen: 'Pasto',
+        municipioDestino: 'Cali',
+        valorTransporte: 200_000,
+        valorAlojamiento: 0,
+        valorAlimentacion: 0,
+        valorOtros: 531_000,
+      },
+    ]
+
+    const actividad = new Actividad({
+      id: 'act-cel-3',
+      numeroRequerimiento: 'TEST-CEL-003',
+      nombreActividad: 'Test Celular Doble',
+      municipio: 'Pasto',
+      fechaInicio: '2026-05-10',
+      fechaFin: '2026-05-10',
+      horaInicio: '10:00',
+      estado: 'en_ejecucion',
+      items: baseItems,
+      costos: [],
+      entregas: [],
+      reembolsosRequerimiento: beneficiarios,
+    })
+
+    const result = actividad.extraerReembolsos()
+    expect(result).toHaveLength(2)
+    result.forEach((r) => {
+      expect(r.celular).toBe('3119876543')
+    })
   })
 })

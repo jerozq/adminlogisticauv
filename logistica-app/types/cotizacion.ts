@@ -74,6 +74,7 @@ export interface ReembolsoDetalleDraft {
   id: string
   nombreBeneficiario: string
   documentoIdentidad: string
+  celularBeneficiario: string | null
   municipioOrigen: string
   municipioDestino: string
   valorTransporte: number

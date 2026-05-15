@@ -220,7 +220,7 @@ export class SupabaseActivityRepository implements IActivityRepository {
     const { data, error } = await this.sb
       .from('items_requerimiento')
       .select(
-        'beneficiario_nombre, beneficiario_documento, municipio_origen, precio_unitario'
+        'beneficiario_nombre, beneficiario_documento, beneficiario_celular, municipio_origen, precio_unitario'
       )
       .eq('requerimiento_id', requerimientoId)
       .eq('tipo', 'REEMBOLSO')
@@ -232,6 +232,7 @@ export class SupabaseActivityRepository implements IActivityRepository {
       .map((row: Record<string, unknown>) => ({
         nombreBeneficiario: (row.beneficiario_nombre as string | null)?.trim() ?? '',
         documentoIdentidad: (row.beneficiario_documento as string | null)?.trim() ?? '',
+        celular:            (row.beneficiario_celular as string | null)?.trim() || null,
         municipioOrigen:    (row.municipio_origen as string | null)?.trim() ?? '',
         municipioDestino:   '',
         valorTransporte:    Number(row.precio_unitario ?? 0),

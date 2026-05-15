@@ -4,10 +4,43 @@ import { revalidatePath } from 'next/cache'
 import {
   makeGetReembolsosFromActivity,
   makePrepareReembolsoDocument,
-  getInMemoryReembolsoRepository,
+  getReembolsoRepository,
 } from '@/src/infrastructure/container'
 import { Reembolso } from '@/src/core/domain/entities/Reembolso'
 import type { ReembolsoProps } from '@/src/core/domain/entities/Reembolso'
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+function isUuid(value: string): boolean {
+  return UUID_RE.test(value)
+}
+
+async function getSupabaseForWrites() {
+  const { createClient } = await import('@supabase/supabase-js')
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  )
+}
+
+function toItemsRequerimientoRow(reembolso: ReembolsoProps) {
+  return {
+    id: reembolso.id,
+    requerimiento_id:       reembolso.actividadId,
+    descripcion:            `Reembolso ${reembolso.tipo}: ${reembolso.personaNombre}`,
+    tipo:                   'REEMBOLSO',
+    unidad_medida:          'und',
+    cantidad:               1,
+    precio_unitario:        reembolso.valor,
+    estado:                 'ACTIVO',
+    fuente:                 'manual',
+    beneficiario_nombre:    reembolso.personaNombre || null,
+    beneficiario_documento: reembolso.documento || null,
+    beneficiario_celular:   reembolso.celular || null,
+    municipio_origen:       reembolso.rutaOrigen || null,
+    notas:                  reembolso.rutaDestino ? `Destino: ${reembolso.rutaDestino}` : null,
+  }
+}
 
 // ============================================================
 // Server Actions — Módulo de Reembolsos
@@ -49,9 +82,26 @@ export async function guardarReembolso(props: ReembolsoProps): Promise<{
   const uc = makePrepareReembolsoDocument()
   const result = await uc.execute({ reembolso: props })
 
+  const reembolso = result.reembolso.toProps()
+
+  // Los reembolsos con UUID son manuales y deben vivir también en BD
+  // para que Tab Informe y Tab Formatos mantengan el mismo inventario.
+  if (isUuid(reembolso.id)) {
+    const sb = await getSupabaseForWrites()
+    const { error } = await sb
+      .from('items_requerimiento')
+      .upsert(toItemsRequerimientoRow(reembolso), { onConflict: 'id' })
+
+    if (error) {
+      throw new Error(`No se pudo sincronizar el reembolso en base de datos: ${error.message}`)
+    }
+  }
+
+  revalidatePath(`/ejecucion/${reembolso.actividadId}`)
+
   return {
-    reembolso:  result.reembolso.toProps(),
-    operacion:  result.operacion,
+    reembolso,
+    operacion: result.operacion,
   }
 }
 
@@ -64,8 +114,18 @@ export async function crearReembolso(
 ): Promise<{ reembolso: ReembolsoProps }> {
   const id = crypto.randomUUID()
   const reembolso = new Reembolso({ ...props, id })
-  const repo = getInMemoryReembolsoRepository()
+  const repo = getReembolsoRepository()
   const saved = await repo.guardar(reembolso)
+
+  const sb = await getSupabaseForWrites()
+  const { error } = await sb
+    .from('items_requerimiento')
+    .upsert(toItemsRequerimientoRow(saved.toProps()), { onConflict: 'id' })
+
+  if (error) {
+    throw new Error(`No se pudo crear el formato en base de datos: ${error.message}`)
+  }
+
   revalidatePath(`/ejecucion/${props.actividadId}`)
   return { reembolso: saved.toProps() }
 }
@@ -78,8 +138,14 @@ export async function eliminarReembolso(
   id: string,
   actividadId: string,
 ): Promise<void> {
-  const repo = getInMemoryReembolsoRepository()
+  const repo = getReembolsoRepository()
   await repo.eliminar(id)
+
+  if (isUuid(id)) {
+    const sb = await getSupabaseForWrites()
+    await sb.from('items_requerimiento').delete().eq('id', id)
+  }
+
   revalidatePath(`/ejecucion/${actividadId}`)
 }
 
@@ -98,7 +164,7 @@ export async function materializarReembolsosAuto(actividadId: string): Promise<{
   const uc = makeGetReembolsosFromActivity()
   const result = await uc.execute({ actividadId })
 
-  const repo = getInMemoryReembolsoRepository()
+  const repo = getReembolsoRepository()
   const existentes = await repo.listarPorActividad(actividadId)
   const existentesIds = new Set(existentes.map((r) => r.id))
 
@@ -202,6 +268,7 @@ export async function importarReembolsosDesdeExcel(
       fuente:                 'excel',
       beneficiario_nombre:    b.nombre || null,
       beneficiario_documento: b.documento || null,
+      beneficiario_celular:   b.celular || null,
       municipio_origen:       b.ruta || null,
     }))
 
@@ -214,9 +281,13 @@ export async function importarReembolsosDesdeExcel(
     const uc = makeGetReembolsosFromActivity()
     const result = await uc.execute({ actividadId })
 
-    const repo = getInMemoryReembolsoRepository()
+    const repo = getReembolsoRepository()
+    const existentes = await repo.listarPorActividad(actividadId)
+    const existentesIds = new Set(existentes.map((r) => r.id))
     for (const r of result.reembolsos) {
-      await repo.guardar(r)
+      if (!existentesIds.has(r.id)) {
+        await repo.guardar(r)
+      }
     }
 
     revalidatePath(`/ejecucion/${actividadId}`)
@@ -244,6 +315,7 @@ export async function importarReembolsosDesdeExcel(
 interface BeneficiarioExtraido {
   nombre: string
   documento: string
+  celular: string
   ruta: string
   valorTotal: number
   esInhumacion: boolean
@@ -282,13 +354,15 @@ function parseAlojamientoSheet(sheet: import('exceljs').Worksheet): Beneficiario
   if (!headerRow) return result
 
   // Detectar columnas dinámicamente
-  let colRuta = 15, colCostoIda = 16, colCostoRegreso = 17, colCostoTotal = 18
+  let colCelular = 7, colRuta = 15, colCostoIda = 16, colCostoRegreso = 17, colCostoTotal = 18
   const hr = sheet.getRow(headerRow)
   const maxCol = Math.max(hr.cellCount || 0, 32)
   for (let c = 1; c <= maxCol; c++) {
     const v = str(hr.getCell(c).value).toUpperCase()
     if (!v) continue
-    if (v.includes('LUGAR DE SALIDA') || v.includes('ITINERARIO TERRESTRE')) {
+    if (v.includes('CELULAR') || v.includes('TELÉFONO') || v.includes('TELEFONO')) {
+      colCelular = c
+    } else if (v.includes('LUGAR DE SALIDA') || v.includes('ITINERARIO TERRESTRE')) {
       colRuta = c
     } else if (v.includes('COSTO IDA') || (v.includes('GASTO TRANSPORTE') && !v.includes('BOGOTA') && !v.includes('BOGOTÁ'))) {
       colCostoIda = c
@@ -311,6 +385,7 @@ function parseAlojamientoSheet(sheet: import('exceljs').Worksheet): Beneficiario
 
     const tipoDoc = getCell(r, 5)
     const numDoc = getCell(r, 6)
+    const celular = getCell(r, colCelular)
     const ruta = getCell(r, colRuta)
     const costoIda = toNum(getCell(r, colCostoIda))
     const costoRegreso = toNum(getCell(r, colCostoRegreso))
@@ -320,6 +395,7 @@ function parseAlojamientoSheet(sheet: import('exceljs').Worksheet): Beneficiario
     result.push({
       nombre,
       documento: tipoDoc ? `${tipoDoc} ${numDoc}`.trim() : numDoc,
+      celular,
       ruta,
       valorTotal,
       esInhumacion: ruta.toUpperCase().includes('INHUMAC'),

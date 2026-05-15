@@ -6,7 +6,7 @@ import { GetFinancialSummary } from '@/src/core/application/use-cases/GetFinanci
 import { getSupabaseActivityRepository } from '@/src/infrastructure/adapters/SupabaseActivityRepository'
 import { WordTemplateAdapter } from '@/src/infrastructure/adapters/WordTemplateAdapter'
 import { ExcelToPdfReembolsoAdapter } from '@/src/infrastructure/adapters/ExcelToPdfReembolsoAdapter'
-import { getInMemoryReembolsoRepository } from '@/src/infrastructure/adapters/InMemoryReembolsoRepository'
+import { getSupabaseReembolsoRepository } from '@/src/infrastructure/adapters/SupabaseReembolsoRepository'
 import { getSupabaseReportingRepository } from '@/src/infrastructure/adapters/SupabaseReportingRepository'
 import { createSupabaseFinancialAdapter } from '@/src/infrastructure/adapters/SupabaseFinancialAdapter'
 import { getFinancialExporter } from '@/src/infrastructure/adapters/FinancialExportAdapter'
@@ -114,11 +114,11 @@ export function makeRedefinirParticipacion(): RedefinirParticipacion {
 }
 
 export function makeGetReembolsosFromActivity(): GetReembolsosFromActivity {
-  return new GetReembolsosFromActivity(getRepo(), getInMemoryReembolsoRepository())
+  return new GetReembolsosFromActivity(getRepo(), getSupabaseReembolsoRepository())
 }
 
 export function makePrepareReembolsoDocument(): PrepareReembolsoDocument {
-  return new PrepareReembolsoDocument(getInMemoryReembolsoRepository())
+  return new PrepareReembolsoDocument(getSupabaseReembolsoRepository())
 }
 
 export function makeGetFinancialSummary(): GetFinancialSummary {
@@ -147,6 +147,6 @@ export {
   getPdfAdapter as getPdfGenerator,
   getReportingRepository,
   getFinancialExporter,
-  getInMemoryReembolsoRepository,
+  getSupabaseReembolsoRepository as getReembolsoRepository,
 }
 export type { IFinancialExporter }

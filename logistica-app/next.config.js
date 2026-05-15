@@ -12,6 +12,7 @@ const nextConfig = {
   outputFileTracingIncludes: {
     '/api/generar-cotizacion':    ['./templates/**'],
     '/api/generar-cuenta-cobro':  ['./templates/**'],
+    '/api/reembolsos/exportar':   ['./templates/**'],
   },
   turbopack: {
     root: require('path').resolve(__dirname, '..'),

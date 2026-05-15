@@ -1,5 +1,25 @@
 import type { InformeActividad, ReembolsoInforme } from '@/actions/informes'
 
+export type TipoVisualReembolso = 'transporte' | 'inhumacion'
+
+export function obtenerTipoVisualReembolso(
+  tipo: string,
+  descripcion?: string | null,
+): TipoVisualReembolso {
+  const tipoNormalizado = tipo.trim().toUpperCase()
+  const descripcionNormalizada = descripcion?.toLowerCase() ?? ''
+
+  if (
+    tipoNormalizado === 'INHUMACION' ||
+    tipoNormalizado === 'PASIVO_TERCERO' ||
+    descripcionNormalizada.includes('inhumaci')
+  ) {
+    return 'inhumacion'
+  }
+
+  return 'transporte'
+}
+
 export function calcularEstadoInforme(
   actividad: InformeActividad,
   reembolsos: ReembolsoInforme[],
