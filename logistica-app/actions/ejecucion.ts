@@ -185,6 +185,7 @@ export async function listarEntregas(actividadId: string): Promise<BitacoraEntre
   return entregas.map((e) => ({
     id: e.id,
     actividad_id: e.actividadId,
+    item_requerimiento_id: null,  // PASO A: será poblado desde DB si es disponible
     descripcion: e.descripcion,
     fecha_hora_limite: e.fechaHoraLimite,
     estado: e.estado,
@@ -210,6 +211,7 @@ export async function crearEntrega(
   return {
     id: entrega.id,
     actividad_id: entrega.actividadId,
+    item_requerimiento_id: null,  // PASO A: se asigna solo desde generarCronogramaIA
     descripcion: entrega.descripcion,
     fecha_hora_limite: entrega.fechaHoraLimite,
     estado: entrega.estado,

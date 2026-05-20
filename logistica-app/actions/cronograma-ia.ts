@@ -39,6 +39,7 @@ export interface HitoCronogramaIA {
   hora: string
   descripcion_item: string
   cantidad: number
+  item_requerimiento_id?: string | null  // FK a items_requerimiento para búsqueda por Paso A
 }
 
 export type GenerarCronogramaResult =
@@ -151,88 +152,111 @@ export async function generarCronogramaIA(
       }
     }
 
-    // 3. Cargar ítems cotizados de la última cotización
-    const { data: items } = await sb
+    // 4. PASO B: Cargar items_requerimiento con observación para extracción por ítem
+    const { data: items, error: itemsError } = await sb
       .from('items_requerimiento')
-      .select('descripcion, categoria, cantidad, unidad_medida')
+      .select('id, descripcion, categoria, cantidad, unidad_medida, observacion_item, fecha_entrega_estimada, hora_entrega_estimada')
       .eq('requerimiento_id', actividadId)
       .in('tipo', ['SERVICIO', 'PASIVO_TERCERO'])
       .neq('estado', 'CANCELADO')
+      .order('created_at', { ascending: true })
 
-    let itemsText = 'Sin ítems cotizados'
-    if (items && items.length > 0) {
-      itemsText = items
-        .map(i => `- ${i.descripcion} (${i.cantidad} ${i.unidad_medida ?? 'und'}) [${i.categoria ?? 'General'}]`)
-        .join('\n')
+    if (itemsError) {
+      return { ok: false, error: `Error al cargar ítems: ${itemsError.message}`, isQuota: false }
     }
 
-    // 4. Calcular duración de la actividad
-    const fechaInicio = req.fecha_inicio ?? new Date().toISOString().split('T')[0]
-    const fechaFin = req.fecha_fin ?? fechaInicio
-    const diasActividad = Math.max(1,
-      Math.ceil(
-        (new Date(fechaFin).getTime() - new Date(fechaInicio).getTime()) / (1000 * 60 * 60 * 24)
-      ) + 1
-    )
+    if (!items || items.length === 0) {
+      return {
+        ok: false,
+        error: 'No hay ítems cotizados. Crea al menos 1 ítem en cotización antes de generar agenda.',
+        isQuota: false
+      }
+    }
 
-    // 5. Generar cronograma con IA
+    // 5. Extracción IA: fecha/hora de observación de CADA ÍTEM (no global)
     const google = createGoogleGenerativeAI({ apiKey })
 
-    const systemPrompt = `Eres un coordinador logístico experto de la UARIV (Unidad para las Víctimas de Colombia).
-Se te pasan los datos de una actividad logística y debes generar un cronograma operativo detallado.
+    const itemsForExtraction = items
+      .map((i, idx) => 
+        `Ítem ${idx + 1}: "${i.descripcion}" | Observación: "${i.observacion_item ?? 'Sin observación'}" | Actual: ${i.fecha_entrega_estimada ?? 'N/A'} ${i.hora_entrega_estimada ?? 'N/A'}`
+      )
+      .join('\n')
 
-REGLAS:
-- Eres un analista logístico experto. Analiza las observaciones de este requerimiento y extrae un cronograma estricto. Si no hay hora específica, infiere una lógica (ej. almuerzos a las 12:00 PM).
-- Devuelve únicamente "entregables" con: fecha (YYYY-MM-DD), hora (HH:MM 24h), descripcion_item y cantidad.
-- Genera entregables realistas y accionables para el equipo de campo.
-- Si hay alimentación, programa horarios consistentes (ej. 10:00, 12:00, 15:00).
-- Ordena cronológicamente por fecha y hora.
-- Máximo ${diasActividad * 12} entregables en total.`
+    const extractionPrompt = `Extrae fecha y hora de ENTREGA/EJECUCIÓN de cada ítem logístico.
+Para cada uno, busca en su observación fechas, horas, o referencias (ej. "mañana", "próximo jueves", "10:00 AM").
 
-    const userPrompt = `=== ACTIVIDAD ===
-Nombre: ${req.nombre_actividad}
-Municipio: ${req.municipio ?? 'No especificado'}
-Fecha inicio: ${fechaInicio}
-Fecha fin: ${fechaFin}
-Hora inicio: ${req.hora_inicio ?? '08:00'}
-Hora fin: ${req.hora_fin ?? '17:00'}
-Días de actividad: ${diasActividad}
-Víctimas/beneficiarios: ${req.num_victimas ?? 0}
+Ítems:
+${itemsForExtraction}
 
-=== ÍTEMS COTIZADOS ===
-${itemsText}
+RESPONDE SOLO un JSON array válido:
+[
+  { "item_idx": 1, "fecha": "YYYY-MM-DD" | null, "hora": "HH:mm" | null },
+  ...
+]
 
-=== OBSERVACIONES ===
-${req.objeto ?? 'Sin observaciones adicionales'}
+Si no hay fecha/hora clara, retorna null para ambos campos.`
 
-Genera el cronograma operativo completo.`
-
-    const { object } = await generateObject({
-      model: google('gemini-2.5-flash'),
-      schema: CronogramaSchema,
-      system: systemPrompt,
-      prompt: userPrompt,
-      temperature: 0.3,
-    })
-
-    const entregables = object.entregables
-
-    // 6. Guardar JSON en caché (actividades/requerimientos.cronograma_ia)
-    await guardarCronogramaIAEnCache(sb, actividadId, entregables)
-
-    // 7. Si se regenera, limpiar hitos anteriores antes de insertar los nuevos
-    if (forzarRegeneracion) {
-      await sb.from('bitacora_entregas').delete().eq('actividad_id', actividadId)
+    let extractedDates: Array<{ item_idx: number; fecha: string | null; hora: string | null }> = []
+    try {
+      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: extractionPrompt }] }],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 500 },
+          safetySettings: [],
+        }),
+      })
+      
+      const result = await response.json()
+      const content = result.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+      const jsonMatch = content.match(/\[[\s\S]*\]/)
+      if (jsonMatch) {
+        extractedDates = JSON.parse(jsonMatch[0])
+      }
+    } catch (aiErr) {
+      console.warn('[generarCronogramaIA] Extracción de fechas falló:', aiErr)
+      // Continuar con valores en DB
     }
 
-    // 8. Persistir los entregables en bitacora_entregas
+    // 6. Generar EXACTAMENTE 1 entrega POR ÍTEM (no inventes ítems adicionales) con item_requerimiento_id
+    const entregables: HitoCronogramaIA[] = []
+
+    for (let idx = 0; idx < items.length; idx++) {
+      const item = items[idx]
+      const extracted = extractedDates.find((e) => e.item_idx === idx + 1)
+      
+      const fecha = extracted?.fecha ?? item.fecha_entrega_estimada ?? req.fecha_inicio ?? new Date().toISOString().split('T')[0]
+      const hora = extracted?.hora ?? item.hora_entrega_estimada ?? req.hora_inicio ?? '08:00'
+
+      entregables.push({
+        fecha,
+        hora,
+        descripcion_item: item.descripcion,
+        cantidad: item.cantidad,
+        item_requerimiento_id: item.id,  // PASO A: guardar FK para búsqueda en UI
+      })
+    }
+
+    // 7. Guardar JSON en caché (requerimientos.cronograma_ia)
+    await guardarCronogramaIAEnCache(sb, actividadId, entregables)
+
+    // 8. Si se regenera, limpiar bitacora_entregas que estén vinculadas a ítems
+    if (forzarRegeneracion) {
+      await sb.from('bitacora_entregas').delete().eq('actividad_id', actividadId).not('item_requerimiento_id', 'is', null)
+    }
+
+    // 9. Persistir entregables en bitacora_entregas con FK a item_requerimiento_id (PASO A)
     let hitosGuardados = 0
-    for (const entregable of entregables) {
+    for (let idx = 0; idx < entregables.length; idx++) {
+      const entregable = entregables[idx]
+      const item = items[idx]
       const fechaHoraISO = toBitacoraISO(entregable.fecha, entregable.hora)
       if (!fechaHoraISO) continue
 
       const { error: insertError } = await sb.from('bitacora_entregas').insert({
         actividad_id: actividadId,
+        item_requerimiento_id: item.id,  // FK FUERTE: vincula a cada ítem de cotización
         descripcion: `${entregable.descripcion_item} (x${entregable.cantidad})`,
         fecha_hora_limite: fechaHoraISO,
         estado: 'pendiente',

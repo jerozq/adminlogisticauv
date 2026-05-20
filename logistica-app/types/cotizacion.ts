@@ -54,6 +54,9 @@ export interface CotizacionItemDraft {
   excluirDeFinanzas: boolean   // Ítems cobrados pero sin impacto en margen operativo
   ocultarEnCotizacion: boolean // Ítems internos que no van en la plantilla
   fuente: FuenteItem
+  observacion?: string | null  // Observación del ítem con posible fecha/hora de entrega
+  fechaEntregaEstimada?: string | null  // Fecha de entrega extraída de observación (YYYY-MM-DD)
+  horaEntregaEstimada?: string | null   // Hora de entrega extraída de observación (HH:mm)
   // Candidatos del tarifario para que el usuario elija (vacío = no hay pendientes)
   opcionesTarifario: TarifarioSugerencia[]
 }
@@ -125,6 +128,7 @@ export interface RequerimientoRow {
   num_victimas: number
   monto_reembolso_declarado: number | null
   archivo_origen_nombre: string | null
+  archivo_origen_url: string | null
   estado: EstadoRequerimiento
   created_at: string
   updated_at: string

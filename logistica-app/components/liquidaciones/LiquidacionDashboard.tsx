@@ -2,10 +2,10 @@
 
 import { Fragment, useMemo, useState, useTransition } from 'react'
 import { AlertCircle, Check, CheckCircle2, ChevronDown, ChevronUp, DollarSign, Info, Loader2, Pencil, Plus, RotateCcw, ShieldAlert, TrendingDown, Trash2, Upload, Users, Wallet, X } from 'lucide-react'
-import { actualizarAbono, cambiarEstadoPagoCosto, eliminarAbono, eliminarCostoReal, eliminarDeudaDevolucion, marcarItemEstado, marcarReembolsoPagado, recalcularDevolucionesPendientes, registrarAbonoUnidad, registrarCostoReal, registrarDeudaDevolucion, registrarSalidaDevolucion, saldarDeudaDevolucion, toggleAsistenciaReembolso } from '@/actions/liquidaciones'
+import { actualizarAbono, cambiarEstadoPagoCosto, cambiarEstadoReembolso, eliminarAbono, eliminarCostoReal, eliminarDeudaDevolucion, marcarItemEstado, recalcularDevolucionesPendientes, registrarAbonoUnidad, registrarCostoReal, registrarDeudaDevolucion, registrarSalidaDevolucion, saldarDeudaDevolucion } from '@/actions/liquidaciones'
 import { useRouter } from 'next/navigation'
 import { GaleriaComprobantes } from './GaleriaComprobantes'
-import type { SoporteProyecto } from '@/actions/liquidaciones'
+import type { EstadoReembolso, SoporteProyecto } from '@/actions/liquidaciones'
 import { FondosInsuficientesModal } from './FondosInsuficientesModal'
 
 const COP = new Intl.NumberFormat('es-CO', {
@@ -1204,31 +1204,31 @@ function ReembolsosManager({ actividadId, reembolsos }: any) {
   const router = useRouter()
   const [loadingId, setLoadingId] = useState<string | null>(null)
 
-  async function handleToggleAsistencia(r: any) {
-    const isAsistiendo = r.estado !== 'NO_ASISTIO'
-    if (!confirm(`Marcar a ${r.beneficiario_nombre} como ${isAsistiendo ? 'NO ASISTIÓ' : 'ASISTIÓ'}?`)) return
-    setLoadingId(r.id)
-    await toggleAsistenciaReembolso(r.id, actividadId, !isAsistiendo, Number(r.precio_unitario ?? 0))
-    router.refresh()
-    setLoadingId(null)
-  }
-
-  async function handleTogglePagado(r: any) {
-    const nuevoPagado = !r.pagado
-    if (nuevoPagado && r.estado === 'NO_ASISTIO') {
-      alert('No se puede marcar como pagado a alguien que no asistió.')
-      return
+  async function handleCambiarEstado(r: any, nuevoEstado: EstadoReembolso) {
+    if (r.estado === nuevoEstado) return
+    const etiquetas: Record<EstadoReembolso, string> = {
+      PENDIENTE: 'Pendiente',
+      PAGADO: 'Pagado — se registrará un egreso en tesorería',
+      DEVOLUCION: 'Para devolución — pasará al módulo de devoluciones',
     }
-    setLoadingId(`pagado-${r.id}`)
-    await marcarReembolsoPagado(r.id, actividadId, nuevoPagado)
-    router.refresh()
-    setLoadingId(null)
+    if (!confirm(`Cambiar estado de "${r.beneficiario_nombre ?? r.descripcion ?? 'beneficiario'}" a: ${etiquetas[nuevoEstado]}?`)) return
+    setLoadingId(r.id)
+    try {
+      await cambiarEstadoReembolso(r.id, actividadId, nuevoEstado)
+      router.refresh()
+    } catch (e: any) {
+      alert(`Error: ${e?.message ?? 'Ocurrió un error'}`)
+    } finally {
+      setLoadingId(null)
+    }
   }
 
-  const totalReembolsos = reembolsos.reduce((s: number, r: any) => s + Number(r.precio_unitario ?? 0), 0)
-  const pagados = reembolsos.filter((r: any) => r.pagado).length
-  const noAsistieron = reembolsos.filter((r: any) => r.estado === 'NO_ASISTIO').length
-  const pendientesPago = reembolsos.filter((r: any) => r.estado !== 'NO_ASISTIO' && !r.pagado).length
+  const totalReembolsos = reembolsos.reduce((s: number, r: any) => s + Number(r.precio_total ?? r.precio_unitario ?? 0), 0)
+  const cntPagados    = reembolsos.filter((r: any) => r.estado === 'PAGADO').length
+  const cntDevolucion = reembolsos.filter((r: any) => r.estado === 'DEVOLUCION').length
+  const cntPendientes = reembolsos.filter((r: any) => r.estado === 'PENDIENTE' || (r.estado !== 'PAGADO' && r.estado !== 'DEVOLUCION')).length
+  const montoPagado   = reembolsos.filter((r: any) => r.estado === 'PAGADO').reduce((s: number, r: any) => s + Number(r.precio_total ?? r.precio_unitario ?? 0), 0)
+  const montoDevolver = reembolsos.filter((r: any) => r.estado === 'DEVOLUCION').reduce((s: number, r: any) => s + Number(r.precio_total ?? r.precio_unitario ?? 0), 0)
 
   return (
     <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md p-6">
@@ -1239,38 +1239,34 @@ function ReembolsosManager({ actividadId, reembolsos }: any) {
         </h2>
         <div className="flex items-center gap-3 text-xs">
           <span className="px-2 py-1 rounded-lg bg-emerald-500/15 text-emerald-300 tabular-nums">
-            {pagados}/{reembolsos.length} pagados
+            {cntPagados} pagado{cntPagados !== 1 ? 's' : ''}
           </span>
-          {noAsistieron > 0 && (
+          {cntDevolucion > 0 && (
             <span className="px-2 py-1 rounded-lg bg-red-500/15 text-red-300 tabular-nums">
-              {noAsistieron} no asistieron
+              {cntDevolucion} a devolver
             </span>
           )}
-          {pendientesPago > 0 && (
+          {cntPendientes > 0 && (
             <span className="px-2 py-1 rounded-lg bg-amber-500/15 text-amber-300 tabular-nums">
-              {pendientesPago} por confirmar pago
+              {cntPendientes} pendiente{cntPendientes !== 1 ? 's' : ''}
             </span>
           )}
         </div>
       </div>
 
-      {/* KPI rápido */}
+      {/* KPIs */}
       <div className="grid grid-cols-3 gap-3 mb-5">
         <div className="p-3 rounded-xl bg-white/5 border border-white/10">
           <div className="text-xs text-slate-400 mb-1">Total a distribuir</div>
           <div className="text-base font-bold text-fuchsia-400 tabular-nums">{COP.format(totalReembolsos)}</div>
         </div>
         <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-          <div className="text-xs text-slate-400 mb-1">Confirmado pagado</div>
-          <div className="text-base font-bold text-emerald-400 tabular-nums">
-            {COP.format(reembolsos.filter((r: any) => r.pagado).reduce((s: number, r: any) => s + Number(r.precio_unitario ?? 0), 0))}
-          </div>
+          <div className="text-xs text-slate-400 mb-1">Pagado (egreso registrado)</div>
+          <div className="text-base font-bold text-emerald-400 tabular-nums">{COP.format(montoPagado)}</div>
         </div>
         <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-          <div className="text-xs text-slate-400 mb-1">No entregado / Devolver</div>
-          <div className="text-base font-bold text-red-400 tabular-nums">
-            {COP.format(reembolsos.filter((r: any) => r.estado === 'NO_ASISTIO').reduce((s: number, r: any) => s + Number(r.precio_unitario ?? 0), 0))}
-          </div>
+          <div className="text-xs text-slate-400 mb-1">Para devolver</div>
+          <div className="text-base font-bold text-red-400 tabular-nums">{COP.format(montoDevolver)}</div>
         </div>
       </div>
 
@@ -1281,25 +1277,19 @@ function ReembolsosManager({ actividadId, reembolsos }: any) {
               <th className="px-4 py-3">Beneficiario</th>
               <th className="px-4 py-3">Ruta / Concepto</th>
               <th className="px-4 py-3 text-right">Monto</th>
-              <th className="px-4 py-3 text-center">¿Asistió?</th>
-              <th className="px-4 py-3 text-center">¿Pagado?</th>
               <th className="px-4 py-3 text-center">Estado</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
             {reembolsos.map((r: any) => {
-              const asistio = r.estado !== 'NO_ASISTIO'
-              const pagado = Boolean(r.pagado)
-              const isLoading = loadingId === r.id || loadingId === `pagado-${r.id}`
-
-              // Estado visual del checklist
-              let badgeColor = 'bg-amber-500/20 text-amber-300'
-              let badgeLabel = 'Pendiente'
-              if (!asistio) { badgeColor = 'bg-red-500/20 text-red-300'; badgeLabel = 'No asistió' }
-              else if (pagado) { badgeColor = 'bg-emerald-500/20 text-emerald-300'; badgeLabel = 'Paz y salvo' }
+              const estado: EstadoReembolso =
+                r.estado === 'PAGADO' ? 'PAGADO'
+                : r.estado === 'DEVOLUCION' ? 'DEVOLUCION'
+                : 'PENDIENTE'
+              const isLoading = loadingId === r.id
 
               return (
-                <tr key={r.id} className={`hover:bg-white/5 transition-colors ${!asistio ? 'opacity-60' : ''}`}>
+                <tr key={r.id} className="hover:bg-white/5 transition-colors">
                   <td className="px-4 py-3 text-slate-200">
                     <div className="font-semibold">{r.beneficiario_nombre ?? r.nombre_beneficiario ?? '—'}</div>
                     <div className="text-xs text-slate-500">{r.beneficiario_documento ?? r.documento ?? ''}</div>
@@ -1308,49 +1298,47 @@ function ReembolsosManager({ actividadId, reembolsos }: any) {
                     {r.municipio_origen ?? r.descripcion ?? '—'}
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums text-fuchsia-300 font-semibold">
-                    {COP.format(Number(r.precio_unitario ?? 0))}
+                    {COP.format(Number(r.precio_total ?? r.precio_unitario ?? 0))}
                   </td>
-
-                  {/* Checkbox: Asistió */}
-                  <td className="px-4 py-3 text-center">
-                    <label className="inline-flex items-center gap-2 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={asistio}
-                        disabled={isLoading}
-                        onChange={() => handleToggleAsistencia(r)}
-                        className="accent-emerald-500 w-4 h-4"
-                      />
-                      <span className={`text-xs ${asistio ? 'text-emerald-400' : 'text-red-400'}`}>
-                        {asistio ? 'Sí' : 'No'}
-                      </span>
-                    </label>
-                  </td>
-
-                  {/* Checkbox: Pagado */}
-                  <td className="px-4 py-3 text-center">
-                    <label className={`inline-flex items-center gap-2 select-none ${asistio ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'}`}>
-                      <input
-                        type="checkbox"
-                        checked={pagado}
-                        disabled={!asistio || isLoading}
-                        onChange={() => handleTogglePagado(r)}
-                        className="accent-fuchsia-500 w-4 h-4"
-                      />
-                      <span className={`text-xs ${pagado ? 'text-fuchsia-400' : 'text-slate-500'}`}>
-                        {pagado ? 'Sí' : 'No'}
-                      </span>
-                    </label>
-                  </td>
-
-                  {/* Badge de estado */}
-                  <td className="px-4 py-3 text-center">
+                  <td className="px-4 py-3">
                     {isLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin text-slate-400 inline" />
+                      <div className="flex justify-center"><Loader2 className="w-4 h-4 animate-spin text-slate-400" /></div>
                     ) : (
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${badgeColor}`}>
-                        {badgeLabel}
-                      </span>
+                      <div className="flex items-center gap-1 justify-center">
+                        <button
+                          onClick={() => handleCambiarEstado(r, 'PENDIENTE')}
+                          title="Marcar como pendiente"
+                          className={`px-2 py-1 rounded-lg text-[11px] font-medium transition-colors border ${
+                            estado === 'PENDIENTE'
+                              ? 'bg-amber-500/25 border-amber-500/50 text-amber-300'
+                              : 'bg-white/5 border-white/10 text-slate-400 hover:border-amber-500/30 hover:text-amber-300'
+                          }`}
+                        >
+                          Pendiente
+                        </button>
+                        <button
+                          onClick={() => handleCambiarEstado(r, 'PAGADO')}
+                          title="Marcar como pagado — se registra egreso en tesorería"
+                          className={`px-2 py-1 rounded-lg text-[11px] font-medium transition-colors border ${
+                            estado === 'PAGADO'
+                              ? 'bg-emerald-500/25 border-emerald-500/50 text-emerald-300'
+                              : 'bg-white/5 border-white/10 text-slate-400 hover:border-emerald-500/30 hover:text-emerald-300'
+                          }`}
+                        >
+                          <Check className="w-3 h-3 inline mr-1" />Pagado
+                        </button>
+                        <button
+                          onClick={() => handleCambiarEstado(r, 'DEVOLUCION')}
+                          title="Marcar para devolución — pasa al módulo de devoluciones sin egreso inmediato"
+                          className={`px-2 py-1 rounded-lg text-[11px] font-medium transition-colors border ${
+                            estado === 'DEVOLUCION'
+                              ? 'bg-red-500/25 border-red-500/50 text-red-300'
+                              : 'bg-white/5 border-white/10 text-slate-400 hover:border-red-500/30 hover:text-red-300'
+                          }`}
+                        >
+                          <RotateCcw className="w-3 h-3 inline mr-1" />Devolución
+                        </button>
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -1358,7 +1346,7 @@ function ReembolsosManager({ actividadId, reembolsos }: any) {
             })}
             {reembolsos.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
+                <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
                   No hay reembolsos ni dineros de terceros registrados para esta actividad.
                 </td>
               </tr>
@@ -1367,11 +1355,11 @@ function ReembolsosManager({ actividadId, reembolsos }: any) {
         </table>
       </div>
 
-      {pendientesPago > 0 && (
+      {cntPendientes > 0 && (
         <div className="mt-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2 text-xs text-amber-300">
           <Info className="w-4 h-4 shrink-0" />
-          Hay {pendientesPago} beneficiario{pendientesPago !== 1 ? 's' : ''} que asistieron pero aún no tienen confirmación de pago.
-          Marcarlos como pagados cuando el dinero sea entregado.
+          {cntPendientes} reembolso{cntPendientes !== 1 ? 's' : ''} pendiente{cntPendientes !== 1 ? 's' : ''}.
+          Marca cada uno como <strong className="ml-1">Pagado</strong> (registra egreso en tesorería) o <strong className="ml-1">Devolución</strong> (pasa al módulo de devoluciones).
         </div>
       )}
     </div>

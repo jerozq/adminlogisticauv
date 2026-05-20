@@ -14,6 +14,64 @@ import {
   TarifarioSugerencia,
 } from '@/types/cotizacion'
 import { crearCuentaProyecto } from '@/actions/tesoreria'
+import { buildRequerimientoStoragePath } from '@/src/utils/requerimiento-file'
+
+export async function subirArchivoRequerimiento(
+  formData: FormData
+): Promise<{ ok: true; nombre: string; url: string } | { ok: false; error: string }> {
+  try {
+    const file = formData.get('file')
+    if (!file || !(file instanceof Blob)) {
+      return { ok: false, error: 'No se recibió un archivo válido.' }
+    }
+
+    const originalName = (file as File).name || 'requerimiento'
+    const ext = originalName.split('.').pop()?.toLowerCase()
+    if (!['xlsx', 'xlsm', 'xls', 'pdf'].includes(ext ?? '')) {
+      return { ok: false, error: 'Solo se permite Excel o PDF para el requerimiento.' }
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      return { ok: false, error: 'El archivo supera el límite de 10 MB.' }
+    }
+
+    const storagePath = buildRequerimientoStoragePath(
+      originalName || `requerimiento.${ext ?? 'bin'}`,
+      crypto.randomUUID(),
+    )
+
+    const { createClient } = await import('@supabase/supabase-js')
+    const sb = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    )
+
+    const { error: uploadError } = await sb.storage
+      .from('informes')
+      .upload(storagePath, file, {
+        upsert: false,
+        contentType: (file as File).type || undefined,
+      })
+
+    if (uploadError) {
+      return { ok: false, error: `No se pudo subir el archivo original: ${uploadError.message}` }
+    }
+
+    const { data } = sb.storage.from('informes').getPublicUrl(storagePath)
+    if (!data.publicUrl) {
+      return { ok: false, error: 'No fue posible obtener la URL pública del archivo.' }
+    }
+
+    return {
+      ok: true,
+      nombre: originalName,
+      url: data.publicUrl,
+    }
+  } catch (err) {
+    console.error('[subirArchivoRequerimiento]', err)
+    return { ok: false, error: 'Error inesperado al subir el archivo del requerimiento.' }
+  }
+}
 
 // ============================================================
 // Utilidades de celda
@@ -1192,7 +1250,8 @@ export async function guardarCotizacion(
   items: CotizacionItemDraft[],
   reembolsos: ReembolsoDetalleDraft[],
   fileName: string,
-  cronogramaSugerido: CronogramaEntregaDraft[] = []
+  cronogramaSugerido: CronogramaEntregaDraft[] = [],
+  archivoOrigenUrl: string | null = null,
 ): Promise<{ ok: true; requerimientoId: string; cotizacionId: string } | { ok: false; error: string }> {
   try {
     // Import dinámico para evitar problemas de bundle en client
@@ -1268,6 +1327,7 @@ export async function guardarCotizacion(
           num_victimas: encabezado.numVictimas || 0,
           monto_reembolso_declarado: encabezado.montoReembolsoDeclarado || null,
           archivo_origen_nombre: fileName,
+          archivo_origen_url: archivoOrigenUrl,
           estado: 'generado',
         })
         .select('id')
@@ -1289,7 +1349,7 @@ export async function guardarCotizacion(
       console.warn('[auto-cuenta] No se pudo crear cuenta virtual:', cuentaErr)
     }
 
-    // 2. Insertar ítems de servicio en items_requerimiento
+    // 2. Insertar ítems de servicio en items_requerimiento (Paso B: guardar observación y fechas extraídas)
     if (items.length > 0) {
       const itemRows = items.map(i => ({
         requerimiento_id: req.id,
@@ -1303,6 +1363,9 @@ export async function guardarCotizacion(
         precio_unitario:  i.precioUnitario,
         estado:           'ACTIVO',
         fuente:           i.fuente,
+        observacion_item: i.observacion || null,  // PASO B: guardar observación del ítem
+        fecha_entrega_estimada: i.fechaEntregaEstimada || null,  // PASO B: fecha extraída
+        hora_entrega_estimada:  i.horaEntregaEstimada || null,   // PASO B: hora extraída
       }))
 
       const { error: itemsError } = await withRetry(() =>
@@ -1402,6 +1465,8 @@ export async function listarRequerimientosConCotizaciones(): Promise<{
   version: number
   estadoCot: string
   total: number
+  archivoOrigenNombre: string | null
+  archivoOrigenUrl: string | null
 }[]> {
   try {
     const sb = await getSupabaseServer()
@@ -1409,7 +1474,7 @@ export async function listarRequerimientosConCotizaciones(): Promise<{
     const [reqResult, itemsResult] = await Promise.all([
       sb
         .from('requerimientos')
-        .select('id, numero_requerimiento, nombre_actividad, municipio, departamento, estado, created_at')
+        .select('id, numero_requerimiento, nombre_actividad, municipio, departamento, estado, created_at, archivo_origen_nombre, archivo_origen_url')
         .order('created_at', { ascending: false }),
       sb
         .from('items_requerimiento')
@@ -1440,6 +1505,8 @@ export async function listarRequerimientosConCotizaciones(): Promise<{
       version:      1,
       estadoCot:    (req.estado as string) || '—',
       total:        totalesPor[req.id as string] ?? 0,
+      archivoOrigenNombre: (req.archivo_origen_nombre as string | null) ?? null,
+      archivoOrigenUrl: (req.archivo_origen_url as string | null) ?? null,
     }))
   } catch (err) {
     console.error('[listarRequerimientosConCotizaciones]', err)
@@ -1456,6 +1523,8 @@ export async function cargarCotizacion(requerimientoId: string): Promise<
       ok: true
       encabezado: RequerimientoEncabezado
       items: CotizacionItemDraft[]
+      archivoOrigenNombre: string | null
+      archivoOrigenUrl: string | null
       cotizacion: { id: string; version: number; estado: string }
       requerimientoEstado: string
     }
@@ -1523,6 +1592,8 @@ export async function cargarCotizacion(requerimientoId: string): Promise<
       ok: true,
       encabezado,
       items,
+      archivoOrigenNombre: (req.archivo_origen_nombre as string | null) ?? null,
+      archivoOrigenUrl: (req.archivo_origen_url as string | null) ?? null,
       cotizacion: {
         id:      requerimientoId,
         version: 1,
