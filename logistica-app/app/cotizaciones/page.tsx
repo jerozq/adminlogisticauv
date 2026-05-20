@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { FileUp, FileText, ChevronRight, Activity } from 'lucide-react'
+import { FileUp, FileDown, ChevronRight } from 'lucide-react'
 import { listarRequerimientosConCotizaciones } from '@/actions/cotizaciones'
 
 export const dynamic = 'force-dynamic'
@@ -85,13 +85,27 @@ export default async function CotizacionesListPage() {
                         {fmt(item.total)}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <Link
-                          href={`/cotizaciones/${item.id}/editar`}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold btn-secondary rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                        >
-                          Abrir
-                          <ChevronRight className="size-3.5" />
-                        </Link>
+                        <div className="inline-flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {item.archivoOrigenUrl && (
+                            <a
+                              href={item.archivoOrigenUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold btn-secondary rounded-lg transition-colors"
+                              title={item.archivoOrigenNombre ?? 'Descargar archivo de requerimiento'}
+                            >
+                              <FileDown className="size-3.5" />
+                              Archivo
+                            </a>
+                          )}
+                          <Link
+                            href={`/cotizaciones/${item.id}/editar`}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold btn-secondary rounded-lg transition-colors"
+                          >
+                            Abrir
+                            <ChevronRight className="size-3.5" />
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   ))

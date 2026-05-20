@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Edit3, History } from 'lucide-react'
+import { ArrowLeft, Edit3, History, FileDown } from 'lucide-react'
 import { cargarCotizacion, listarHistorialCotizaciones } from '@/actions/cotizaciones'
 import { CotizacionEditor } from '@/components/cotizaciones/CotizacionEditor'
 import { DocumentosHeaderActions } from '@/components/cotizaciones/DocumentosHeaderActions'
@@ -54,17 +54,31 @@ export default async function EditarCotizacionPage({
           </div>
 
           <div className="shrink-0">
-            <DocumentosHeaderActions
-              proyectoId={requerimientoId}
-              identificadorProyecto={datos.encabezado.numeroRequerimiento || requerimientoId}
-              encabezado={datos.encabezado}
-              items={datos.items.map((item) => ({
-                descripcion: item.descripcion,
-                cantidad: item.cantidad,
-                precioUnitario: item.precioUnitario,
-              }))}
-              historialCotizaciones={historial}
-            />
+            <div className="flex items-center gap-2">
+              {datos.archivoOrigenUrl && (
+                <a
+                  href={datos.archivoOrigenUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-white/10 transition-colors"
+                  title={datos.archivoOrigenNombre ?? 'Descargar archivo de requerimiento'}
+                >
+                  <FileDown strokeWidth={1.5} className="size-3.5" />
+                  Archivo original
+                </a>
+              )}
+              <DocumentosHeaderActions
+                proyectoId={requerimientoId}
+                identificadorProyecto={datos.encabezado.numeroRequerimiento || requerimientoId}
+                encabezado={datos.encabezado}
+                items={datos.items.map((item) => ({
+                  descripcion: item.descripcion,
+                  cantidad: item.cantidad,
+                  precioUnitario: item.precioUnitario,
+                }))}
+                historialCotizaciones={historial}
+              />
+            </div>
           </div>
         </div>
       </div>

@@ -1006,11 +1006,12 @@ async function _recalcPendientes(sb: any, actividadId: string): Promise<number> 
       .in('tipo', ['SERVICIO', 'PASIVO_TERCERO'])
       .eq('estado', 'CANCELADO'),
     // Reembolsos NO_ASISTIO (flujo "Alternar" clásico)
+    // Reembolsos marcados para devolución (nuevo flujo 3-estados)
     sb.from('items_requerimiento')
       .select('precio_total')
       .eq('requerimiento_id', actividadId)
-      .eq('tipo', 'REEMBOLSO')
-      .eq('estado', 'NO_ASISTIO'),
+      .in('tipo', ['REEMBOLSO', 'PASIVO_TERCERO'])
+      .eq('estado', 'DEVOLUCION'),
     // Movimientos de salida: RETIRO (legacy) + DEVOLUCION (nuevo)
     cuenta
       ? sb.from('movimientos_bancarios')
@@ -1058,48 +1059,114 @@ export async function marcarItemEstado(itemId: string, actividadId: string, esta
   return { ok: true }
 }
 
-export async function toggleAsistenciaReembolso(reembolsoId: string, actividadId: string, asiste: boolean, _valorAsignado?: number) {
+// ============================================================
+// NUEVO FLUJO 3-ESTADOS PARA REEMBOLSOS / PASIVOS TERCEROS
+// ============================================================
+// PENDIENTE  → estado inicial, sin movimientos
+// PAGADO     → egreso GASTO en tesorería (dinero salió al beneficiario)
+// DEVOLUCION → se registra deuda en devoluciones_deuda (dinero aún no sale)
+// ============================================================
+
+export type EstadoReembolso = 'PENDIENTE' | 'PAGADO' | 'DEVOLUCION'
+
+export async function cambiarEstadoReembolso(
+  reembolsoId: string,
+  actividadId: string,
+  nuevoEstado: EstadoReembolso,
+): Promise<{ ok: true }> {
   const sb = await createClient()
-  const estado = asiste ? 'ACTIVO' : 'NO_ASISTIO'
-  await sb.from('items_requerimiento').update({ estado }).eq('id', reembolsoId)
 
-  if (!asiste) {
-    // Si NO asistió: limpiar flag pagado y registrar deuda de devolución si no existe
-    await sb.from('items_requerimiento').update({ pagado: false }).eq('id', reembolsoId)
+  const { data: item, error: itemErr } = await sb
+    .from('items_requerimiento')
+    .select('id, estado, precio_total, precio_unitario, cantidad, movimiento_reembolso_id, descripcion, beneficiario_nombre')
+    .eq('id', reembolsoId)
+    .single()
 
-    const { data: item } = await sb
-      .from('items_requerimiento')
-      .select('precio_total, precio_unitario, cantidad, requerimiento_id')
-      .eq('id', reembolsoId)
-      .maybeSingle()
+  if (itemErr || !item) throw new Error('Reembolso no encontrado.')
 
-    const montoDeuda = Number(item?.precio_total ?? item?.precio_unitario ?? 0)
-    if (montoDeuda > 0) {
-      const { data: existing } = await sb
-        .from('devoluciones_deuda')
-        .select('id')
-        .eq('item_origen_id', reembolsoId)
-        .eq('estado_deuda', 'PENDIENTE')
-        .maybeSingle()
+  const estadoActual = item.estado as string
+  if (estadoActual === nuevoEstado) return { ok: true }
 
-      if (!existing) {
-        await sb.from('devoluciones_deuda').insert({
-          requerimiento_id:  actividadId,
-          item_origen_id:    reembolsoId,
-          cantidad_cancelada: Number(item?.cantidad ?? 1),
-          monto_total:       montoDeuda,
-          tipo:              'TERCERO',
-          motivo:            'Beneficiario no asistió',
-          estado_deuda:      'PENDIENTE',
-        })
-      }
-    }
-  } else {
-    // Al marcar que SÍ asistió: borrar deudas PENDIENTE de no-asistencia
-    await sb.from('devoluciones_deuda')
+  // ── 1. Revertir efectos del estado anterior ─────────────────────
+  if (estadoActual === 'PAGADO' && item.movimiento_reembolso_id) {
+    await sb
+      .from('movimientos_bancarios')
+      .update({ estado: 'ANULADO', descripcion: `Reembolso ${item.beneficiario_nombre ?? ''} (anulado)` })
+      .eq('id', item.movimiento_reembolso_id)
+  }
+
+  if (estadoActual === 'DEVOLUCION') {
+    await sb
+      .from('devoluciones_deuda')
       .delete()
       .eq('item_origen_id', reembolsoId)
       .eq('estado_deuda', 'PENDIENTE')
+  }
+
+  // ── 2. Aplicar nuevo estado ──────────────────────────────────────
+  if (nuevoEstado === 'PAGADO') {
+    const cuenta = await _obtenerOCrearCuentaProyecto(sb, actividadId)
+    const monto = Number(item.precio_total ?? item.precio_unitario ?? 0)
+    const nombreBeneficiario = item.beneficiario_nombre ?? item.descripcion ?? 'Beneficiario'
+
+    const { data: movimiento, error: movErr } = await sb
+      .from('movimientos_bancarios')
+      .insert({
+        origen_id:   cuenta.id,
+        destino_id:  null,
+        tipo:        'GASTO',
+        estado:      'EJECUTADO',
+        monto,
+        descripcion: `Reembolso pagado: ${nombreBeneficiario}`,
+        notas: {
+          reembolso_id: reembolsoId,
+          actividad_id: actividadId,
+          beneficiario: nombreBeneficiario,
+          tipo_egreso:  'REEMBOLSO',
+        },
+      })
+      .select('id')
+      .single()
+
+    if (movErr) throw new Error(`Error al registrar egreso de reembolso: ${movErr.message}`)
+
+    await sb
+      .from('items_requerimiento')
+      .update({ estado: 'PAGADO', pagado: true, movimiento_reembolso_id: movimiento.id })
+      .eq('id', reembolsoId)
+
+  } else if (nuevoEstado === 'DEVOLUCION') {
+    const monto = Number(item.precio_total ?? item.precio_unitario ?? 0)
+    const { data: existingDeuda } = await sb
+      .from('devoluciones_deuda')
+      .select('id')
+      .eq('item_origen_id', reembolsoId)
+      .eq('estado_deuda', 'PENDIENTE')
+      .maybeSingle()
+
+    if (!existingDeuda && monto > 0) {
+      await sb.from('devoluciones_deuda').insert({
+        requerimiento_id:   actividadId,
+        item_origen_id:     reembolsoId,
+        cantidad_cancelada: Number(item.cantidad ?? 1),
+        monto_total:        monto,
+        tipo:               'TERCERO',
+        motivo:             `Reembolso para devolución: ${item.beneficiario_nombre ?? item.descripcion ?? ''}`,
+        estado_deuda:       'PENDIENTE',
+      })
+    }
+
+    await sb
+      .from('items_requerimiento')
+      .update({ estado: 'DEVOLUCION', pagado: false, movimiento_reembolso_id: null })
+      .eq('id', reembolsoId)
+
+  } else {
+    // PENDIENTE
+    await sb
+      .from('items_requerimiento')
+      .update({ estado: 'PENDIENTE', pagado: false, movimiento_reembolso_id: null })
+      .eq('id', reembolsoId)
   }
 
   const pendientes = await _recalcPendientes(sb, actividadId)
@@ -1357,21 +1424,13 @@ export async function obtenerInsightsRetenciones(): Promise<{
  * La fuente de verdad es el checklist manual; el movimiento bancario
  * sirve como validación adicional (no bloquea).
  */
+/** @deprecated Usar cambiarEstadoReembolso en su lugar. */
 export async function marcarReembolsoPagado(
   reembolsoId: string,
   actividadId: string,
   pagado: boolean,
 ): Promise<{ ok: true }> {
-  const sb = await createClient()
-  const { error } = await sb
-    .from('items_requerimiento')
-    .update({ pagado })
-    .eq('id', reembolsoId)
-
-  if (error) throw new Error(`Error al actualizar checklist pagado: ${error.message}`)
-
-  revalidatePath(`/liquidaciones/${actividadId}`)
-  return { ok: true }
+  return cambiarEstadoReembolso(reembolsoId, actividadId, pagado ? 'PAGADO' : 'PENDIENTE')
 }
 
 // ============================================================

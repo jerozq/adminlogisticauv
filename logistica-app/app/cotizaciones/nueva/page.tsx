@@ -17,12 +17,15 @@ import { FileUploader } from '@/components/cotizaciones/FileUploader'
 import { RequerimientoHeader } from '@/components/cotizaciones/RequerimientoHeader'
 import { CotizacionPreview } from '@/components/cotizaciones/CotizacionPreview'
 import { guardarCotizacion } from '@/actions/cotizaciones'
+import { subirArchivoRequerimiento } from '@/actions/cotizaciones'
 import type {
   CotizacionItemDraft,
   ParsedRequerimiento,
+  ReembolsoDetalleDraft,
   RequerimientoEncabezado,
   WizardStep,
 } from '@/types/cotizacion'
+import { buildGuardarCotizacionPayload } from '@/src/utils/cotizacion-persist-payload'
 
 const ENCABEZADO_VACIO: RequerimientoEncabezado = {
   numeroRequerimiento: '',
@@ -114,17 +117,53 @@ export default function NuevaCotizacionPage() {
   const [fileName, setFileName] = useState('')
   const [encabezado, setEncabezado] = useState<RequerimientoEncabezado | null>(null)
   const [items, setItems] = useState<CotizacionItemDraft[]>([])
+  const [reembolsos, setReembolsos] = useState<ReembolsoDetalleDraft[]>([])
   const [cronogramaSugerido, setCronogramaSugerido] = useState<ParsedRequerimiento['cronogramaSugerido']>([])
+  const [archivoOrigenUrl, setArchivoOrigenUrl] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [savedIds, setSavedIds] = useState<{ requerimientoId: string; cotizacionId: string } | null>(null)
 
-  function onParsed(data: ParsedRequerimiento, name: string) {
+  async function onParsed(data: ParsedRequerimiento, name: string, file: File) {
     setFileName(name)
     setEncabezado(data.encabezado)
     setItems(data.items)
+    setReembolsos(data.reembolsos)
     setCronogramaSugerido(data.cronogramaSugerido ?? [])
-    setStep(2)
+    setSaving(true)
+    setSaveError(null)
+
+    const fd = new FormData()
+    fd.append('file', file)
+    const uploadResult = await subirArchivoRequerimiento(fd)
+    if (!uploadResult.ok) {
+      setSaving(false)
+      setStep(2)
+      setSaveError(`No se pudo guardar el archivo original del requerimiento: ${uploadResult.error}`)
+      return
+    }
+    setArchivoOrigenUrl(uploadResult.url)
+
+    const payload = buildGuardarCotizacionPayload(data, name)
+    const result = await guardarCotizacion(
+      payload.encabezado,
+      payload.items,
+      payload.reembolsos,
+      payload.fileName,
+      payload.cronogramaSugerido,
+      uploadResult.url,
+    )
+
+    if (result.ok) {
+      setSavedIds({ requerimientoId: result.requerimientoId, cotizacionId: result.cotizacionId })
+      setStep(4)
+    } else {
+      // Fallback manual: conservar datos cargados y dejar al usuario ajustar/guardar.
+      setStep(2)
+      setSaveError(`No se pudo guardar automáticamente: ${result.error}`)
+    }
+
+    setSaving(false)
   }
 
   async function handleGuardar() {
@@ -132,19 +171,18 @@ export default function NuevaCotizacionPage() {
     setSaving(true)
     setSaveError(null)
     try {
-      // Evita exceder el límite de body de Server Actions.
-      // Las sugerencias de tarifario no son necesarias para persistir.
-      const itemsToSave: CotizacionItemDraft[] = items.map((it) => ({
-        ...it,
-        opcionesTarifario: [],
-      }))
+      const payload = buildGuardarCotizacionPayload(
+        { encabezado, items, reembolsos, cronogramaSugerido },
+        fileName,
+      )
 
       const result = await guardarCotizacion(
-        encabezado,
-        itemsToSave,
-        [],
-        fileName,
-        cronogramaSugerido
+        payload.encabezado,
+        payload.items,
+        payload.reembolsos,
+        payload.fileName,
+        payload.cronogramaSugerido,
+        archivoOrigenUrl,
       )
       if (result.ok) {
         setSavedIds({ requerimientoId: result.requerimientoId, cotizacionId: result.cotizacionId })
@@ -187,10 +225,16 @@ export default function NuevaCotizacionPage() {
               <h2 className="text-lg font-bold text-slate-200">Carga el requerimiento</h2>
               <p className="mt-1 text-sm text-slate-400">
                 Excel de la Unidad para las Víctimas (formato UARIV).
-                El sistema extrae automáticamente encabezado e ítems, incluyendo servicios de inhumación.
+                Al subirlo se dispara automáticamente IA para cotización, agenda operativa y formatos de reembolso.
               </p>
             </div>
             <FileUploader onParsed={onParsed} />
+
+            {saving && (
+              <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-sm text-blue-300">
+                Guardando automáticamente requerimiento, agenda y formatos. Esto puede tardar unos segundos.
+              </div>
+            )}
 
             {/* Separador */}
             <div className="flex items-center gap-3 mt-2">
@@ -206,6 +250,7 @@ export default function NuevaCotizacionPage() {
                 setFileName('manual')
                 setEncabezado(ENCABEZADO_VACIO)
                 setItems([])
+                setReembolsos([])
                 setCronogramaSugerido([])
                 setStep(2)
               }}
@@ -269,8 +314,19 @@ export default function NuevaCotizacionPage() {
             <div>
               <h2 className="text-xl font-bold text-slate-100">¡Cotización guardada!</h2>
               <p className="mt-2 text-sm text-slate-400">
-                Se creó el requerimiento y la cotización versión 1 en Supabase.
+                Se creó el requerimiento con cotización inicial, agenda operativa y base de formatos de reembolso.
+                Si algo falla luego, puedes usar los botones de regenerar desde Ejecución.
               </p>
+              {archivoOrigenUrl && (
+                <a
+                  href={archivoOrigenUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-flex items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20"
+                >
+                  Descargar archivo original del requerimiento
+                </a>
+              )}
             </div>
 
             {/* Preview de encabezado bloqueado */}
@@ -295,6 +351,12 @@ export default function NuevaCotizacionPage() {
 
             <div className="flex flex-col gap-2 w-full sm:flex-row sm:justify-center">
               <a
+                href={`/ejecucion/${savedIds.requerimientoId}?tab=agenda`}
+                className="flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-600 transition-colors"
+              >
+                Ir a agenda operativa
+              </a>
+              <a
                 href="/cotizaciones"
                 className="flex items-center justify-center gap-2 rounded-xl bg-zinc-700 px-5 py-3 text-sm font-semibold text-white hover:bg-zinc-600 transition-colors"
               >
@@ -306,7 +368,9 @@ export default function NuevaCotizacionPage() {
                   setStep(1)
                   setEncabezado(null)
                   setItems([])
+                  setReembolsos([])
                   setCronogramaSugerido([])
+                  setArchivoOrigenUrl(null)
                   setFileName('')
                   setSavedIds(null)
                 }}

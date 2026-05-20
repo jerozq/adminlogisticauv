@@ -6,7 +6,7 @@ import { parsearRequerimientoExcel } from '@/actions/cotizaciones'
 import type { ParsedRequerimiento } from '@/types/cotizacion'
 
 interface FileUploaderProps {
-  onParsed: (data: ParsedRequerimiento, fileName: string) => void
+  onParsed: (data: ParsedRequerimiento, fileName: string, file: File) => void | Promise<void>
 }
 
 export function FileUploader({ onParsed }: FileUploaderProps) {
@@ -33,8 +33,11 @@ export function FileUploader({ onParsed }: FileUploaderProps) {
         setFileName(null)
       } else {
         setUsedAI(result.usedAI)
-        onParsed(result.data, file.name)
+        await onParsed(result.data, file.name, file)
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error inesperado procesando el archivo.')
+      setFileName(null)
     } finally {
       setLoading(false)
     }
@@ -80,7 +83,7 @@ export function FileUploader({ onParsed }: FileUploaderProps) {
           <>
             <Loader2 strokeWidth={1.5} className="size-10 animate-spin text-blue-500" />
             <p className="text-sm font-medium text-blue-400">Procesando {fileName}…</p>
-            <p className="text-xs text-blue-500">Analizando con IA · extrayendo ítems, encabezado y reembolsos</p>
+            <p className="text-xs text-blue-500">Analizando con IA · generando cotización, agenda y formatos</p>
           </>
         ) : (
           <>

@@ -65,6 +65,14 @@ function formatDateLabel(dateStr: string): string {
   return d.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'short' })
 }
 
+function buildBitacoraIso(fecha: string, hora: string): string {
+  return new Date(`${fecha}T${hora}:00`).toISOString()
+}
+
+function buildBitacoraDescripcion(descripcionItem: string, cantidad: number): string {
+  return `${descripcionItem} (x${cantidad})`
+}
+
 // ── Toast Component ───────────────────────────────────────────────────────────
 function Toast({ type, message, onClose }: { type: 'success' | 'error' | 'quota'; message: string; onClose: () => void }) {
   useEffect(() => {
@@ -172,6 +180,7 @@ export function AgendaView({
   const [generating, startGenerate] = useTransition()
   const [toast, setToast] = useState<{ type: 'success' | 'error' | 'quota'; message: string } | null>(null)
   const [modal, setModal] = useState<{ open: boolean; hito: HitoCronogramaIA | null; index: number }>({ open: false, hito: null, index: -1 })
+  const [uploadingEntregaId, setUploadingEntregaId] = useState<string | null>(null)
 
   // Carga automática desde Supabase si no hay datos del servidor
   const autoLoadedRef = useRef(false)
@@ -258,6 +267,66 @@ export function AgendaView({
     })
   }
 
+  function findEntregaByHito(hito: HitoCronogramaIA): BitacoraEntregaRow | null {
+    // PASO A: Busca por item_requerimiento_id (FK fuerte) en lugar de coincidencia de texto
+    if (hito.item_requerimiento_id) {
+      const byItemId = entregas.find((e) => e.item_requerimiento_id === hito.item_requerimiento_id)
+      if (byItemId) return byItemId
+    }
+
+    // Fallback: búsqueda por fecha/hora y descripción (para ítems manuales sin item_id)
+    const iso = buildBitacoraIso(hito.fecha, hito.hora)
+    const descripcion = buildBitacoraDescripcion(hito.descripcion_item, hito.cantidad)
+
+    const exact = entregas.find(
+      (e) => e.fecha_hora_limite === iso && e.descripcion === descripcion
+    )
+    if (exact) return exact
+
+    const sameHour = entregas.find((e) => {
+      const fecha = e.fecha_hora_limite.split('T')[0]
+      const hora = e.fecha_hora_limite.split('T')[1]?.substring(0, 5)
+      return (
+        fecha === hito.fecha &&
+        hora === hito.hora.substring(0, 5) &&
+        e.descripcion === descripcion
+      )
+    })
+
+    return sameHour ?? null
+  }
+
+  async function handleUploadEvidencia(hito: HitoCronogramaIA, file: File) {
+    const entrega = findEntregaByHito(hito)
+    if (!entrega) {
+      setToast({
+        type: 'error',
+        message: 'Este ítem no existe en bitácora de entregas. Regenera agenda para sincronizar y vuelve a intentar.',
+      })
+      return
+    }
+
+    setUploadingEntregaId(entrega.id)
+    try {
+      const url = await uploadEvidencia(file, 'entregas')
+      await marcarEntregaLista(entrega.id, url, actividadId)
+
+      setEntregas((prev) =>
+        prev.map((e) =>
+          e.id === entrega.id
+            ? { ...e, estado: 'listo', evidencia_url: url }
+            : e
+        )
+      )
+
+      setToast({ type: 'success', message: 'Evidencia cargada correctamente.' })
+    } catch {
+      setToast({ type: 'error', message: 'No se pudo subir la evidencia. Intenta nuevamente.' })
+    } finally {
+      setUploadingEntregaId(null)
+    }
+  }
+
   return (
     <div className="space-y-6">
       {toast && <Toast {...toast} onClose={() => setToast(null)} />}
@@ -331,6 +400,8 @@ export function AgendaView({
                 const { cat, cleanDesc } = parseCategoryFromDesc(item.descripcion_item)
                 const CatIcon = CATEGORY_ICONS[cat] ?? Clock
                 const catCls = CATEGORY_COLORS[cat] ?? CATEGORY_COLORS['Otro']
+                const entrega = findEntregaByHito(item)
+                const uploading = Boolean(entrega?.id && uploadingEntregaId === entrega.id)
                 
                 return (
                   <div key={`${item.fecha}-${item.hora}-${globalIdx}`} className="group relative">
@@ -361,7 +432,39 @@ export function AgendaView({
                       </div>
 
                       {/* Controles CRUD */}
-                      <div className="flex gap-1 shrink-0">
+                      <div className="flex items-center gap-2 shrink-0">
+                        {entrega?.evidencia_url && (
+                          <a
+                            href={entrega.evidencia_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hidden sm:inline-flex text-[10px] font-semibold [color:var(--text-muted)] hover:[color:var(--text-primary)]"
+                          >
+                            Ver evidencia
+                          </a>
+                        )}
+                        <label
+                          className={`inline-flex items-center justify-center p-2 rounded-lg transition-colors ${
+                            uploading
+                              ? 'bg-white/5 [color:var(--text-muted)] cursor-wait'
+                              : 'hover:bg-white/10 [color:var(--text-muted)] hover:[color:var(--text-primary)] cursor-pointer'
+                          }`}
+                          title="Subir evidencia"
+                        >
+                          {uploading ? <Loader2 className="size-4 animate-spin" /> : <Camera className="size-4" />}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            className="hidden"
+                            disabled={uploading}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              if (file) void handleUploadEvidencia(item, file)
+                              e.target.value = ''
+                            }}
+                          />
+                        </label>
                         <button 
                           onClick={() => setModal({ open: true, hito: item, index: globalIdx })}
                           className="p-2 rounded-lg hover:bg-white/10 [color:var(--text-muted)] hover:[color:var(--text-primary)] transition-colors"

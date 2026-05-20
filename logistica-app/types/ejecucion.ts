@@ -13,6 +13,7 @@ export type ModoRegistroCosto = 'por_item' | 'delegado'
 export interface BitacoraEntregaRow {
   id: string
   actividad_id: string
+  item_requerimiento_id: string | null  // FK a items_requerimiento para vínculo 1:1 estricto
   descripcion: string
   fecha_hora_limite: string   // ISO timestamptz
   estado: EstadoEntrega
