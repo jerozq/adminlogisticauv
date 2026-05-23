@@ -10,7 +10,7 @@ const COP = new Intl.NumberFormat('es-CO', {
 })
 
 export default async function LiquidacionesPage() {
-  const liquidaciones = await listarLiquidaciones()
+  const liquidaciones = await listarLiquidaciones().catch(() => [])
 
   return (
     <div className="min-h-screen">
