@@ -35,6 +35,12 @@ export interface ReembolsoProps {
   fecha: string
   /** Valor del reembolso en COP (número entero positivo). */
   valor: number
+  /**
+   * UUID de la fila en items_requerimiento que originó este reembolso
+   * (auto-generados desde Excel). Permite actualizar la fila exacta
+   * sin depender de beneficiario_documento.
+   */
+  itemsRequerimientoId?: string | null
 }
 
 // ---------------------------------------------------------------
@@ -114,6 +120,7 @@ export class Reembolso {
   readonly rutaDestino: string
   readonly fecha: string
   readonly valor: number
+  readonly itemsRequerimientoId: string | null
 
   constructor(props: ReembolsoProps) {
     if (props.valor <= 0) {
@@ -128,16 +135,17 @@ export class Reembolso {
       throw new Error('Reembolso: documento no puede estar vacío.')
     }
 
-    this.id            = props.id
-    this.actividadId   = props.actividadId
-    this.tipo          = props.tipo
-    this.personaNombre = props.personaNombre.trim()
-    this.documento     = props.documento.trim()
-    this.celular       = props.celular
-    this.rutaOrigen    = props.rutaOrigen
-    this.rutaDestino   = props.rutaDestino
-    this.fecha         = props.fecha
-    this.valor         = Math.round(props.valor)
+    this.id                    = props.id
+    this.actividadId           = props.actividadId
+    this.tipo                  = props.tipo
+    this.personaNombre         = props.personaNombre.trim()
+    this.documento             = props.documento.trim()
+    this.celular               = props.celular
+    this.rutaOrigen            = props.rutaOrigen
+    this.rutaDestino           = props.rutaDestino
+    this.fecha                 = props.fecha
+    this.valor                 = Math.round(props.valor)
+    this.itemsRequerimientoId  = props.itemsRequerimientoId ?? null
   }
 
   // ---------------------------------------------------------------
@@ -157,16 +165,17 @@ export class Reembolso {
 
   toProps(): ReembolsoProps {
     return {
-      id:            this.id,
-      actividadId:   this.actividadId,
-      tipo:          this.tipo,
-      personaNombre: this.personaNombre,
-      documento:     this.documento,
-      celular:       this.celular,
-      rutaOrigen:    this.rutaOrigen,
-      rutaDestino:   this.rutaDestino,
-      fecha:         this.fecha,
-      valor:         this.valor,
+      id:                   this.id,
+      actividadId:          this.actividadId,
+      tipo:                 this.tipo,
+      personaNombre:        this.personaNombre,
+      documento:            this.documento,
+      celular:              this.celular,
+      rutaOrigen:           this.rutaOrigen,
+      rutaDestino:          this.rutaDestino,
+      fecha:                this.fecha,
+      valor:                this.valor,
+      itemsRequerimientoId: this.itemsRequerimientoId,
     }
   }
 }

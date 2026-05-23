@@ -253,16 +253,17 @@ export class Actividad {
       if (ben.valorTransporte > 0) {
         result.push(
           new Reembolso({
-            id:            `${this.id}-TRANSPORTE-${i}-${ben.documentoIdentidad}`,
-            actividadId:   this.id,
-            tipo:          'TRANSPORTE',
-            personaNombre: ben.nombreBeneficiario,
-            documento:     ben.documentoIdentidad,
-            celular:       ben.celular ?? null,
-            rutaOrigen:    ben.municipioOrigen,
-            rutaDestino:   ben.municipioDestino,
+            id:                   `${this.id}-TRANSPORTE-${i}-${ben.documentoIdentidad}`,
+            actividadId:          this.id,
+            tipo:                 'TRANSPORTE',
+            personaNombre:        ben.nombreBeneficiario,
+            documento:            ben.documentoIdentidad,
+            celular:              ben.celular ?? null,
+            rutaOrigen:           ben.municipioOrigen,
+            rutaDestino:          ben.municipioDestino,
             fecha,
-            valor:         ben.valorTransporte,
+            valor:                ben.valorTransporte,
+            itemsRequerimientoId: ben.itemsRequerimientoId ?? null,
           })
         )
       }
@@ -270,16 +271,17 @@ export class Actividad {
       if (tieneItemsInhumacion && ben.valorOtros > 0) {
         result.push(
           new Reembolso({
-            id:            `${this.id}-INHUMACION-${i}-${ben.documentoIdentidad}`,
-            actividadId:   this.id,
-            tipo:          'INHUMACION',
-            personaNombre: ben.nombreBeneficiario,
-            documento:     ben.documentoIdentidad,
-            celular:       ben.celular ?? null,
-            rutaOrigen:    ben.municipioOrigen,
-            rutaDestino:   ben.municipioDestino,
+            id:                   `${this.id}-INHUMACION-${i}-${ben.documentoIdentidad}`,
+            actividadId:          this.id,
+            tipo:                 'INHUMACION',
+            personaNombre:        ben.nombreBeneficiario,
+            documento:            ben.documentoIdentidad,
+            celular:              ben.celular ?? null,
+            rutaOrigen:           ben.municipioOrigen,
+            rutaDestino:          ben.municipioDestino,
             fecha,
-            valor:         ben.valorOtros > 0 ? ben.valorOtros : 531000,
+            valor:                ben.valorOtros > 0 ? ben.valorOtros : 531000,
+            itemsRequerimientoId: ben.itemsRequerimientoId ?? null,
           })
         )
       }

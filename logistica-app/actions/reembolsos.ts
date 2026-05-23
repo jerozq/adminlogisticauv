@@ -84,10 +84,10 @@ export async function guardarReembolso(props: ReembolsoProps): Promise<{
 
   const reembolso = result.reembolso.toProps()
 
-  // Los reembolsos con UUID son manuales y deben vivir también en BD
-  // para que Tab Informe y Tab Formatos mantengan el mismo inventario.
+  const sb = await getSupabaseForWrites()
+
   if (isUuid(reembolso.id)) {
-    const sb = await getSupabaseForWrites()
+    // Reembolsos manuales creados en la app: upsert por ID (columna UUID).
     const { error } = await sb
       .from('items_requerimiento')
       .upsert(toItemsRequerimientoRow(reembolso), { onConflict: 'id' })
@@ -95,9 +95,49 @@ export async function guardarReembolso(props: ReembolsoProps): Promise<{
     if (error) {
       throw new Error(`No se pudo sincronizar el reembolso en base de datos: ${error.message}`)
     }
+  } else {
+    // Reembolsos auto-generados desde Excel: su ID no es UUID, así que
+    // actualizamos la fila de items_requerimiento que los originó.
+    // Preferimos buscar por el UUID exacto de la fila (más robusto),
+    // con fallback a beneficiario_documento cuando el UUID no está disponible.
+    const updatePayload = {
+      precio_unitario:      reembolso.valor,
+      beneficiario_nombre:  reembolso.personaNombre || null,
+      beneficiario_celular: reembolso.celular || null,
+      municipio_origen:     reembolso.rutaOrigen || null,
+      notas:                reembolso.rutaDestino ? `Destino: ${reembolso.rutaDestino}` : null,
+    }
+
+    // itemsRequerimientoId puede venir del form original (props) o del entity
+    const itemsRowId = props.itemsRequerimientoId ?? reembolso.itemsRequerimientoId
+
+    let updateError: { message: string } | null = null
+
+    if (itemsRowId) {
+      // Camino preferido: UPDATE por UUID exacto de la fila
+      const { error } = await sb
+        .from('items_requerimiento')
+        .update(updatePayload)
+        .eq('id', itemsRowId)
+      updateError = error
+    } else {
+      // Fallback: UPDATE por requerimiento + tipo + documento
+      const { error } = await sb
+        .from('items_requerimiento')
+        .update(updatePayload)
+        .eq('requerimiento_id', reembolso.actividadId)
+        .eq('tipo', 'REEMBOLSO')
+        .eq('beneficiario_documento', reembolso.documento)
+      updateError = error
+    }
+
+    if (updateError) {
+      throw new Error(`No se pudo actualizar el reembolso en base de datos: ${updateError.message}`)
+    }
   }
 
   revalidatePath(`/ejecucion/${reembolso.actividadId}`)
+  revalidatePath(`/liquidaciones/${reembolso.actividadId}`)
 
   return {
     reembolso,
@@ -127,6 +167,7 @@ export async function crearReembolso(
   }
 
   revalidatePath(`/ejecucion/${props.actividadId}`)
+  revalidatePath(`/liquidaciones/${props.actividadId}`)
   return { reembolso: saved.toProps() }
 }
 
@@ -147,6 +188,7 @@ export async function eliminarReembolso(
   }
 
   revalidatePath(`/ejecucion/${actividadId}`)
+  revalidatePath(`/liquidaciones/${actividadId}`)
 }
 
 /**
@@ -176,6 +218,7 @@ export async function materializarReembolsosAuto(actividadId: string): Promise<{
 
   const todos = [...existentes, ...nuevos]
   revalidatePath(`/ejecucion/${actividadId}`)
+  revalidatePath(`/liquidaciones/${actividadId}`)
 
   return {
     generados: nuevos.length,
@@ -291,6 +334,7 @@ export async function importarReembolsosDesdeExcel(
     }
 
     revalidatePath(`/ejecucion/${actividadId}`)
+    revalidatePath(`/liquidaciones/${actividadId}`)
 
     return {
       generados: result.reembolsos.length,
