@@ -47,6 +47,7 @@ export type TipoMovimiento =
   | 'GASTO'
   | 'REPARTO_50_50'
   | 'RETIRO'
+  | 'RETIRO_UTILIDAD'
   | 'DEVOLUCION'
 
 export interface MovimientoBancario {
@@ -726,11 +727,17 @@ export async function repartirUtilidadVariable(params: {
 }
 
 /**
- * Retiro de fondos: CTA-SOCIO → efectivo externo (destino null).
+ * Retiro de fondos de la cuenta de un socio.
+ *
+ * - tipo 'RETIRO'          → devuelve capital/aporte del socio. Afecta el cálculo
+ *                            de deuda en el panel de Trazabilidad.
+ * - tipo 'RETIRO_UTILIDAD' → extrae utilidades. Solo reduce el saldo de la cuenta;
+ *                            NO se contabiliza como retiro de deuda/aporte.
  */
 export async function registrarRetiro(params: {
   cuentaSocioId: string
   monto: number
+  tipoRetiro?: 'RETIRO' | 'RETIRO_UTILIDAD'
   descripcion?: string
   soporteUrl?: string
 }): Promise<{ ok: boolean }> {
@@ -739,12 +746,17 @@ export async function registrarRetiro(params: {
   const sb = await createClient()
   const { data: { user } } = await sb.auth.getUser()
 
+  const tipo = params.tipoRetiro ?? 'RETIRO'
+  const descripcionDefault = tipo === 'RETIRO_UTILIDAD'
+    ? 'Retiro de utilidades del socio'
+    : 'Retiro de fondos del socio'
+
   const { error } = await sb.from('movimientos_bancarios').insert({
     origen_id:      params.cuentaSocioId,
     destino_id:     null,
     monto:          params.monto,
-    tipo:           'RETIRO',
-    descripcion:    params.descripcion ?? 'Retiro de fondos del socio',
+    tipo,
+    descripcion:    params.descripcion ?? descripcionDefault,
     soporte_url:    params.soporteUrl ?? null,
     registrado_por: user?.id ?? null,
   })

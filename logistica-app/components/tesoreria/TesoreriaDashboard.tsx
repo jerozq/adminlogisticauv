@@ -94,22 +94,24 @@ function getCuentaTheme(cuenta: CuentaVirtual, socioIndex = 0) {
 }
 
 const TIPO_LABEL: Record<TipoMovimiento, string> = {
-  TRANSFERENCIA: 'Transferencia',
-  INYECCION:     'Inyección',
-  PAGO_UNIDAD:   'Pago UV',
-  REPARTO_50_50: 'Reparto 50/50',
-  RETIRO:        'Retiro',
-  GASTO:         'Gasto',
-  DEVOLUCION:    'Devolución',
+  TRANSFERENCIA:    'Transferencia',
+  INYECCION:        'Inyección',
+  PAGO_UNIDAD:      'Pago UV',
+  REPARTO_50_50:    'Reparto 50/50',
+  RETIRO:           'Retiro Deuda/Aporte',
+  RETIRO_UTILIDAD:  'Retiro Utilidades',
+  GASTO:            'Gasto',
+  DEVOLUCION:       'Devolución',
 }
 const TIPO_COLOR: Record<TipoMovimiento, string> = {
-  TRANSFERENCIA: 'bg-blue-500/20 text-blue-300',
-  INYECCION:     'bg-violet-500/20 text-violet-300',
-  PAGO_UNIDAD:   'bg-cyan-500/20 text-cyan-300',
-  REPARTO_50_50: 'bg-emerald-500/20 text-emerald-300',
-  RETIRO:        'bg-red-500/20 text-red-300',
-  GASTO:         'bg-orange-500/20 text-orange-300',
-  DEVOLUCION:    'bg-amber-500/20 text-amber-300',
+  TRANSFERENCIA:    'bg-blue-500/20 text-blue-300',
+  INYECCION:        'bg-violet-500/20 text-violet-300',
+  PAGO_UNIDAD:      'bg-cyan-500/20 text-cyan-300',
+  REPARTO_50_50:    'bg-emerald-500/20 text-emerald-300',
+  RETIRO:           'bg-red-500/20 text-red-300',
+  RETIRO_UTILIDAD:  'bg-pink-500/20 text-pink-300',
+  GASTO:            'bg-orange-500/20 text-orange-300',
+  DEVOLUCION:       'bg-amber-500/20 text-amber-300',
 }
 
 // ── Credit Card ───────────────────────────────────────────────
@@ -544,6 +546,7 @@ function ModalRetiro({
   onClose,
   onOk,
 }: { cuenta: CuentaVirtual; onClose: () => void; onOk: () => void }) {
+  const [tipoRetiro, setTipoRetiro] = useState<'RETIRO' | 'RETIRO_UTILIDAD'>('RETIRO')
   const [monto, setMonto]       = useState('')
   const [desc, setDesc]         = useState('')
   const [soporte, setSoporte]   = useState('')
@@ -561,6 +564,7 @@ function ModalRetiro({
         await registrarRetiro({
           cuentaSocioId: cuenta.id,
           monto:         Number(monto),
+          tipoRetiro,
           descripcion:   desc || undefined,
           soporteUrl:    soporte || undefined,
         })
@@ -571,11 +575,46 @@ function ModalRetiro({
     })
   }
 
+  const esUtilidad = tipoRetiro === 'RETIRO_UTILIDAD'
+
   return (
     <Modal title={`Retiro — ${cuenta.nombre}`} icon={<ArrowDownLeft className="size-4 text-red-400" />} onClose={onClose}>
+      {/* Selector de tipo */}
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => setTipoRetiro('RETIRO')}
+          className={`flex flex-col gap-1 rounded-xl border p-3 text-left transition-colors ${
+            tipoRetiro === 'RETIRO'
+              ? 'border-red-500/60 bg-red-500/10 text-red-300'
+              : 'border-white/10 bg-white/5 text-slate-400 hover:bg-white/10'
+          }`}
+        >
+          <span className="text-xs font-bold">Deuda / Aporte</span>
+          <span className="text-[10px] leading-tight opacity-75">
+            Devuelve capital aportado por el socio. Reduce la deuda pendiente.
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setTipoRetiro('RETIRO_UTILIDAD')}
+          className={`flex flex-col gap-1 rounded-xl border p-3 text-left transition-colors ${
+            tipoRetiro === 'RETIRO_UTILIDAD'
+              ? 'border-pink-500/60 bg-pink-500/10 text-pink-300'
+              : 'border-white/10 bg-white/5 text-slate-400 hover:bg-white/10'
+          }`}
+        >
+          <span className="text-xs font-bold">Utilidades</span>
+          <span className="text-[10px] leading-tight opacity-75">
+            Extrae ganancias. Solo reduce el saldo; no afecta la deuda del socio.
+          </span>
+        </button>
+      </div>
+
       <p className="text-xs text-slate-400 leading-relaxed">
-        Registra el retiro de fondos del socio. El saldo de la cuenta se reduce
-        y queda el registro inmutable de cuándo y cuánto se pagó.
+        {esUtilidad
+          ? 'El saldo de la cuenta se reduce. La deuda/aporte del socio no varía.'
+          : 'Registra el retiro de fondos del socio. El saldo y la deuda pendiente se reducen.'}
       </p>
       <div className="bg-white/5 rounded-xl p-3 border border-white/10 text-center">
         <p className="text-xs text-slate-400 mb-1">Saldo disponible</p>
@@ -598,9 +637,13 @@ function ModalRetiro({
       </label>
       {err && <ErrorMsg msg={err} />}
       <button onClick={submit} disabled={isPending}
-        className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-semibold py-2 rounded-xl transition-colors text-sm">
+        className={`w-full flex items-center justify-center gap-2 disabled:opacity-50 text-white font-semibold py-2 rounded-xl transition-colors text-sm ${
+          esUtilidad
+            ? 'bg-pink-600 hover:bg-pink-700'
+            : 'bg-red-600 hover:bg-red-700'
+        }`}>
         {isPending ? <Loader2 className="size-4 animate-spin" /> : <ArrowDownLeft className="size-4" />}
-        {isPending ? 'Registrando…' : 'Confirmar Retiro'}
+        {isPending ? 'Registrando…' : esUtilidad ? 'Confirmar Retiro de Utilidades' : 'Confirmar Retiro de Deuda/Aporte'}
       </button>
     </Modal>
   )
@@ -830,10 +873,14 @@ function DeudaPanel({
     const inyectado = transacciones
       .filter((t) => t.tipo === 'INYECCION' && t.destino_id === socioId)
       .reduce((s, t) => s + t.monto, 0)
+    // Solo RETIRO (deuda/aporte) reduce la deuda; RETIRO_UTILIDAD no la afecta
     const retirado = transacciones
       .filter((t) => t.tipo === 'RETIRO' && t.origen_id === socioId)
       .reduce((s, t) => s + t.monto, 0)
-    return { inyectado, retirado, pendiente: Math.max(0, inyectado - retirado) }
+    const retiradoUtilidad = transacciones
+      .filter((t) => t.tipo === 'RETIRO_UTILIDAD' && t.origen_id === socioId)
+      .reduce((s, t) => s + t.monto, 0)
+    return { inyectado, retirado, retiradoUtilidad, pendiente: Math.max(0, inyectado - retirado) }
   }
 
   if (socios.every((s) => calcDeuda(s.id).inyectado === 0)) return null
@@ -859,9 +906,15 @@ function DeudaPanel({
                 <span className="text-violet-400 font-semibold">{COP.format(datos.inyectado)}</span>
               </div>
               <div className="flex justify-between text-xs text-slate-400">
-                <span>Total retirado</span>
+                <span>Retirado (deuda/aporte)</span>
                 <span className="text-red-400 font-semibold">{COP.format(datos.retirado)}</span>
               </div>
+              {datos.retiradoUtilidad > 0 && (
+                <div className="flex justify-between text-xs text-slate-400">
+                  <span>Retirado (utilidades)</span>
+                  <span className="text-pink-400 font-semibold">{COP.format(datos.retiradoUtilidad)}</span>
+                </div>
+              )}
               <div className="border-t border-white/10 pt-2 flex justify-between text-xs font-bold">
                 <span className="text-amber-300">La sociedad le debe</span>
                 <span className="text-amber-300">{COP.format(datos.pendiente)}</span>
@@ -881,8 +934,9 @@ const FILTROS: { label: string; value: TipoMovimiento | 'TODOS' }[] = [
   { label: 'Pagos UV',      value: 'PAGO_UNIDAD' },
   { label: 'Repartos',      value: 'REPARTO_50_50' },
   { label: 'Devoluciones',  value: 'DEVOLUCION' },
-  { label: 'Retiros',       value: 'RETIRO' },
-  { label: 'Transferencias',value: 'TRANSFERENCIA' },
+  { label: 'Retiros Aporte',    value: 'RETIRO' },
+  { label: 'Retiros Utilidad',  value: 'RETIRO_UTILIDAD' },
+  { label: 'Transferencias',    value: 'TRANSFERENCIA' },
   { label: 'Gastos',        value: 'GASTO' },
 ]
 
