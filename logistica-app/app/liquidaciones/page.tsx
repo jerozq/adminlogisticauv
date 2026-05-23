@@ -34,7 +34,7 @@ export default async function LiquidacionesPage() {
                   <th className="px-6 py-4 font-semibold text-right">Costos</th>
                   <th className="px-6 py-4 font-semibold text-right text-red-400">Devoluciones Pendientes</th>
                   <th className="px-6 py-4 font-semibold text-center">Estado</th>
-                  <th className="px-6 py-4 font-semibold text-center">Accin</th>
+                  <th className="px-6 py-4 font-semibold text-center">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
