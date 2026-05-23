@@ -124,8 +124,12 @@ function CuentaCard({
 }) {
   const theme = getCuentaTheme(cuenta, socioIndex)
   const tail = cuenta.id.replace(/-/g, '').slice(-8).toUpperCase()
-  // Para socios mostramos el email completo en el subtítulo de la tarjeta
-  const subtitulo = cuenta.tipo === 'SOCIO' ? cuenta.user_email : cuenta.nombre_actividad
+  // Título: para proyectos solo el municipio; para socios/general el nombre guardado
+  const titulo = cuenta.tipo === 'PROYECTO'
+    ? (cuenta.municipio_requerimiento ?? cuenta.numero_requerimiento ?? cuenta.nombre)
+    : cuenta.nombre
+  // Subtítulo: email para socios, nada para proyectos (el nro ya va en theme.label)
+  const subtitulo = cuenta.tipo === 'SOCIO' ? cuenta.user_email : null
 
   return (
     <div
@@ -140,7 +144,7 @@ function CuentaCard({
       <div className="flex items-start justify-between relative z-10">
         <div>
           <p className="text-[9px] font-black uppercase tracking-widest text-white/40 mb-0.5">{theme.label}</p>
-          <p className="text-sm font-bold text-white/90 leading-tight">{cuenta.nombre}</p>
+          <p className="text-sm font-bold text-white/90 leading-tight">{titulo}</p>
           {subtitulo && (
             <p className="text-[10px] text-white/40 mt-0.5 truncate max-w-[160px]">{subtitulo}</p>
           )}
