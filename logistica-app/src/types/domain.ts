@@ -150,6 +150,8 @@ export interface ReembolsoBeneficiario {
   valorAlojamiento: number
   valorAlimentacion: number
   valorOtros: number
+  /** UUID de la fila en items_requerimiento que origina este reembolso. */
+  itemsRequerimientoId?: string | null
 }
 
 export interface HitoCronogramaSugerido {

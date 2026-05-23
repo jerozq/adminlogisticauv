@@ -34,6 +34,7 @@ export interface CuentaVirtual {
   // Datos enriquecidos (JOIN)
   numero_requerimiento?: string | null
   nombre_actividad?: string | null
+  municipio_requerimiento?: string | null
   // DEPRECATED — mantener para compatibilidad temporal con componentes que aún lo leen
   user_email?: string | null
   user_nombre?: string | null
@@ -94,7 +95,7 @@ export async function listarCuentas(): Promise<CuentaVirtual[]> {
   const [cuentasRes, usuariosRes, movsRes] = await Promise.all([
     sb
       .from('cuentas_virtuales')
-      .select('*, requerimientos!requerimiento_id(numero_requerimiento, nombre_actividad)')
+      .select('*, requerimientos!requerimiento_id(numero_requerimiento, nombre_actividad, municipio)')
       .order('tipo')
       .order('created_at'),
     sb.rpc('listar_usuarios_registrados'),
@@ -122,8 +123,9 @@ export async function listarCuentas(): Promise<CuentaVirtual[]> {
       user_id:              c.user_id,
       created_at:           c.created_at,
       updated_at:           c.updated_at,
-      numero_requerimiento: c.requerimientos?.numero_requerimiento ?? null,
-      nombre_actividad:     c.requerimientos?.nombre_actividad ?? null,
+      numero_requerimiento:     c.requerimientos?.numero_requerimiento ?? null,
+      nombre_actividad:         c.requerimientos?.nombre_actividad ?? null,
+      municipio_requerimiento:  c.requerimientos?.municipio ?? null,
       user_email:           user?.email ?? null,
       user_nombre:          user?.nombre ?? null,
     } satisfies CuentaVirtual

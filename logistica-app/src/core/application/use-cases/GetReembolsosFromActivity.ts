@@ -1,6 +1,6 @@
 import type { IActivityRepository } from '@/src/core/domain/ports/IActivityRepository'
 import type { IReembolsoRepository } from '@/src/core/domain/ports/IReembolsoRepository'
-import type { Reembolso } from '@/src/core/domain/entities/Reembolso'
+import { Reembolso } from '@/src/core/domain/entities/Reembolso'
 import { getTracer, withSpan } from '@/src/infrastructure/observability/tracer'
 
 // ============================================================
@@ -120,9 +120,21 @@ export class GetReembolsosFromActivity {
         // ── Paso 4: Merge (manuales tienen precedencia por ID) ──
         const manualesById = new Map(manuales.map((r) => [r.id, r]))
 
-        const mergeados: Reembolso[] = autoGenerados.map((auto) =>
-          manualesById.has(auto.id) ? manualesById.get(auto.id)! : auto,
-        )
+        const mergeados: Reembolso[] = autoGenerados.map((auto) => {
+          const manual = manualesById.get(auto.id)
+          if (!manual) return auto
+
+          // El manual tiene los valores editados por el usuario (en reembolsos_manuales),
+          // pero NO tiene itemsRequerimientoId (no viene de items_requerimiento).
+          // Lo preservamos del auto-generado para poder hacer el UPDATE exacto más tarde.
+          if (auto.itemsRequerimientoId && !manual.itemsRequerimientoId) {
+            return new Reembolso({
+              ...manual.toProps(),
+              itemsRequerimientoId: auto.itemsRequerimientoId,
+            })
+          }
+          return manual
+        })
 
         // Incluir manuales sin contraparte auto-generada (altas manuales)
         const idsAutoGenerados = new Set(autoGenerados.map((r) => r.id))
