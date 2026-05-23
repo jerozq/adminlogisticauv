@@ -296,13 +296,14 @@ export async function listarLiquidaciones(): Promise<LiquidacionResumen[]> {
   const cuentaIds = Object.values(cuentaPorReq)
 
   // Buscar todos los movimientos de entrada (abonos) a las cuentas virtuales
-  // Solo contar movimientos EJECUTADO (o sin estado para backward compat)
+  // Solo contar PAGO_UNIDAD EJECUTADO — las transferencias internas no son abonos de la UV
   const abonosPorCuenta: Record<string, number> = {}
   if (cuentaIds.length > 0) {
     const { data: movimientos } = await sb
       .from('movimientos_bancarios')
-      .select('destino_id, monto, estado')
+      .select('destino_id, monto, estado, tipo')
       .in('destino_id', cuentaIds)
+      .eq('tipo', 'PAGO_UNIDAD')
 
     for (const m of (movimientos ?? [])) {
       if ((m as any).estado && (m as any).estado !== 'EJECUTADO') continue
