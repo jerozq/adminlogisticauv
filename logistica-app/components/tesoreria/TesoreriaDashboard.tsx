@@ -56,6 +56,20 @@ const SOCIO_PALETTES = [
   { gradient: 'from-rose-600 via-rose-700 to-pink-800',       glow: 'shadow-rose-900/60',    badge: 'bg-rose-400/20 text-rose-200 border-rose-400/30',        accent: 'text-rose-200'    },
 ]
 
+/**
+ * Devuelve el nombre de display de una cuenta.
+ * Para cuentas PROYECTO muestra "Municipio — Req. NNN" en lugar del nombre de actividad.
+ */
+function labelCuenta(c: CuentaVirtual): string {
+  if (c.tipo === 'PROYECTO') {
+    const partes: string[] = []
+    if (c.municipio_requerimiento) partes.push(c.municipio_requerimiento)
+    if (c.numero_requerimiento) partes.push(`Req. ${c.numero_requerimiento}`)
+    if (partes.length > 0) return partes.join(' — ')
+  }
+  return c.nombre
+}
+
 function getCuentaTheme(cuenta: CuentaVirtual, socioIndex = 0) {
   if (cuenta.tipo === 'GENERAL') return {
     gradient: 'from-slate-600 via-slate-700 to-zinc-800',
@@ -261,7 +275,7 @@ function ModalInyectar({
           <option value="">— No transferir, solo inyectar al socio —</option>
           {proyectos.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.nombre} {p.numero_requerimiento ? `(${p.numero_requerimiento})` : ''}
+              {labelCuenta(p)}
             </option>
           ))}
         </select>
@@ -424,7 +438,7 @@ function ModalRepartir({
         <select value={proyId} onChange={(e) => setProyId(e.target.value)} className={SEL}>
           {proyectos.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.nombre} — {COP.format(p.saldo)}
+              {labelCuenta(p)} — {COP.format(p.saldo)}
             </option>
           ))}
         </select>
@@ -602,6 +616,16 @@ function ModalTransferir({
   const [err, setErr]           = useState<string | null>(null)
   const [isPending, start]      = useTransition()
 
+  // Si el usuario cambia el origen al mismo valor que el destino actual,
+  // ajustamos el destino automáticamente para evitar el falso error de "deben ser distintos".
+  function handleOrigenChange(newId: string) {
+    setOrigenId(newId)
+    if (destinoId === newId) {
+      const fallback = cuentas.find((c) => c.id !== newId)
+      setDestinoId(fallback?.id ?? '')
+    }
+  }
+
   function submit() {
     if (origenId === destinoId) { setErr('Origen y destino deben ser distintos.'); return }
     if (Number(monto) <= 0) { setErr('El monto debe ser mayor a cero.'); return }
@@ -633,10 +657,10 @@ function ModalTransferir({
       </label>
       <label className="block">
         <span className="text-xs text-slate-400 mb-1 block">Origen</span>
-        <select value={origenId} onChange={(e) => setOrigenId(e.target.value)} className={SEL}>
+        <select value={origenId} onChange={(e) => handleOrigenChange(e.target.value)} className={SEL}>
           {cuentas.map((c) => (
             <option key={c.id} value={c.id}>
-              {c.nombre} — {COP.format(c.saldo)}
+              {labelCuenta(c)} — {COP.format(c.saldo)}
             </option>
           ))}
         </select>
@@ -645,7 +669,7 @@ function ModalTransferir({
         <span className="text-xs text-slate-400 mb-1 block">Destino</span>
         <select value={destinoId} onChange={(e) => setDestinoId(e.target.value)} className={SEL}>
           {cuentas.filter((c) => c.id !== origenId).map((c) => (
-            <option key={c.id} value={c.id}>{c.nombre}</option>
+            <option key={c.id} value={c.id}>{labelCuenta(c)}</option>
           ))}
         </select>
       </label>
