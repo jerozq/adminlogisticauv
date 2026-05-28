@@ -40,6 +40,7 @@ interface CostoLiquidacionDetalle {
   transferencia_id: string | null
   cuenta_origen_id: string | null
   observaciones: string | null
+  grupo_id: string | null
   created_at: string
   updated_at?: string | null
 }
@@ -359,7 +360,7 @@ export async function getLiquidacionDetalle(actividadId: string) {
     .eq('requerimiento_id', actividadId)
     .maybeSingle()
 
-  const [reqRes, movimientosRes, costosRes, itemsRes, reembolsosRes, deudasRes] = await Promise.all([
+  const [reqRes, movimientosRes, costosRes, itemsRes, reembolsosRes, deudasRes, gruposRes] = await Promise.all([
     sb.from('requerimientos').select('*').eq('id', actividadId).single(),
     cuenta
       ? sb.from('movimientos_bancarios')
@@ -382,6 +383,10 @@ export async function getLiquidacionDetalle(actividadId: string) {
       .select('*')
       .eq('requerimiento_id', actividadId)
       .order('created_at', { ascending: false }),
+    sb.from('grupos_costos_liquidacion')
+      .select('*')
+      .eq('actividad_id', actividadId)
+      .order('created_at', { ascending: true }),
   ])
 
   const movimientos = (movimientosRes.data || []) as any[]
@@ -437,6 +442,7 @@ export async function getLiquidacionDetalle(actividadId: string) {
     costos:        costosRes.data || [],
     itemsCotizados: itemsRes.data || [],
     reembolsos:    reembolsosRes.data || [],
+    grupos:        gruposRes.data || [],
   }
 }
 
@@ -1807,4 +1813,197 @@ export async function eliminarSoporte(
   if (error) return { ok: false, error: error.message }
   revalidatePath(`/liquidaciones/${requerimientoId}`)
   return { ok: true }
+}
+
+// ============================================================
+// GRUPOS DE COSTOS LIQUIDACIÓN
+// Agrupa varios ítems cotizados y registra un costo total
+// sin desglosar por ítem. Un ítem puede estar en varios grupos.
+// ============================================================
+
+export interface GrupoCostosInput {
+  nombre: string
+  montoTotal: number
+  itemsIds: string[]
+}
+
+export interface GrupoCostos {
+  id: string
+  actividad_id: string
+  nombre: string
+  monto_total: number
+  items_ids: string[]
+  created_at: string
+  updated_at: string
+}
+
+export async function crearGrupoCostos(
+  actividadId: string,
+  input: GrupoCostosInput,
+): Promise<{ ok: true; id: string }> {
+  if (!input.nombre.trim()) throw new Error('El nombre del grupo es obligatorio.')
+  if (input.montoTotal <= 0) throw new Error('El monto del grupo debe ser mayor a cero.')
+  if (input.itemsIds.length === 0) throw new Error('Selecciona al menos un ítem para el grupo.')
+
+  const sb = await createClient()
+  const { data, error } = await sb
+    .from('grupos_costos_liquidacion')
+    .insert({
+      actividad_id: actividadId,
+      nombre: input.nombre.trim(),
+      monto_total: input.montoTotal,
+      items_ids: input.itemsIds,
+    })
+    .select('id')
+    .single()
+
+  if (error) throw new Error(`Error al crear grupo: ${error.message}`)
+
+  revalidatePath(`/liquidaciones/${actividadId}`)
+  return { ok: true, id: data.id }
+}
+
+export async function actualizarGrupoCostos(
+  grupoId: string,
+  actividadId: string,
+  input: GrupoCostosInput,
+): Promise<{ ok: true }> {
+  if (!input.nombre.trim()) throw new Error('El nombre del grupo es obligatorio.')
+  if (input.montoTotal <= 0) throw new Error('El monto del grupo debe ser mayor a cero.')
+  if (input.itemsIds.length === 0) throw new Error('Selecciona al menos un ítem para el grupo.')
+
+  const sb = await createClient()
+  const { error } = await sb
+    .from('grupos_costos_liquidacion')
+    .update({
+      nombre: input.nombre.trim(),
+      monto_total: input.montoTotal,
+      items_ids: input.itemsIds,
+    })
+    .eq('id', grupoId)
+    .eq('actividad_id', actividadId)
+
+  if (error) throw new Error(`Error al actualizar grupo: ${error.message}`)
+
+  revalidatePath(`/liquidaciones/${actividadId}`)
+  return { ok: true }
+}
+
+export async function eliminarGrupoCostos(
+  grupoId: string,
+  actividadId: string,
+): Promise<{ ok: true }> {
+  const sb = await createClient()
+  const { error } = await sb
+    .from('grupos_costos_liquidacion')
+    .delete()
+    .eq('id', grupoId)
+    .eq('actividad_id', actividadId)
+
+  if (error) throw new Error(`Error al eliminar grupo: ${error.message}`)
+
+  revalidatePath(`/liquidaciones/${actividadId}`)
+  return { ok: true }
+}
+
+// ── Pagos de Grupo ────────────────────────────────────────────────────────────
+
+export interface GuardarPagoGrupoInput {
+  pagoId?: string | null          // si se edita un pago existente
+  grupoId: string
+  actividadId: string
+  descripcion: string
+  monto: number
+  cuentaOrigenId?: string | null
+  estadoPago?: 'PENDIENTE' | 'PAGADO'
+  pagador?: string | null
+  observaciones?: string | null
+}
+
+export async function registrarPagoGrupo(
+  input: GuardarPagoGrupoInput,
+): Promise<{ ok: true; costoId: string }> {
+  if (!input.descripcion.trim()) throw new Error('La descripción del pago es obligatoria.')
+  if (input.monto <= 0) throw new Error('El monto del pago debe ser mayor a cero.')
+
+  const sb = await createClient()
+  const estadoPago: 'PENDIENTE' | 'PAGADO' = input.estadoPago ?? 'PENDIENTE'
+  const pagador: PagadorCosto = _esPagadorValido(input.pagador) ? input.pagador : 'caja_proyecto'
+
+  // ── Edición de pago existente ─────────────────────────────────────────────
+  if (input.pagoId) {
+    const { data: existente, error: fetchErr } = await sb
+      .from('ejecucion_costos')
+      .select('*')
+      .eq('id', input.pagoId)
+      .single()
+    if (fetchErr) throw new Error(`Error al leer el pago: ${fetchErr.message}`)
+
+    const costoActualizado: CostoLiquidacionDetalle = {
+      ...(existente as CostoLiquidacionDetalle),
+      descripcion: input.descripcion.trim(),
+      monto: input.monto,
+      pagador,
+      estado_pago: estadoPago,
+      cuenta_origen_id: input.cuentaOrigenId ?? existente.cuenta_origen_id ?? null,
+      observaciones: input.observaciones?.trim() ?? null,
+      modo_registro: 'global',
+      cantidad: 1,
+      precio_unitario: input.monto,
+    }
+
+    const { error: updateErr } = await sb
+      .from('ejecucion_costos')
+      .update({
+        descripcion: costoActualizado.descripcion,
+        monto: costoActualizado.monto,
+        pagador: costoActualizado.pagador,
+        estado_pago: costoActualizado.estado_pago,
+        cuenta_origen_id: costoActualizado.cuenta_origen_id,
+        observaciones: costoActualizado.observaciones,
+        precio_unitario: costoActualizado.precio_unitario,
+      })
+      .eq('id', input.pagoId)
+    if (updateErr) throw new Error(`Error al actualizar el pago: ${updateErr.message}`)
+
+    await _sincronizarMovimientoCosto(sb, costoActualizado, input.cuentaOrigenId ?? null)
+
+    revalidatePath(`/liquidaciones/${input.actividadId}`)
+    return { ok: true, costoId: input.pagoId }
+  }
+
+  // ── Nuevo pago ────────────────────────────────────────────────────────────
+  const { data: insertado, error } = await sb
+    .from('ejecucion_costos')
+    .insert({
+      actividad_id: input.actividadId,
+      grupo_id: input.grupoId,
+      item_id: null,
+      descripcion: input.descripcion.trim(),
+      monto: input.monto,
+      pagador,
+      modo_registro: 'global',
+      cantidad: 1,
+      precio_unitario: input.monto,
+      estado_pago: estadoPago,
+      cuenta_origen_id: input.cuentaOrigenId ?? null,
+      observaciones: input.observaciones?.trim() ?? null,
+    })
+    .select('*')
+    .single()
+
+  if (error) throw new Error(`Error al registrar el pago: ${error.message}`)
+
+  await _sincronizarMovimientoCosto(sb, insertado as CostoLiquidacionDetalle, input.cuentaOrigenId ?? null)
+
+  revalidatePath(`/liquidaciones/${input.actividadId}`)
+  return { ok: true, costoId: insertado.id }
+}
+
+export async function eliminarPagoGrupo(
+  pagoId: string,
+  actividadId: string,
+): Promise<{ ok: true }> {
+  // Reutiliza la lógica de eliminarCostoReal que ya anula el movimiento
+  return eliminarCostoReal(pagoId, actividadId)
 }

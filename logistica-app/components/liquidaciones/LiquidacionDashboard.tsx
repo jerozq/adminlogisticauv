@@ -1,8 +1,8 @@
 'use client'
 
 import { Fragment, useMemo, useState, useTransition } from 'react'
-import { AlertCircle, Check, CheckCircle2, ChevronDown, ChevronUp, DollarSign, Info, Loader2, Pencil, Plus, RotateCcw, ShieldAlert, TrendingDown, Trash2, Upload, Users, Wallet, X } from 'lucide-react'
-import { actualizarAbono, cambiarEstadoPagoCosto, cambiarEstadoReembolso, eliminarAbono, eliminarCostoReal, eliminarDeudaDevolucion, marcarItemEstado, recalcularDevolucionesPendientes, registrarAbonoUnidad, registrarCostoReal, registrarDeudaDevolucion, registrarSalidaDevolucion, saldarDeudaDevolucion } from '@/actions/liquidaciones'
+import { AlertCircle, Check, CheckCircle2, ChevronDown, ChevronUp, DollarSign, Info, Layers, Loader2, Pencil, Plus, RotateCcw, ShieldAlert, TrendingDown, Trash2, Upload, Users, Wallet, X } from 'lucide-react'
+import { actualizarAbono, actualizarGrupoCostos, cambiarEstadoPagoCosto, cambiarEstadoReembolso, crearGrupoCostos, eliminarAbono, eliminarCostoReal, eliminarDeudaDevolucion, eliminarGrupoCostos, eliminarPagoGrupo, marcarItemEstado, recalcularDevolucionesPendientes, registrarAbonoUnidad, registrarCostoReal, registrarDeudaDevolucion, registrarPagoGrupo, registrarSalidaDevolucion, saldarDeudaDevolucion } from '@/actions/liquidaciones'
 import { useRouter } from 'next/navigation'
 import { GaleriaComprobantes } from './GaleriaComprobantes'
 import type { EstadoReembolso, SoporteProyecto } from '@/actions/liquidaciones'
@@ -20,7 +20,7 @@ type InsightsRetenciones = {
 
 export function LiquidacionDashboard({ detalle, actividadId, insights, soportes, cuentas }: { detalle: any, actividadId: string, insights: InsightsRetenciones, soportes: SoporteProyecto[], cuentas: any[] }) {
   const router = useRouter()
-  const { actividad, abonos, movimientosProyecto, devoluciones, deudas, costos, itemsCotizados, reembolsos } = detalle
+  const { actividad, abonos, movimientosProyecto, devoluciones, deudas, costos, itemsCotizados, reembolsos, grupos } = detalle
 
   // Derived values
   const totalCotizado = itemsCotizados.reduce((acc: number, item: any) => acc + (item.cantidad * item.precio_unitario), 0)
@@ -442,6 +442,7 @@ export function LiquidacionDashboard({ detalle, actividadId, insights, soportes,
         cuentas={cuentas}
         totalAbonosOperativo={totalAbonosOperativo}
         deudas={deudas ?? []}
+        grupos={grupos ?? []}
       />
 
       <ReembolsosManager 
@@ -469,7 +470,7 @@ export function LiquidacionDashboard({ detalle, actividadId, insights, soportes,
   )
 }
 
-function ItemsManager({ actividadId, itemsCotizados, costos, cuentas, totalAbonosOperativo, deudas }: any) {
+function ItemsManager({ actividadId, itemsCotizados, costos, cuentas, totalAbonosOperativo, deudas, grupos }: any) {
   const router = useRouter()
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
@@ -485,6 +486,29 @@ function ItemsManager({ actividadId, itemsCotizados, costos, cuentas, totalAbono
   const [justificacionCantidad, setJustificacionCantidad] = useState('')
   const [errorModal, setErrorModal] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+
+  // ── Estado para grupos de costos ──────────────────────────────────────────
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set())
+  const [grupoModalOpen, setGrupoModalOpen] = useState(false)
+  const [editingGrupoId, setEditingGrupoId] = useState<string | null>(null)
+  const [grupoNombre, setGrupoNombre] = useState('')
+  const [grupoMontoStr, setGrupoMontoStr] = useState('')
+  const [grupoItemsIds, setGrupoItemsIds] = useState<Set<string>>(new Set())
+  const [grupoError, setGrupoError] = useState<string | null>(null)
+  const [grupoPending, startGrupoTransition] = useTransition()
+  const [expandedGrupoId, setExpandedGrupoId] = useState<string | null>(null)
+
+  // ── Estado para pagos de grupo ─────────────────────────────────────────────
+  const [pagoGrupoModalOpen, setPagoGrupoModalOpen] = useState(false)
+  const [selectedGrupo, setSelectedGrupo] = useState<any | null>(null)
+  const [editingPagoId, setEditingPagoId] = useState<string | null>(null)
+  const [pagoDesc, setPagoDesc] = useState('')
+  const [pagoMontoStr, setPagoMontoStr] = useState('')
+  const [pagoPagado, setPagoPagado] = useState(false)
+  const [pagoCuentaId, setPagoCuentaId] = useState('')
+  const [pagoObs, setPagoObs] = useState('')
+  const [pagoError, setPagoError] = useState<string | null>(null)
+  const [pagoPending, startPagoTransition] = useTransition()
 
   // Modal de devolución parcial
   const [devModalOpen, setDevModalOpen] = useState(false)
@@ -758,6 +782,166 @@ function ItemsManager({ actividadId, itemsCotizados, costos, cuentas, totalAbono
     }
   }
 
+  // ── Handlers para grupos de costos ────────────────────────────────────────
+  const PREDEFINED_GRUPO_NOMBRES = [
+    'Alimentación',
+    'Transporte',
+    'Hospedaje',
+    'Material de apoyo',
+    'Servicios técnicos',
+    'Honorarios',
+    'Comunicaciones',
+    'Impresión y papelería',
+    'Insumos de campo',
+    'Logística general',
+  ]
+
+  function toggleItemSelection(itemId: string) {
+    setSelectedItemIds(prev => {
+      const next = new Set(prev)
+      if (next.has(itemId)) next.delete(itemId)
+      else next.add(itemId)
+      return next
+    })
+  }
+
+  function abrirModalNuevoGrupo() {
+    setEditingGrupoId(null)
+    setGrupoNombre('')
+    setGrupoMontoStr('')
+    setGrupoItemsIds(new Set(selectedItemIds))
+    setGrupoError(null)
+    setGrupoModalOpen(true)
+  }
+
+  function abrirModalEditarGrupo(grupo: any) {
+    setEditingGrupoId(grupo.id)
+    setGrupoNombre(grupo.nombre)
+    setGrupoMontoStr(String(grupo.monto_total))
+    setGrupoItemsIds(new Set(grupo.items_ids as string[]))
+    setGrupoError(null)
+    setGrupoModalOpen(true)
+  }
+
+  function cerrarGrupoModal() {
+    setGrupoModalOpen(false)
+    setEditingGrupoId(null)
+    setGrupoError(null)
+  }
+
+  function toggleGrupoItem(itemId: string) {
+    setGrupoItemsIds(prev => {
+      const next = new Set(prev)
+      if (next.has(itemId)) next.delete(itemId)
+      else next.add(itemId)
+      return next
+    })
+  }
+
+  async function handleGuardarGrupo(e: React.FormEvent) {
+    e.preventDefault()
+    const montoNum = Number(grupoMontoStr)
+    if (!grupoNombre.trim()) { setGrupoError('El nombre del grupo es obligatorio.'); return }
+    if (!montoNum || montoNum <= 0) { setGrupoError('El monto del grupo debe ser mayor a cero.'); return }
+    if (grupoItemsIds.size === 0) { setGrupoError('Selecciona al menos un ítem para el grupo.'); return }
+    setGrupoError(null)
+    startGrupoTransition(async () => {
+      try {
+        const input = { nombre: grupoNombre.trim(), montoTotal: montoNum, itemsIds: Array.from(grupoItemsIds) }
+        if (editingGrupoId) {
+          await actualizarGrupoCostos(editingGrupoId, actividadId, input)
+        } else {
+          await crearGrupoCostos(actividadId, input)
+          setSelectedItemIds(new Set())
+        }
+        cerrarGrupoModal()
+        router.refresh()
+      } catch (err) {
+        setGrupoError(err instanceof Error ? err.message : 'Error al guardar el grupo')
+      }
+    })
+  }
+
+  async function handleEliminarGrupo(grupoId: string) {
+    if (!confirm('¿Eliminar este grupo? Los ítems individuales no se verán afectados.')) return
+    try {
+      await eliminarGrupoCostos(grupoId, actividadId)
+      router.refresh()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'No se pudo eliminar el grupo')
+    }
+  }
+
+  // ── Handlers de pagos de grupo ─────────────────────────────────────────────
+  function abrirModalNuevoPagoGrupo(grupo: any) {
+    setSelectedGrupo(grupo)
+    setEditingPagoId(null)
+    setPagoDesc(grupo.nombre)
+    setPagoMontoStr('')
+    setPagoPagado(false)
+    setPagoCuentaId(defaultCuentaOrigenId)
+    setPagoObs('')
+    setPagoError(null)
+    setPagoGrupoModalOpen(true)
+  }
+
+  function abrirModalEditarPagoGrupo(grupo: any, pago: any) {
+    setSelectedGrupo(grupo)
+    setEditingPagoId(pago.id)
+    setPagoDesc(pago.descripcion ?? grupo.nombre)
+    setPagoMontoStr(String(pago.monto))
+    setPagoPagado(pago.estado_pago === 'PAGADO')
+    setPagoCuentaId(pago.cuenta_origen_id ?? defaultCuentaOrigenId)
+    setPagoObs(pago.observaciones ?? '')
+    setPagoError(null)
+    setPagoGrupoModalOpen(true)
+  }
+
+  function cerrarPagoGrupoModal() {
+    setPagoGrupoModalOpen(false)
+    setSelectedGrupo(null)
+    setEditingPagoId(null)
+    setPagoError(null)
+  }
+
+  async function handleGuardarPagoGrupo(e: React.FormEvent) {
+    e.preventDefault()
+    if (!selectedGrupo) return
+    const montoNum = Number(pagoMontoStr)
+    if (!pagoDesc.trim()) { setPagoError('La descripción es obligatoria.'); return }
+    if (!montoNum || montoNum <= 0) { setPagoError('El monto debe ser mayor a cero.'); return }
+    setPagoError(null)
+    startPagoTransition(async () => {
+      try {
+        await registrarPagoGrupo({
+          pagoId: editingPagoId,
+          grupoId: selectedGrupo.id,
+          actividadId,
+          descripcion: pagoDesc.trim(),
+          monto: montoNum,
+          cuentaOrigenId: pagoPagado ? (pagoCuentaId || defaultCuentaOrigenId) : null,
+          estadoPago: pagoPagado ? 'PAGADO' : 'PENDIENTE',
+          pagador: resolverPagador(pagoPagado ? (pagoCuentaId || defaultCuentaOrigenId) : null),
+          observaciones: pagoObs.trim() || null,
+        })
+        cerrarPagoGrupoModal()
+        router.refresh()
+      } catch (err) {
+        setPagoError(err instanceof Error ? err.message : 'Error al guardar el pago')
+      }
+    })
+  }
+
+  async function handleEliminarPagoGrupo(pagoId: string) {
+    if (!confirm('¿Eliminar este pago? Si ya tenía movimiento asociado, se anulará.')) return
+    try {
+      await eliminarPagoGrupo(pagoId, actividadId)
+      router.refresh()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'No se pudo eliminar el pago')
+    }
+  }
+
   async function handleCancelarItem(item: any) {
     if (confirm(`Cancelar el item "${item.descripcion}". Se marcará como cancelado.`)) {
       await marcarItemEstado(item.id, actividadId, 'CANCELADO')
@@ -779,13 +963,23 @@ function ItemsManager({ actividadId, itemsCotizados, costos, cuentas, totalAbono
           <h2 className="text-lg font-bold text-white">Cruce de Costos vs Cotización</h2>
           <p className="text-xs text-slate-400 mt-1">Carga costos desde un modal sin bajar la tabla. Cada ítem puede tener varios costos y cada costo se puede editar o anular.</p>
         </div>
-        <button
-          onClick={() => itemsCotizados[0] && abrirModalNuevo(itemsCotizados[0])}
-          disabled={itemsCotizados.length === 0}
-          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 text-xs font-semibold transition-colors"
-        >
-          <Plus className="size-4" /> Nuevo costo
-        </button>
+        <div className="flex items-center gap-2">
+          {selectedItemIds.size > 0 && (
+            <button
+              onClick={abrirModalNuevoGrupo}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-500/20 text-violet-300 hover:bg-violet-500/30 text-xs font-semibold transition-colors"
+            >
+              <Layers className="size-4" /> Agrupar {selectedItemIds.size} ítem{selectedItemIds.size === 1 ? '' : 's'}
+            </button>
+          )}
+          <button
+            onClick={() => itemsCotizados[0] && abrirModalNuevo(itemsCotizados[0])}
+            disabled={itemsCotizados.length === 0}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 text-xs font-semibold transition-colors"
+          >
+            <Plus className="size-4" /> Nuevo costo
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-5">
@@ -818,10 +1012,164 @@ function ItemsManager({ actividadId, itemsCotizados, costos, cuentas, totalAbono
         </div>
       </div>
 
+      {/* ── GRUPOS DE COSTOS ──────────────────────────────────────────── */}
+      {(grupos ?? []).length > 0 && (
+        <div className="mb-5 space-y-2">
+          <div className="flex items-center gap-2 mb-3">
+            <Layers className="size-4 text-violet-400" />
+            <h3 className="text-sm font-bold text-white">Grupos de Costos</h3>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/20">
+              {(grupos ?? []).length} grupo{(grupos ?? []).length === 1 ? '' : 's'}
+            </span>
+          </div>
+          {(grupos ?? []).map((grupo: any) => {
+            const itemsDelGrupo = itemsCotizados.filter((it: any) => (grupo.items_ids as string[]).includes(it.id))
+            const sumaCotizadoGrupo = itemsDelGrupo.reduce((acc: number, it: any) => acc + Number(it.cantidad) * Number(it.precio_unitario), 0)
+            const montoGrupo = Number(grupo.monto_total ?? 0)
+            const diferencia = sumaCotizadoGrupo - montoGrupo
+            const expandedG = expandedGrupoId === grupo.id
+            const pagosGrupo = costos.filter((c: any) => c.grupo_id === grupo.id)
+            const totalPagadoGrupo = pagosGrupo.filter((c: any) => c.estado_pago === 'PAGADO').reduce((acc: number, c: any) => acc + Number(c.monto), 0)
+            const totalRegistradoGrupo = pagosGrupo.reduce((acc: number, c: any) => acc + Number(c.monto), 0)
+
+            return (
+              <div key={grupo.id} className="rounded-xl border border-violet-500/20 bg-violet-500/5">
+                <div className="flex items-center justify-between gap-3 px-4 py-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <button
+                      onClick={() => setExpandedGrupoId(expandedG ? null : grupo.id)}
+                      className="text-slate-400 hover:text-white transition-colors shrink-0"
+                    >
+                      {expandedG ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+                    </button>
+                    <div className="min-w-0">
+                      <div className="font-semibold text-violet-200 text-sm truncate">{grupo.nombre}</div>
+                      <div className="text-[10px] text-slate-500 mt-0.5 flex items-center gap-2">
+                        <span>{itemsDelGrupo.length} ítem{itemsDelGrupo.length === 1 ? '' : 's'} · Cotizado: {COP.format(sumaCotizadoGrupo)}</span>
+                        {pagosGrupo.length > 0 && (
+                          <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-semibold ${totalPagadoGrupo >= montoGrupo ? 'bg-emerald-500/20 text-emerald-300' : 'bg-orange-500/20 text-orange-300'}`}>
+                            {pagosGrupo.length} pago{pagosGrupo.length === 1 ? '' : 's'} · {COP.format(totalRegistradoGrupo)} reg.
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <div className="text-right">
+                      <div className="text-xs text-slate-400">Presupuesto</div>
+                      <div className="font-bold text-violet-300 tabular-nums text-sm">{COP.format(montoGrupo)}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs text-slate-400">Pagado</div>
+                      <div className={`font-bold tabular-nums text-sm ${totalPagadoGrupo > 0 ? 'text-orange-400' : 'text-slate-500'}`}>{COP.format(totalPagadoGrupo)}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs text-slate-400">Diferencia</div>
+                      <div className={`font-bold tabular-nums text-sm ${diferencia >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {diferencia >= 0 ? '+' : ''}{COP.format(diferencia)}
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => abrirModalNuevoPagoGrupo(grupo)}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded bg-orange-500/20 text-orange-300 hover:bg-orange-500/30 text-[10px] font-semibold transition-colors"
+                        title="Registrar pago"
+                      >
+                        <Plus className="size-3" /> Pago
+                      </button>
+                      <button
+                        onClick={() => abrirModalEditarGrupo(grupo)}
+                        className="p-1.5 hover:bg-white/10 rounded text-slate-400 hover:text-white transition-colors"
+                        title="Editar grupo"
+                      >
+                        <Pencil className="size-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleEliminarGrupo(grupo.id)}
+                        className="p-1.5 hover:bg-red-500/20 rounded text-slate-400 hover:text-red-400 transition-colors"
+                        title="Eliminar grupo"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {expandedG && (
+                  <div className="border-t border-violet-500/20 px-4 py-3 space-y-3">
+                    {/* Ítems del grupo */}
+                    {itemsDelGrupo.length > 0 && (
+                      <div className="space-y-1">
+                        <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Ítems agrupados</p>
+                        {itemsDelGrupo.map((it: any) => (
+                          <div key={it.id} className="flex justify-between items-center text-xs text-slate-300 pl-4 border-l-2 border-violet-500/30">
+                            <span className="truncate">{it.descripcion}</span>
+                            <span className="tabular-nums text-slate-400 shrink-0 ml-4">{COP.format(Number(it.cantidad) * Number(it.precio_unitario))}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Pagos registrados del grupo */}
+                    {pagosGrupo.length > 0 && (
+                      <div className="space-y-1.5">
+                        <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Pagos registrados</p>
+                        {pagosGrupo.map((pago: any) => (
+                          <div key={pago.id} className="flex items-center justify-between gap-2 pl-4 border-l-2 border-orange-500/30 text-xs">
+                            <div className="min-w-0">
+                              <span className="text-slate-300 truncate block">{pago.descripcion || grupo.nombre}</span>
+                              {pago.observaciones && <span className="text-slate-500 text-[10px]">{pago.observaciones}</span>}
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-semibold ${pago.estado_pago === 'PAGADO' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-yellow-500/20 text-yellow-300'}`}>
+                                {pago.estado_pago}
+                              </span>
+                              <span className="font-bold tabular-nums text-orange-400">{COP.format(Number(pago.monto))}</span>
+                              <button
+                                onClick={() => abrirModalEditarPagoGrupo(grupo, pago)}
+                                className="p-1 hover:bg-white/10 rounded text-slate-500 hover:text-white transition-colors"
+                              >
+                                <Pencil className="size-3" />
+                              </button>
+                              <button
+                                onClick={() => handleEliminarPagoGrupo(pago.id)}
+                                className="p-1 hover:bg-red-500/20 rounded text-slate-500 hover:text-red-400 transition-colors"
+                              >
+                                <Trash2 className="size-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {pagosGrupo.length === 0 && itemsDelGrupo.length === 0 && (
+                      <p className="text-xs text-slate-500">No se encontraron ítems ni pagos.</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
       <div className="overflow-x-auto">
         <table className="w-full text-sm text-left">
           <thead className="bg-white/5 border-b border-white/10 text-xs uppercase text-slate-400">
             <tr>
+              <th className="px-3 py-3">
+                <input
+                  type="checkbox"
+                  checked={selectedItemIds.size === itemsCotizados.length && itemsCotizados.length > 0}
+                  onChange={e => {
+                    if (e.target.checked) setSelectedItemIds(new Set(itemsCotizados.map((it: any) => it.id)))
+                    else setSelectedItemIds(new Set())
+                  }}
+                  className="accent-violet-500"
+                  title="Seleccionar todos"
+                />
+              </th>
               <th className="px-4 py-3">Item</th>
               <th className="px-4 py-3 text-right">Cantidad cotizada</th>
               <th className="px-4 py-3 text-right">Valor unitario</th>
@@ -847,7 +1195,15 @@ function ItemsManager({ actividadId, itemsCotizados, costos, cuentas, totalAbono
 
               return (
                 <Fragment key={it.id}>
-                  <tr className="hover:bg-white/5 align-top">
+                  <tr className={`hover:bg-white/5 align-top ${selectedItemIds.has(it.id) ? 'bg-violet-500/5' : ''}`}>
+                    <td className="px-3 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedItemIds.has(it.id)}
+                        onChange={() => toggleItemSelection(it.id)}
+                        className="accent-violet-500"
+                      />
+                    </td>
                     <td className="px-4 py-3 text-slate-200">
                       <div className="font-semibold">{it.descripcion}</div>
                       <div className="mt-1 flex items-center gap-2 text-[10px] text-slate-500">
@@ -855,6 +1211,11 @@ function ItemsManager({ actividadId, itemsCotizados, costos, cuentas, totalAbono
                           {it.tipo_rubro}
                         </span>
                         {it.estado_ejecucion === 'CANCELADO' && <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-300">CANCELADO</span>}
+                        {(grupos ?? []).some((g: any) => (g.items_ids as string[]).includes(it.id)) && (
+                          <span className="px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 inline-flex items-center gap-1">
+                            <Layers className="size-2.5" /> en grupo
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums">{Number(it.cantidad).toLocaleString('es-CO')}</td>
@@ -909,7 +1270,7 @@ function ItemsManager({ actividadId, itemsCotizados, costos, cuentas, totalAbono
                   </tr>
                   {expanded && (
                     <tr key={`${it.id}-detail`} className="bg-white/5">
-                      <td colSpan={10} className="px-4 py-4">
+                      <td colSpan={11} className="px-4 py-4">
                         <div className="space-y-3">
                           <div className="flex items-center justify-between gap-3">
                             <h3 className="text-sm font-semibold text-white">Costos de {it.descripcion}</h3>
@@ -995,6 +1356,204 @@ function ItemsManager({ actividadId, itemsCotizados, costos, cuentas, totalAbono
           </tbody>
         </table>
       </div>
+
+      {/* ── MODAL: Crear / Editar Grupo de Costos ──────────────────────────── */}
+      {grupoModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
+          <div className="w-full max-w-xl rounded-2xl border border-violet-500/30 bg-[#0b1020] shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <Layers className="size-5 text-violet-400" />
+                <h3 className="text-lg font-bold text-white">{editingGrupoId ? 'Editar grupo' : 'Nuevo grupo de costos'}</h3>
+              </div>
+              <button onClick={cerrarGrupoModal} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-colors">
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleGuardarGrupo} className="p-5 space-y-5">
+              {/* Nombre del grupo */}
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Nombre del grupo</label>
+                <input
+                  list="grupo-nombres-predefinidos"
+                  value={grupoNombre}
+                  onChange={e => setGrupoNombre(e.target.value)}
+                  type="text"
+                  placeholder="Ej. Alimentación o escribe un nombre…"
+                  required
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-500"
+                />
+                <datalist id="grupo-nombres-predefinidos">
+                  {PREDEFINED_GRUPO_NOMBRES.map(n => <option key={n} value={n} />)}
+                </datalist>
+              </div>
+
+              {/* Monto total */}
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Costo total del grupo</label>
+                <input
+                  value={grupoMontoStr}
+                  onChange={e => setGrupoMontoStr(e.target.value)}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  required
+                  placeholder="0"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-violet-500"
+                />
+                <p className="text-[10px] text-slate-500 mt-1">Este es el costo real total de los ítems agrupados, sin desglosar por ítem.</p>
+              </div>
+
+              {/* Selección de ítems */}
+              <div>
+                <label className="block text-xs text-slate-400 mb-2">Ítems incluidos en el grupo</label>
+                <div className="rounded-xl border border-white/10 bg-white/5 divide-y divide-white/5 max-h-52 overflow-y-auto">
+                  {itemsCotizados.map((it: any) => {
+                    const checked = grupoItemsIds.has(it.id)
+                    const presup = Number(it.cantidad) * Number(it.precio_unitario)
+                    return (
+                      <label key={it.id} className={`flex items-center gap-3 px-3 py-2 cursor-pointer select-none transition-colors ${checked ? 'bg-violet-500/10' : 'hover:bg-white/5'}`}>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleGrupoItem(it.id)}
+                          className="accent-violet-500 shrink-0"
+                        />
+                        <span className="flex-1 text-sm text-slate-200 truncate">{it.descripcion}</span>
+                        <span className="text-xs text-slate-400 tabular-nums shrink-0">{COP.format(presup)}</span>
+                      </label>
+                    )
+                  })}
+                </div>
+                {grupoItemsIds.size > 0 && (
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Cotizado seleccionado: <strong className="text-slate-300">
+                      {COP.format(itemsCotizados
+                        .filter((it: any) => grupoItemsIds.has(it.id))
+                        .reduce((acc: number, it: any) => acc + Number(it.cantidad) * Number(it.precio_unitario), 0)
+                      )}
+                    </strong>
+                  </p>
+                )}
+              </div>
+
+              {grupoError && (
+                <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-200 flex items-start gap-2">
+                  <AlertCircle className="size-3.5 shrink-0 mt-0.5" />
+                  <span>{grupoError}</span>
+                </div>
+              )}
+
+              <div className="flex gap-2 justify-end pt-1">
+                <button type="button" onClick={cerrarGrupoModal} className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-semibold text-white transition-colors">Cancelar</button>
+                <button type="submit" disabled={grupoPending} className="px-4 py-2 rounded-lg bg-violet-500 hover:bg-violet-600 disabled:opacity-50 text-sm font-semibold text-white transition-colors inline-flex items-center gap-2">
+                  {grupoPending ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
+                  {editingGrupoId ? 'Actualizar grupo' : 'Crear grupo'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: Registrar / Editar Pago de Grupo ────────────────────────── */}
+      {pagoGrupoModalOpen && selectedGrupo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
+          <div className="w-full max-w-md rounded-2xl border border-orange-500/20 bg-[#0b1020] shadow-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+              <div>
+                <h3 className="text-lg font-bold text-white">{editingPagoId ? 'Editar pago' : 'Registrar pago'}</h3>
+                <p className="text-xs text-slate-400">{selectedGrupo.nombre}</p>
+              </div>
+              <button onClick={cerrarPagoGrupoModal} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-colors">
+                <X className="size-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleGuardarPagoGrupo} className="p-5 space-y-4">
+              <label className="block">
+                <span className="text-xs text-slate-400 mb-1 block">Descripción</span>
+                <input
+                  value={pagoDesc}
+                  onChange={e => setPagoDesc(e.target.value)}
+                  type="text"
+                  required
+                  placeholder="Descripción del pago"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"
+                />
+              </label>
+
+              <label className="block">
+                <span className="text-xs text-slate-400 mb-1 block">Monto ($)</span>
+                <input
+                  value={pagoMontoStr}
+                  onChange={e => setPagoMontoStr(e.target.value)}
+                  type="number"
+                  min="0"
+                  step="any"
+                  required
+                  placeholder="0"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"
+                />
+                <p className="text-[10px] text-slate-500 mt-1">Presupuesto del grupo: <strong className="text-violet-300">{COP.format(Number(selectedGrupo.monto_total ?? 0))}</strong></p>
+              </label>
+
+              <label className="block">
+                <span className="text-xs text-slate-400 mb-1 block">Observaciones (opcional)</span>
+                <input
+                  value={pagoObs}
+                  onChange={e => setPagoObs(e.target.value)}
+                  type="text"
+                  placeholder="Observaciones"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"
+                />
+              </label>
+
+              <div className="flex items-center gap-3 pt-1">
+                <input
+                  id="pago-grupo-pagado"
+                  type="checkbox"
+                  checked={pagoPagado}
+                  onChange={e => setPagoPagado(e.target.checked)}
+                  className="accent-orange-500 size-4"
+                />
+                <label htmlFor="pago-grupo-pagado" className="text-sm text-slate-300 cursor-pointer">¿Ya fue pagado?</label>
+              </div>
+
+              {pagoPagado && (
+                <label className="block">
+                  <span className="text-xs text-slate-400 mb-1 block">Cuenta de origen</span>
+                  <select
+                    value={pagoCuentaId}
+                    onChange={e => setPagoCuentaId(e.target.value)}
+                    className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"
+                  >
+                    {cuentasSeleccionables.map((c: any) => (
+                      <option key={c.id} value={c.id}>{c.nombre ?? c.tipo} — {COP.format(Number(c.saldo ?? 0))}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
+
+              {pagoError && (
+                <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-200 flex items-start gap-2">
+                  <AlertCircle className="size-3.5 shrink-0 mt-0.5" />
+                  <span>{pagoError}</span>
+                </div>
+              )}
+
+              <div className="flex gap-2 justify-end pt-1">
+                <button type="button" onClick={cerrarPagoGrupoModal} className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm font-semibold text-white transition-colors">Cancelar</button>
+                <button type="submit" disabled={pagoPending} className="px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-sm font-semibold text-white transition-colors inline-flex items-center gap-2">
+                  {pagoPending ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
+                  {editingPagoId ? 'Actualizar pago' : 'Registrar pago'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {modalOpen && selectedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 py-6">
