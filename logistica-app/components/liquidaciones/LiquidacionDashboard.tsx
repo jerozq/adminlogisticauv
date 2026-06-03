@@ -561,7 +561,10 @@ function ItemsManager({ actividadId, itemsCotizados, costos, cuentas, totalAbono
     return map
   }, [deudas])
 
-  const itemIdsVigentes = useMemo(() => new Set((itemsCotizados ?? []).map((item: any) => String(item.id))), [itemsCotizados])
+  const itemIdsVigentes = useMemo<Set<string>>(
+    () => new Set<string>((itemsCotizados ?? []).map((item: any) => String(item.id))),
+    [itemsCotizados],
+  )
 
   function abrirModalDevolucion(it: any) {
     setDevSelectedItem(it)
