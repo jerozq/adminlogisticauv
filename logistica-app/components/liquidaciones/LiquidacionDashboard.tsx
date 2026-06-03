@@ -4,6 +4,7 @@ import { Fragment, useMemo, useState, useTransition } from 'react'
 import { AlertCircle, Check, CheckCircle2, ChevronDown, ChevronUp, DollarSign, Info, Layers, Loader2, Pencil, Plus, RotateCcw, ShieldAlert, TrendingDown, Trash2, Upload, Users, Wallet, X } from 'lucide-react'
 import { actualizarAbono, actualizarGrupoCostos, cambiarEstadoPagoCosto, cambiarEstadoReembolso, crearGrupoCostos, eliminarAbono, eliminarCostoReal, eliminarDeudaDevolucion, eliminarGrupoCostos, eliminarPagoGrupo, marcarItemEstado, recalcularDevolucionesPendientes, registrarAbonoUnidad, registrarCostoReal, registrarDeudaDevolucion, registrarPagoGrupo, registrarSalidaDevolucion, saldarDeudaDevolucion } from '@/actions/liquidaciones'
 import { useRouter } from 'next/navigation'
+import { calcularTotalCostosRegistrados } from '@/src/utils/liquidacion-costos'
 import { GaleriaComprobantes } from './GaleriaComprobantes'
 import type { EstadoReembolso, SoporteProyecto } from '@/actions/liquidaciones'
 import { FondosInsuficientesModal } from './FondosInsuficientesModal'
@@ -594,7 +595,7 @@ function ItemsManager({ actividadId, itemsCotizados, costos, cuentas, totalAbono
     })
   }
 
-  const totalCostos = useMemo(() => costos.reduce((acc: number, costo: any) => acc + Number(costo.monto ?? 0), 0), [costos])
+  const totalCostos = useMemo(() => calcularTotalCostosRegistrados(costos), [costos])
 
   function abrirModalNuevo(item: any) {
     const cantidadBase = Number(item?.cantidad ?? 1)
