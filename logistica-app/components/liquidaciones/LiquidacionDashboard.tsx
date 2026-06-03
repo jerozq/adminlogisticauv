@@ -4,7 +4,7 @@ import { Fragment, useMemo, useState, useTransition } from 'react'
 import { AlertCircle, Check, CheckCircle2, ChevronDown, ChevronUp, DollarSign, Info, Layers, Loader2, Pencil, Plus, RotateCcw, ShieldAlert, TrendingDown, Trash2, Upload, Users, Wallet, X } from 'lucide-react'
 import { actualizarAbono, actualizarGrupoCostos, cambiarEstadoPagoCosto, cambiarEstadoReembolso, crearGrupoCostos, eliminarAbono, eliminarCostoReal, eliminarDeudaDevolucion, eliminarGrupoCostos, eliminarPagoGrupo, marcarItemEstado, recalcularDevolucionesPendientes, registrarAbonoUnidad, registrarCostoReal, registrarDeudaDevolucion, registrarPagoGrupo, registrarSalidaDevolucion, saldarDeudaDevolucion } from '@/actions/liquidaciones'
 import { useRouter } from 'next/navigation'
-import { calcularTotalCostosRegistrados } from '@/src/utils/liquidacion-costos'
+import { calcularTotalCostosRegistrados, contarCostosHuerfanos } from '@/src/utils/liquidacion-costos'
 import { GaleriaComprobantes } from './GaleriaComprobantes'
 import type { EstadoReembolso, SoporteProyecto } from '@/actions/liquidaciones'
 import { FondosInsuficientesModal } from './FondosInsuficientesModal'
@@ -561,6 +561,8 @@ function ItemsManager({ actividadId, itemsCotizados, costos, cuentas, totalAbono
     return map
   }, [deudas])
 
+  const itemIdsVigentes = useMemo(() => new Set((itemsCotizados ?? []).map((item: any) => String(item.id))), [itemsCotizados])
+
   function abrirModalDevolucion(it: any) {
     setDevSelectedItem(it)
     setDevCantidad('1')
@@ -595,7 +597,8 @@ function ItemsManager({ actividadId, itemsCotizados, costos, cuentas, totalAbono
     })
   }
 
-  const totalCostos = useMemo(() => calcularTotalCostosRegistrados(costos), [costos])
+  const totalCostos = useMemo(() => calcularTotalCostosRegistrados(costos, itemIdsVigentes), [costos, itemIdsVigentes])
+  const costosHuerfanos = useMemo(() => contarCostosHuerfanos(costos, itemIdsVigentes), [costos, itemIdsVigentes])
 
   function abrirModalNuevo(item: any) {
     const cantidadBase = Number(item?.cantidad ?? 1)
@@ -995,6 +998,11 @@ function ItemsManager({ actividadId, itemsCotizados, costos, cuentas, totalAbono
         <div className="p-4 rounded-xl bg-white/5 border border-white/10">
           <div className="text-xs text-slate-400">Costos registrados</div>
           <div className="text-lg font-bold text-orange-400 tabular-nums">{COP.format(totalCostos)}</div>
+          {costosHuerfanos > 0 && (
+            <div className="text-[10px] text-amber-300 mt-1">
+              {costosHuerfanos} costo{costosHuerfanos === 1 ? '' : 's'} de ítems antiguos no se cuentan.
+            </div>
+          )}
         </div>
         <div className="p-4 rounded-xl bg-white/5 border border-white/10">
           <div className="text-xs text-slate-400">Utilidad estimada</div>
