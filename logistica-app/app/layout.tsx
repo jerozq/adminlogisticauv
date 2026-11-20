@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AppShell } from "@/components/AppShell";
+import { NumberInputGuard } from "@/components/NumberInputGuard";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,6 +33,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-[#0a0b0f] text-slate-200" suppressHydrationWarning>
         <ThemeProvider>
+          <NumberInputGuard />
           <AppShell>{children}</AppShell>
         </ThemeProvider>
       </body>

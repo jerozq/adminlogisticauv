@@ -131,6 +131,16 @@ export default async function EditarCotizacionPage({
                       <p className="text-xs text-slate-400 mt-0.5">
                         {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(h.total_general)}
                       </p>
+                      {h.usuarioEmail && (
+                        <p className="text-[11px] text-slate-500 mt-0.5 truncate" title={h.usuarioEmail}>
+                          {h.usuarioEmail}
+                        </p>
+                      )}
+                      {h.resumenCambios && (
+                        <p className="text-[11px] text-slate-400 mt-1 leading-snug" title={h.resumenCambios}>
+                          {h.resumenCambios.length > 90 ? `${h.resumenCambios.slice(0, 90)}…` : h.resumenCambios}
+                        </p>
+                      )}
                       {isCurrent && (
                         <div className="mt-2 inline-flex items-center rounded-md bg-blue-500/10 px-2 py-1 text-xs font-bold text-blue-300 border border-blue-500/20">
                           Actual (Editable)

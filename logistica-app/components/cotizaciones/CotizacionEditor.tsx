@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Plus,
@@ -9,6 +9,7 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   ChevronDown,
   ChevronUp,
   Sparkles,
@@ -130,6 +131,14 @@ export function CotizacionEditor({
   const [result, setResult] = useState<{ ok: boolean; msg: string } | null>(null)
   const [headerOpen, setHeaderOpen] = useState(true)
 
+  // ── Guard de cambios sin guardar ──────────────────────────────
+  const [savedSnapshot, setSavedSnapshot] = useState(
+    () => JSON.stringify({ encabezado: initialEncabezado, items: initialItems })
+  )
+  const isDirty = JSON.stringify({ encabezado, items }) !== savedSnapshot
+  const [confirmNav, setConfirmNav] = useState<{ href: string } | null>(null)
+  const bypassGuardRef = useRef(false)
+
   function setEnc<K extends keyof RequerimientoEncabezado>(key: K, value: RequerimientoEncabezado[K]) {
     setEncabezado((prev) => ({ ...prev, [key]: value }))
   }
@@ -195,14 +204,17 @@ export function CotizacionEditor({
     }
   }
 
-  async function handleSave() {
+  async function handleSave(): Promise<boolean> {
     setSaving(true)
     setResult(null)
+    let ok = false
     try {
       const itemsToSave = items.map((it) => ({ ...it, opcionesTarifario: [] }))
       const res = await actualizarCotizacion(requerimientoId, cotizacionId, encabezado, itemsToSave)
-      
+
       if (res.ok) {
+        ok = true
+        setSavedSnapshot(JSON.stringify({ encabezado, items }))
         setResult({ ok: true, msg: '¡Cambios guardados como nueva versión correctamente!' })
         router.refresh() // Refresh to load the new version from the server
       } else {
@@ -213,6 +225,59 @@ export function CotizacionEditor({
     } finally {
       setSaving(false)
       window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+    return ok
+  }
+
+  // Avisa al cerrar/recargar la pestaña si hay cambios sin guardar
+  useEffect(() => {
+    function onBeforeUnload(e: BeforeUnloadEvent) {
+      if (!isDirty) return
+      e.preventDefault()
+      e.returnValue = ''
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [isDirty])
+
+  // Intercepta la navegación dentro de la app (links) si hay cambios sin guardar
+  useEffect(() => {
+    function onClickCapture(e: MouseEvent) {
+      if (!isDirty || bypassGuardRef.current) return
+      const anchor = (e.target as HTMLElement | null)?.closest?.('a')
+      if (!anchor) return
+      const href = anchor.getAttribute('href')
+      if (!href || href.startsWith('#') || anchor.target === '_blank') return
+      let url: URL
+      try {
+        url = new URL(href, window.location.href)
+      } catch {
+        return
+      }
+      if (url.origin !== window.location.origin) return
+      if (url.pathname === window.location.pathname) return
+
+      e.preventDefault()
+      e.stopPropagation()
+      setConfirmNav({ href: url.pathname + url.search })
+    }
+    document.addEventListener('click', onClickCapture, true)
+    return () => document.removeEventListener('click', onClickCapture, true)
+  }, [isDirty])
+
+  function salirSinGuardar() {
+    if (!confirmNav) return
+    bypassGuardRef.current = true
+    router.push(confirmNav.href)
+    setConfirmNav(null)
+  }
+
+  async function guardarYSalir() {
+    const ok = await handleSave()
+    if (ok && confirmNav) {
+      bypassGuardRef.current = true
+      router.push(confirmNav.href)
+      setConfirmNav(null)
     }
   }
 
@@ -594,6 +659,12 @@ export function CotizacionEditor({
 
       {/* ── Botón guardar ── */}
       <div className="flex items-center justify-end gap-3 pb-8">
+        {isDirty && !saving && (
+          <span className="flex items-center gap-1.5 text-xs font-semibold [color:var(--state-cancel-fg)]">
+            <AlertTriangle strokeWidth={1.5} className="size-3.5" />
+            Cambios sin guardar
+          </span>
+        )}
         <button
           onClick={handleSave}
           disabled={saving}
@@ -607,6 +678,46 @@ export function CotizacionEditor({
           {saving ? 'Guardando...' : 'Guardar cambios'}
         </button>
       </div>
+
+      {/* ── Modal: cambios sin guardar ── */}
+      {confirmNav && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-sm rounded-2xl surface-card p-6 shadow-xl">
+            <div className="flex items-start gap-3">
+              <AlertTriangle strokeWidth={1.5} className="size-5 shrink-0 [color:var(--state-cancel-fg)] mt-0.5" />
+              <div>
+                <h3 className="font-bold text-sm [color:var(--text-primary)]">Tienes cambios sin guardar</h3>
+                <p className="text-xs [color:var(--text-secondary)] mt-1">
+                  Si sales ahora vas a perder los cambios que hiciste en esta cotización.
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex flex-col gap-2">
+              <button
+                onClick={guardarYSalir}
+                disabled={saving}
+                className="flex items-center justify-center gap-2 rounded-xl btn-primary px-4 py-2.5 text-sm font-semibold disabled:opacity-60 transition-colors"
+              >
+                {saving ? <Loader2 strokeWidth={1.5} className="size-4 animate-spin" /> : <Save strokeWidth={1.5} className="size-4" />}
+                Guardar y salir
+              </button>
+              <button
+                onClick={salirSinGuardar}
+                disabled={saving}
+                className="rounded-xl px-4 py-2.5 text-sm font-semibold pill-cancel transition-colors"
+              >
+                Salir sin guardar
+              </button>
+              <button
+                onClick={() => setConfirmNav(null)}
+                className="rounded-xl px-4 py-2.5 text-sm font-semibold [color:var(--text-secondary)] hover:[background:var(--surface-raised)] transition-colors"
+              >
+                Seguir editando
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

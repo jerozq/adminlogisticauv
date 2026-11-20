@@ -176,7 +176,7 @@ function PrecioCell({
         <input
           ref={inputRef}
           type="number"
-          step="0.01"
+          step="1000"
           min="0"
           value={value}
           onChange={(e) => setValue(e.target.value)}
@@ -317,7 +317,7 @@ function AddItemForm({ onAdded, onClose }: { onAdded: (item: TarifarioItem) => v
           </label>
           <input
             type="number"
-            step="0.01"
+            step="1000"
             min="0"
             placeholder="0"
             value={form.precio_venta}

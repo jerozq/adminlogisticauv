@@ -43,7 +43,9 @@ export async function subirArchivoRequerimiento(
     const { createClient } = await import('@supabase/supabase-js')
     const sb = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      // Server action sin sesión de usuario: la policy de storage exige `authenticated`,
+      // así que usamos la service role (igual que generar-cuenta-cobro) para no chocar con RLS.
+      process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     )
 
     const { error: uploadError } = await sb.storage
@@ -1474,7 +1476,7 @@ export async function listarRequerimientosConCotizaciones(): Promise<{
     const [reqResult, itemsResult] = await Promise.all([
       sb
         .from('requerimientos')
-        .select('id, numero_requerimiento, nombre_actividad, municipio, departamento, estado, created_at, archivo_origen_nombre, archivo_origen_url')
+        .select('id, numero_requerimiento, nombre_actividad, municipio, departamento, estado, version, created_at, archivo_origen_nombre, archivo_origen_url')
         .order('created_at', { ascending: false }),
       sb
         .from('items_requerimiento')
@@ -1502,7 +1504,7 @@ export async function listarRequerimientosConCotizaciones(): Promise<{
       municipio:    (req.municipio as string) || '—',
       departamento: (req.departamento as string) || '—',
       estadoReq:    (req.estado as string) || '—',
-      version:      1,
+      version:      Number(req.version ?? 1),
       estadoCot:    (req.estado as string) || '—',
       total:        totalesPor[req.id as string] ?? 0,
       archivoOrigenNombre: (req.archivo_origen_nombre as string | null) ?? null,
@@ -1596,7 +1598,7 @@ export async function cargarCotizacion(requerimientoId: string): Promise<
       archivoOrigenUrl: (req.archivo_origen_url as string | null) ?? null,
       cotizacion: {
         id:      requerimientoId,
-        version: 1,
+        version: Number(req.version ?? 1),
         estado:  (req.estado as string) ?? 'generado',
       },
       requerimientoEstado: (req.estado as string) ?? 'generado',
@@ -1617,18 +1619,25 @@ export async function listarHistorialCotizaciones(requerimientoId: string): Prom
   estado: string
   total_general: number
   created_at: string
+  usuarioEmail: string | null
+  resumenCambios: string | null
 }[]> {
   try {
     const sb = await getSupabaseServer()
 
-    const [reqResult, itemsResult] = await Promise.all([
-      sb.from('requerimientos').select('id, estado, created_at').eq('id', requerimientoId).single(),
+    const [reqResult, itemsResult, historialResult] = await Promise.all([
+      sb.from('requerimientos').select('id, estado, version, created_at').eq('id', requerimientoId).single(),
       sb
         .from('items_requerimiento')
         .select('precio_total')
         .eq('requerimiento_id', requerimientoId)
         .in('tipo', ['SERVICIO', 'PASIVO_TERCERO'])
         .eq('estado', 'ACTIVO'),
+      sb
+        .from('requerimiento_historial')
+        .select('id, version, usuario_email, resumen_cambios, created_at, datos_nuevos')
+        .eq('requerimiento_id', requerimientoId)
+        .order('version', { ascending: true }),
     ])
 
     if (reqResult.error || !reqResult.data) {
@@ -1636,18 +1645,44 @@ export async function listarHistorialCotizaciones(requerimientoId: string): Prom
       return []
     }
 
-    const total = (itemsResult.data ?? []).reduce(
+    const estadoActual = (reqResult.data.estado as string) ?? 'generado'
+    const versionActual = Number(reqResult.data.version ?? 1)
+
+    const totalActual = (itemsResult.data ?? []).reduce(
       (sum, r) => sum + Number(r.precio_total ?? 0),
       0
     )
 
-    return [{
-      id:            requerimientoId,
-      version:       1,
-      estado:        (reqResult.data.estado as string) ?? 'generado',
-      total_general: total,
-      created_at:    (reqResult.data.created_at as string) ?? new Date().toISOString(),
-    }]
+    // Tabla de historial aún no disponible (migración no aplicada en este entorno)
+    // o actividad creada pero nunca editada: mostrar solo la versión actual.
+    if (historialResult.error || !historialResult.data || historialResult.data.length === 0) {
+      return [{
+        id:             requerimientoId,
+        version:        versionActual,
+        estado:         estadoActual,
+        total_general:  totalActual,
+        created_at:     (reqResult.data.created_at as string) ?? new Date().toISOString(),
+        usuarioEmail:   null,
+        resumenCambios: 'Creación',
+      }]
+    }
+
+    return historialResult.data.map((h) => {
+      const snapshot = h.datos_nuevos as { items?: { cantidad: number; precioUnitario: number }[] } | null
+      const totalVersion = h.version === versionActual
+        ? totalActual
+        : (snapshot?.items ?? []).reduce((s, it) => s + Number(it.cantidad) * Number(it.precioUnitario), 0)
+
+      return {
+        id:             h.id as string,
+        version:        h.version as number,
+        estado:         estadoActual,
+        total_general:  totalVersion,
+        created_at:     h.created_at as string,
+        usuarioEmail:   (h.usuario_email as string | null) ?? null,
+        resumenCambios: (h.resumen_cambios as string | null) ?? null,
+      }
+    })
   } catch (err) {
     console.error('[listarHistorialCotizaciones]', err)
     return []
@@ -1658,6 +1693,60 @@ export async function listarHistorialCotizaciones(requerimientoId: string): Prom
 // actualizarCotizacion
 // ============================================================
 
+/** Compara el estado anterior vs el nuevo y arma un resumen legible para el historial. */
+function resumirCambiosCotizacion(
+  encAntes: Record<string, unknown> | null,
+  itemsAntes: { id: string; descripcion: string; cantidad: number; precio_unitario: number }[],
+  encDespues: RequerimientoEncabezado,
+  itemsDespues: CotizacionItemDraft[]
+): string {
+  const cambios: string[] = []
+
+  const camposEncabezado: [string, keyof RequerimientoEncabezado, string][] = [
+    ['numero_requerimiento', 'numeroRequerimiento', 'N° Requerimiento'],
+    ['nombre_actividad', 'nombreActividad', 'Nombre de la actividad'],
+    ['municipio', 'municipio', 'Municipio'],
+    ['departamento', 'departamento', 'Departamento'],
+    ['fecha_inicio', 'fechaInicio', 'Fecha inicio'],
+    ['responsable_nombre', 'responsableNombre', 'Responsable'],
+  ]
+  for (const [campoDb, campoDraft, label] of camposEncabezado) {
+    const antes = (encAntes?.[campoDb] as string | null) ?? ''
+    const despues = (encDespues[campoDraft] as string) ?? ''
+    if (String(antes) !== String(despues)) {
+      cambios.push(`${label}: "${antes || '—'}" → "${despues || '—'}"`)
+    }
+  }
+
+  const antesPorId = new Map(itemsAntes.map((i) => [i.id, i]))
+  const despuesIds = new Set(itemsDespues.map((i) => i.id))
+
+  for (const item of itemsDespues) {
+    const anterior = antesPorId.get(item.id)
+    if (!anterior) {
+      cambios.push(`Ítem agregado: "${item.descripcion}" (${item.cantidad} × $${item.precioUnitario.toLocaleString('es-CO')})`)
+      continue
+    }
+    if (Number(anterior.precio_unitario) !== Number(item.precioUnitario)) {
+      cambios.push(`Precio "${item.descripcion}": $${Number(anterior.precio_unitario).toLocaleString('es-CO')} → $${item.precioUnitario.toLocaleString('es-CO')}`)
+    }
+    if (Number(anterior.cantidad) !== Number(item.cantidad)) {
+      cambios.push(`Cantidad "${item.descripcion}": ${anterior.cantidad} → ${item.cantidad}`)
+    }
+    if (anterior.descripcion !== item.descripcion) {
+      cambios.push(`Ítem renombrado: "${anterior.descripcion}" → "${item.descripcion}"`)
+    }
+  }
+
+  for (const anterior of itemsAntes) {
+    if (!despuesIds.has(anterior.id)) {
+      cambios.push(`Ítem eliminado: "${anterior.descripcion}"`)
+    }
+  }
+
+  return cambios.join('; ')
+}
+
 export async function actualizarCotizacion(
   requerimientoId: string,
   _cotizacionId: string,
@@ -1667,7 +1756,24 @@ export async function actualizarCotizacion(
   try {
     const sb = await getSupabaseServer()
 
-    // 1. Update requerimiento encabezado
+    // 0. Snapshot del estado actual ANTES de modificar, para el historial de versiones
+    const { data: reqAntes } = await sb
+      .from('requerimientos')
+      .select('*')
+      .eq('id', requerimientoId)
+      .single()
+
+    const { data: itemsAntesData } = await sb
+      .from('items_requerimiento')
+      .select('id, descripcion, cantidad, precio_unitario')
+      .eq('requerimiento_id', requerimientoId)
+      .in('tipo', ['SERVICIO', 'PASIVO_TERCERO'])
+      .neq('estado', 'CANCELADO')
+
+    const itemsAntes = (itemsAntesData ?? []) as { id: string; descripcion: string; cantidad: number; precio_unitario: number }[]
+    const versionNueva = Number(reqAntes?.version ?? 1) + 1
+
+    // 1. Update requerimiento encabezado (incrementa versión)
     const { error: reqError } = await sb
       .from('requerimientos')
       .update({
@@ -1689,6 +1795,7 @@ export async function actualizarCotizacion(
         responsable_correo:   encabezado.responsableCorreo || null,
         num_victimas:         encabezado.numVictimas || 0,
         monto_reembolso_declarado: encabezado.montoReembolsoDeclarado || null,
+        version:              versionNueva,
       })
       .eq('id', requerimientoId)
 
@@ -1731,6 +1838,25 @@ export async function actualizarCotizacion(
       if (itemsError) {
         return { ok: false, error: `Error al guardar ítems: ${itemsError.message}` }
       }
+    }
+
+    // 4. Registrar en el historial quién, cuándo y qué cambió
+    try {
+      const { data: userData } = await sb.auth.getUser()
+      const usuarioEmail = userData?.user?.email ?? null
+      const resumen = resumirCambiosCotizacion(reqAntes ?? null, itemsAntes, encabezado, items)
+
+      await sb.from('requerimiento_historial').insert({
+        requerimiento_id: requerimientoId,
+        version: versionNueva,
+        usuario_email: usuarioEmail,
+        resumen_cambios: resumen || 'Guardado sin cambios detectados',
+        datos_anteriores: { encabezado: reqAntes, items: itemsAntes },
+        datos_nuevos: { encabezado, items },
+      })
+    } catch (histErr) {
+      // No bloquear el guardado si el historial falla (ej. migración aún no aplicada)
+      console.warn('[actualizarCotizacion] No se pudo registrar historial:', histErr)
     }
 
     return { ok: true, cotizacionId: requerimientoId }
