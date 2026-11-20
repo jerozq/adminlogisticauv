@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Activity, Landmark, ReceiptText, BookOpen, Home, FileUp, ChevronDown, X, LogOut, User, Vault,
+import { Activity, Landmark, ReceiptText, BookOpen, Home, FileUp, ChevronDown, X, LogOut, User, Vault, Users,
 } from 'lucide-react'
 import { createClient } from '@/utils/supabase/client'
 import { signOut } from '@/actions/auth'
@@ -16,6 +16,7 @@ const MODULE_MAP: { prefix: string; label: string; icon: React.ElementType }[] =
   { prefix: '/tarifario',        label: 'Tarifario',      icon: BookOpen     },
   { prefix: '/reembolsos',       label: 'Reembolsos',     icon: ReceiptText  },
   { prefix: '/tesoreria',        label: 'Tesorería',      icon: Vault        },
+  { prefix: '/profesionales',    label: 'Profesionales',  icon: Users        },
 ]
 
 const NAV_LINKS = [
@@ -26,6 +27,7 @@ const NAV_LINKS = [
   { href: '/tarifario',           label: 'Tarifario',    icon: BookOpen     },
   { href: '/reembolsos',          label: 'Reembolsos',   icon: ReceiptText  },
   { href: '/tesoreria',           label: 'Tesorería',    icon: Vault        },
+  { href: '/profesionales',       label: 'Profesionales',icon: Users        },
 ]
 
 // ── Hook: detecta scroll hacia abajo para reducir opacidad ───────────────────
