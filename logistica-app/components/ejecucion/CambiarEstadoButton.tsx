@@ -8,10 +8,13 @@ import { cambiarEstadoActividad } from '@/actions/ejecucion'
 import { TRANSICIONES_PERMITIDAS } from '@/lib/transiciones'
 import type { EstadoActividad } from '@/lib/transiciones'
 import { ModalMotivo } from './ModalMotivo'
+import { AlertaLiquidacionModal } from './AlertaLiquidacionModal'
+import type { LiquidacionResumen } from '@/actions/liquidaciones'
 
 interface Props {
   actividadId: string
   estadoActual: string
+  resumenLiquidacion?: LiquidacionResumen | null
 }
 
 const ESTADOS: { value: EstadoActividad; label: string; cls: string; colorCls: string }[] = [
@@ -44,13 +47,14 @@ const NECESITA_MOTIVO: EstadoActividad[] = ['aplazado', 'cancelado']
 /** Estados finales: no permiten ningún cambio saliente */
 const ESTADOS_FINALES: EstadoActividad[] = ['liquidado', 'cancelado']
 
-export function CambiarEstadoButton({ actividadId, estadoActual }: Props) {
+export function CambiarEstadoButton({ actividadId, estadoActual, resumenLiquidacion }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [open, setOpen] = useState(false)
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({})
   const [pendingEstado, setPendingEstado] = useState<EstadoActividad | null>(null)
+  const [mostrarAlertaLiquidacion, setMostrarAlertaLiquidacion] = useState(false)
   const btnRef = useRef<HTMLButtonElement>(null)
 
   const estadoActualTyped = estadoActual as EstadoActividad
@@ -101,10 +105,18 @@ export function CambiarEstadoButton({ actividadId, estadoActual }: Props) {
     })
   }
 
+  function liquidacionParecePendiente(): boolean {
+    if (!resumenLiquidacion) return false
+    const sinNada = resumenLiquidacion.abonado === 0 && resumenLiquidacion.costosEjecutados === 0
+    return sinNada || resumenLiquidacion.devolucionesPendientes > 0
+  }
+
   function handleSelect(nuevoEstado: EstadoActividad) {
     if (nuevoEstado === estadoActualTyped) { setOpen(false); return }
     setOpen(false)
-    if (NECESITA_MOTIVO.includes(nuevoEstado)) {
+    if (nuevoEstado === 'liquidado' && liquidacionParecePendiente()) {
+      setMostrarAlertaLiquidacion(true)
+    } else if (NECESITA_MOTIVO.includes(nuevoEstado)) {
       setPendingEstado(nuevoEstado)
     } else {
       ejecutarCambio(nuevoEstado)
@@ -182,6 +194,17 @@ export function CambiarEstadoButton({ actividadId, estadoActual }: Props) {
             ejecutarCambio(estado, motivo)
           }}
           onCancel={() => setPendingEstado(null)}
+        />
+      )}
+
+      {mostrarAlertaLiquidacion && resumenLiquidacion && (
+        <AlertaLiquidacionModal
+          resumen={resumenLiquidacion}
+          onConfirm={() => {
+            setMostrarAlertaLiquidacion(false)
+            ejecutarCambio('liquidado')
+          }}
+          onCancel={() => setMostrarAlertaLiquidacion(false)}
         />
       )}
     </>

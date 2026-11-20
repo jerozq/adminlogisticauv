@@ -350,6 +350,60 @@ export async function listarLiquidaciones(): Promise<LiquidacionResumen[]> {
   })
 }
 
+/**
+ * Versión de listarLiquidaciones() acotada a una sola actividad, para
+ * mostrar el estado financiero directamente en /ejecucion/[id] sin
+ * cargar todos los requerimientos del sistema.
+ */
+export async function obtenerResumenLiquidacionActividad(actividadId: string): Promise<LiquidacionResumen | null> {
+  const sb = await createClient()
+
+  const [reqRes, itemsRes, cuentaRes] = await Promise.all([
+    sb.from('requerimientos')
+      .select('id, numero_requerimiento, nombre_actividad, municipio, estado, devoluciones_pendientes_unidad, ejecucion_costos(monto)')
+      .eq('id', actividadId)
+      .maybeSingle(),
+    sb.from('items_requerimiento')
+      .select('precio_total')
+      .eq('requerimiento_id', actividadId)
+      .in('tipo', ['SERVICIO', 'PASIVO_TERCERO'])
+      .eq('estado', 'ACTIVO'),
+    sb.from('cuentas_virtuales').select('id').eq('requerimiento_id', actividadId).maybeSingle(),
+  ])
+
+  if (reqRes.error || !reqRes.data) return null
+  const req = reqRes.data as any
+
+  let abonado = 0
+  if (cuentaRes.data?.id) {
+    const { data: movimientos } = await sb
+      .from('movimientos_bancarios')
+      .select('monto, estado, tipo')
+      .eq('destino_id', cuentaRes.data.id)
+      .eq('tipo', 'PAGO_UNIDAD')
+    for (const m of movimientos ?? []) {
+      if ((m as any).estado && (m as any).estado !== 'EJECUTADO') continue
+      abonado += Number(m.monto)
+    }
+  }
+
+  const cotizado = (itemsRes.data ?? []).reduce((acc, i) => acc + Number(i.precio_total ?? 0), 0)
+  const costos = req.ejecucion_costos || []
+  const costosEjecutados = costos.reduce((acc: number, cur: any) => acc + Number(cur.monto), 0)
+
+  return {
+    id: req.id,
+    numeroRequerimiento: req.numero_requerimiento,
+    nombreActividad: req.nombre_actividad,
+    municipio: req.municipio ?? null,
+    cotizado,
+    abonado,
+    costosEjecutados,
+    devolucionesPendientes: Number(req.devoluciones_pendientes_unidad || 0),
+    estado: req.estado,
+  }
+}
+
 export async function getLiquidacionDetalle(actividadId: string) {
   const sb = await createClient()
 

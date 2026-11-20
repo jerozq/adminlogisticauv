@@ -5,9 +5,11 @@ import { getSupabase } from '@/lib/supabase'
 import { getActivityRepository, makeGetReembolsosFromActivity } from '@/src/infrastructure/container'
 import { listarEntregas } from '@/actions/ejecucion'
 import { obtenerInformeActividad } from '@/actions/informes'
+import { obtenerResumenLiquidacionActividad } from '@/actions/liquidaciones'
 import { ActivityTabs } from '@/components/ejecucion/ActivityTabs'
 import { CambiarEstadoButton } from '@/components/ejecucion/CambiarEstadoButton'
 import { MetaCardEjecucion } from '@/components/ejecucion/MetaCardEjecucion'
+import { ResumenLiquidacion } from '@/components/ejecucion/ResumenLiquidacion'
 import { AssistantAI } from '@/components/AssistantAI'
 import { PageHeader } from '@/components/PageHeader'
 import type { HitoCronogramaIA } from '@/actions/cronograma-ia'
@@ -65,6 +67,7 @@ export default async function ActividadDetailPage({
     entregas,
     reembolsosResult,
     informeData,
+    resumenLiquidacion,
   ] = await Promise.all([
     getActivityRepository().obtenerPorId(id),
     unstable_cache(
@@ -87,6 +90,7 @@ export default async function ActividadDetailPage({
       reembolsos: [],
       evidencias: [],
     })),
+    obtenerResumenLiquidacionActividad(id).catch(() => null),
   ])
 
   const actividad = rawResult as RequerimientoRaw | null
@@ -155,7 +159,7 @@ export default async function ActividadDetailPage({
               <FileText strokeWidth={1.5} className="size-3.5" />
               Editar
             </Link>
-            <CambiarEstadoButton actividadId={id} estadoActual={actividad.estado} />
+            <CambiarEstadoButton actividadId={id} estadoActual={actividad.estado} resumenLiquidacion={resumenLiquidacion} />
           </>
         }
       />
@@ -175,6 +179,10 @@ export default async function ActividadDetailPage({
           estadoLabel={estadoCfg.label}
           estadoCls={estadoCfg.cls}
         />
+      </div>
+
+      <div className="max-w-2xl mx-auto px-4 pb-2">
+        <ResumenLiquidacion resumen={resumenLiquidacion} />
       </div>
 
       {/* Tabs */}
