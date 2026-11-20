@@ -16,6 +16,7 @@ import {
 import { UploadDocumento } from './UploadDocumento'
 import { DescargarPDFButton } from '@/components/informes/DescargarPDFButton'
 import { GenerarEvidenciasPDFButton } from '@/components/informes/GenerarEvidenciasPDFButton'
+import { DescargarTodoButton } from '@/components/informes/DescargarTodoButton'
 import {
   subirDocumentoBeneficiario,
   subirDocumentoActividad,
@@ -89,10 +90,11 @@ function DocBadge({ url }: { url: string | null }) {
 
 // ── Barra de progreso del informe ─────────────────────────────
 
-function ProgressBar({ porcentaje, pdf1, pdf2, pdf3 }: {
+function ProgressBar({ porcentaje, pdf1, pdf2, reembolsos, pdf3 }: {
   porcentaje: number
   pdf1: boolean
   pdf2: boolean
+  reembolsos: boolean
   pdf3: boolean
 }) {
   const dot = (ok: boolean, label: string) => (
@@ -121,10 +123,11 @@ function ProgressBar({ porcentaje, pdf1, pdf2, pdf3 }: {
           }}
         />
       </div>
-      <div className="flex items-center gap-4">
-        {dot(pdf1, 'PDF 1')}
-        {dot(pdf2, 'PDF 2')}
-        {dot(pdf3, 'PDF 3')}
+      <div className="flex items-center gap-4 flex-wrap">
+        {dot(pdf1, 'RS')}
+        {dot(pdf2, 'Asistencia')}
+        {dot(reembolsos, 'Reembolsos')}
+        {dot(pdf3, 'Evidencias')}
       </div>
     </div>
   )
@@ -174,8 +177,10 @@ export function TabInforme({ actividadId, actividad, reembolsos, evidencias }: P
         porcentaje={estado.porcentaje}
         pdf1={estado.pdf1Completo}
         pdf2={estado.pdf2Completo}
+        reembolsos={estado.reembolsosCompleto}
         pdf3={estado.pdf3Completo}
       />
+      <DescargarTodoButton actividadId={actividadId} actividad={actividad} reembolsos={reembolsos} />
 
       {/* ══════════════════════════════════════════
           SECCIÓN 1 — Documentos de la Actividad
@@ -294,7 +299,7 @@ export function TabInforme({ actividadId, actividad, reembolsos, evidencias }: P
         ) : (
           <div className="space-y-2">
             {reembolsos.map((r) => {
-              const tipoVisual = obtenerTipoVisualReembolso(r.tipo, r.descripcion)
+              const tipoVisual = obtenerTipoVisualReembolso(r.tipo, r.descripcion, r.categoria)
               // Habilitar cédula solo para rubros de Transporte e Inhumación
               const habilitarCedula = tipoVisual === 'transporte' || tipoVisual === 'inhumacion' || r.tipo === 'REEMBOLSO' || r.tipo === 'PASIVO_TERCERO'
 

@@ -11,6 +11,7 @@ export interface ReembolsoInforme {
   id: string
   descripcion: string
   tipo: string
+  categoria: string | null
   beneficiario_nombre: string | null
   beneficiario_documento: string | null
   precio_total: number
@@ -90,6 +91,7 @@ export async function obtenerInformeActividad(actividadId: string): Promise<{
         id,
         descripcion,
         tipo,
+        categoria,
         beneficiario_nombre,
         beneficiario_documento,
         precio_total,
