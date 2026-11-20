@@ -27,6 +27,7 @@ import {
   listarHistorialItem,
   desactivarItem,
 } from '@/actions/tarifario'
+import type { PromedioItem } from '@/actions/tarifario'
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('es-CO', {
@@ -57,6 +58,22 @@ interface Props {
   pageSize: number
   initialSearch?: string
   initialCategoria?: string
+  promedios?: Record<string, PromedioItem>
+}
+
+/** Pinta el promedio histórico pagado por un ítem, con alerta si el precio de venta se desvía. */
+function PromedioHistoricoHint({ item, promedio }: { item: TarifarioItem; promedio?: PromedioItem }) {
+  if (!promedio || promedio.n === 0) return null
+  const desviacion = (item.precio_venta - promedio.promedio) / promedio.promedio
+  const sobrePrecio = desviacion > 0.15
+  return (
+    <p
+      className={`text-[11px] mt-0.5 ${sobrePrecio ? '[color:var(--state-cancel-fg)]' : '[color:var(--text-muted)]'}`}
+      title={`Promedio pagado en ${promedio.n} actividad${promedio.n === 1 ? '' : 'es'} ejecutada${promedio.n === 1 ? '' : 's'}`}
+    >
+      Hist.: {fmt(promedio.promedio)} ({promedio.n}){sobrePrecio && ` · ${Math.round(desviacion * 100)}% sobre el histórico`}
+    </p>
+  )
 }
 
 type SortKey = 'codigo_item' | 'descripcion' | 'categoria' | 'precio_venta'
@@ -375,6 +392,7 @@ export function TarifarioEditor({
   pageSize,
   initialSearch = '',
   initialCategoria = '',
+  promedios,
 }: Props) {
   const router = useRouter()
   const [items, setItems] = useState<TarifarioItem[]>(initialItems)
@@ -594,6 +612,7 @@ export function TarifarioEditor({
                     {item.notas && (
                       <p className="text-[11px] [color:var(--text-muted)] truncate" title={item.notas}>{item.notas}</p>
                     )}
+                    <PromedioHistoricoHint item={item} promedio={promedios?.[item.id]} />
                     {/* Mobile-only */}
                     <div className="flex items-center gap-2 mt-0.5 sm:hidden">
                       <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full backdrop-blur-sm ${CATEGORIA_COLOR[item.categoria] ?? CATEGORIA_COLOR['Otro']}`}>

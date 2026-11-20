@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import type { CotizacionItemDraft, RequerimientoEncabezado } from '@/types/cotizacion'
 import { actualizarCotizacion, parsearRequerimientoExcel } from '@/actions/cotizaciones'
+import type { PromedioItem } from '@/actions/tarifario'
 
 // ─── Constantes ──────────────────────────────────────────────
 const CATEGORIAS = [
@@ -108,6 +109,36 @@ interface Props {
   version: number
   estado: string
   requerimientoEstado: string
+  promedios?: Record<string, PromedioItem>
+}
+
+/** Compara el precio del ítem contra el promedio histórico pagado en la misma zona. */
+function ComparacionZonaHint({
+  item,
+  municipio,
+  promedios,
+}: {
+  item: CotizacionItemDraft
+  municipio: string
+  promedios?: Record<string, PromedioItem>
+}) {
+  if (!item.tarifarioId) return null
+  const entry = promedios?.[item.tarifarioId]
+  const zona = municipio ? entry?.porZona[municipio] : undefined
+  const referencia = zona ?? entry
+  if (!referencia || referencia.n === 0) return null
+
+  const desviacion = (item.precioUnitario - referencia.promedio) / referencia.promedio
+  const sobrePrecio = desviacion > 0.15
+  const fmtRef = (n: number) =>
+    n.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
+
+  return (
+    <p className={`text-[10px] mt-0.5 text-right ${sobrePrecio ? '[color:var(--state-cancel-fg)]' : '[color:var(--text-muted)]'}`}>
+      {zona ? `Prom. en ${municipio}` : 'Prom. histórico'}: {fmtRef(referencia.promedio)} ({referencia.n})
+      {sobrePrecio && ` · +${Math.round(desviacion * 100)}%`}
+    </p>
+  )
 }
 
 // ============================================================
@@ -121,6 +152,7 @@ export function CotizacionEditor({
   version,
   estado,
   requerimientoEstado,
+  promedios,
 }: Props) {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -582,6 +614,7 @@ export function CotizacionEditor({
                       }
                       className="w-full min-w-[110px] rounded-lg border border-transparent bg-transparent px-2 py-1 text-sm text-right [color:var(--text-primary)] hover:[border-color:var(--surface-border)] focus:[border-color:var(--input-ring)] focus:[background:var(--input-bg)] focus:outline-none transition-colors"
                     />
+                    <ComparacionZonaHint item={item} municipio={encabezado.municipio} promedios={promedios} />
                   </td>
 
                   {/* Total */}

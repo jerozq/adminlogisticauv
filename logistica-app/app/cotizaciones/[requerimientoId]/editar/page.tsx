@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Edit3, History, FileDown } from 'lucide-react'
 import { cargarCotizacion, listarHistorialCotizaciones } from '@/actions/cotizaciones'
+import { obtenerPromediosHistoricos } from '@/actions/tarifario'
 import { CotizacionEditor } from '@/components/cotizaciones/CotizacionEditor'
 import { DocumentosHeaderActions } from '@/components/cotizaciones/DocumentosHeaderActions'
 
@@ -15,9 +16,11 @@ export default async function EditarCotizacionPage({
   const { requerimientoId } = await params
 
   // Cargar desde capa de aplicación (acciones)
-  const historial = await listarHistorialCotizaciones(requerimientoId)
-
-  const datos = await cargarCotizacion(requerimientoId)
+  const [historial, datos, promedios] = await Promise.all([
+    listarHistorialCotizaciones(requerimientoId),
+    cargarCotizacion(requerimientoId),
+    obtenerPromediosHistoricos(),
+  ])
 
   if (!datos.ok) {
     notFound()
@@ -96,6 +99,7 @@ export default async function EditarCotizacionPage({
             version={datos.cotizacion.version}
             estado={datos.cotizacion.estado}
             requerimientoEstado={datos.requerimientoEstado}
+            promedios={promedios}
           />
         </div>
 

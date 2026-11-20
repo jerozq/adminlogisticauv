@@ -98,6 +98,75 @@ export async function listarHistorialItem(
   return (data ?? []) as TarifarioHistorial[]
 }
 
+// ============================================================
+// obtenerPromediosHistoricos
+// Promedio de precio realmente pagado por ítem del tarifario, según
+// lo registrado en actividades ya ejecutadas (items_requerimiento),
+// global y desglosado por municipio — para comparar contra el precio
+// de venta vigente y detectar sobreprecio.
+// ============================================================
+
+export type PromedioZona = { promedio: number; n: number }
+export type PromedioItem = { promedio: number; n: number; porZona: Record<string, PromedioZona> }
+
+export async function obtenerPromediosHistoricos(): Promise<Record<string, PromedioItem>> {
+  const supabase = getSupabase()
+
+  const [itemsResult, reqResult] = await Promise.all([
+    supabase
+      .from('items_requerimiento')
+      .select('tarifario_id, precio_unitario, requerimiento_id')
+      .not('tarifario_id', 'is', null)
+      .in('tipo', ['SERVICIO', 'PASIVO_TERCERO'])
+      .neq('estado', 'CANCELADO')
+      .limit(5000),
+    supabase.from('requerimientos').select('id, municipio').limit(5000),
+  ])
+
+  if (itemsResult.error || reqResult.error) {
+    console.error('[obtenerPromediosHistoricos]', itemsResult.error ?? reqResult.error)
+    return {}
+  }
+
+  const municipioPorReq = new Map<string, string>()
+  for (const r of reqResult.data ?? []) {
+    if (r.municipio) municipioPorReq.set(r.id as string, r.municipio as string)
+  }
+
+  // Acumuladores: { [tarifarioId]: { suma, n, zonas: { [municipio]: { suma, n } } } }
+  const acc = new Map<string, { suma: number; n: number; zonas: Map<string, { suma: number; n: number }> }>()
+
+  for (const row of itemsResult.data ?? []) {
+    const tarifarioId = row.tarifario_id as string
+    const precio = Number(row.precio_unitario ?? 0)
+    if (!tarifarioId || precio <= 0) continue
+
+    if (!acc.has(tarifarioId)) acc.set(tarifarioId, { suma: 0, n: 0, zonas: new Map() })
+    const entry = acc.get(tarifarioId)!
+    entry.suma += precio
+    entry.n += 1
+
+    const municipio = municipioPorReq.get(row.requerimiento_id as string)
+    if (municipio) {
+      if (!entry.zonas.has(municipio)) entry.zonas.set(municipio, { suma: 0, n: 0 })
+      const zonaEntry = entry.zonas.get(municipio)!
+      zonaEntry.suma += precio
+      zonaEntry.n += 1
+    }
+  }
+
+  const resultado: Record<string, PromedioItem> = {}
+  for (const [tarifarioId, entry] of acc) {
+    const porZona: Record<string, PromedioZona> = {}
+    for (const [municipio, zonaEntry] of entry.zonas) {
+      porZona[municipio] = { promedio: zonaEntry.suma / zonaEntry.n, n: zonaEntry.n }
+    }
+    resultado[tarifarioId] = { promedio: entry.suma / entry.n, n: entry.n, porZona }
+  }
+
+  return resultado
+}
+
 export async function desactivarItem(
   itemId: string
 ): Promise<{ ok: boolean; error?: string }> {

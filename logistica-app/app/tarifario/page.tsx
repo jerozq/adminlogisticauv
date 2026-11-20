@@ -1,4 +1,4 @@
-import { listarTarifario } from '@/actions/tarifario'
+import { listarTarifario, obtenerPromediosHistoricos } from '@/actions/tarifario'
 import type { TarifarioPageParams } from '@/src/core/domain/ports/ITarifarioRepository'
 import { TarifarioEditor } from '@/components/tarifario/TarifarioEditor'
 import { PageHeader } from '@/components/PageHeader'
@@ -18,12 +18,10 @@ export default async function TarifarioPage({
 
   const page = Math.max(1, parseInt(pageStr ?? '1', 10) || 1)
 
-  const { items, totalCount } = await listarTarifario({
-    page,
-    pageSize: PAGE_SIZE,
-    search,
-    categoria,
-  })
+  const [{ items, totalCount }, promedios] = await Promise.all([
+    listarTarifario({ page, pageSize: PAGE_SIZE, search, categoria }),
+    obtenerPromediosHistoricos(),
+  ])
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 space-y-6">
@@ -45,6 +43,7 @@ export default async function TarifarioPage({
         pageSize={PAGE_SIZE}
         initialSearch={search}
         initialCategoria={categoria}
+        promedios={promedios}
       />
     </main>
   )
